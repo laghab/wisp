@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Wisp Keyboard</string>
+    <string name="ime_name">Wisp keyboard</string>
+    <string name="ime_subtype">English (US)</string>
+</resources>

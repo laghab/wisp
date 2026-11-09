@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# On-device checks for the symbols and emoji panels (task 2.5). Usage: tools/e2e/panels.sh <adb-serial>
+DEV="${1:?adb serial}"; source "$(dirname "$0")/lib.sh"; FAILED=0
+SYM="75 1045"            # ?123 / ABC (left end of the bottom row)
+EMOJI="284 1045"         # emoji key, right of the globe
+launch_field
+
+# symbols page 1: ?123, then digits and an @ symbol, then ABC back to letters
+tap $SYM; tap $(KX 0) 829; tap $(KX 1) 829; tap $(KX 0) 900               # 1 2 @
+tap $SYM; tap $(KX 0) 829                                                # ABC, then q
+expect "symbols page types digits and symbols, ABC returns to letters" "12@q"
+
+# symbols page 2 via the =< key, then back
+tap $SYM; tap 75 973; tap $(KX 0) 829                                   # ?123, =<, ~
+tap 75 973; tap $(KX 0) 829                                             # ?123 (back to page 1), 1
+expect "second symbols page and back" "12@q~1"
+tap $SYM
+a input keyevent KEYCODE_MOVE_END >/dev/null
+
+# emoji panel: open from letters, pick the first emoji, close via ABC
+launch_field
+tap $EMOJI; adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/panel_emoji.png"
+tap 30 840                                                               # top-left emoji
+tap 90 1045                                                              # bottom bar ABC (1.5 weight, left)
+tap $(KX 0) 829                                                          # q
+got="$(field_text)"
+case "$got" in "&#128512;q") echo "PASS emoji panel inserts an emoji and ABC returns: '$got'";; *) echo "FAIL emoji: '$got'"; FAILED=1;; esac
+exit $FAILED

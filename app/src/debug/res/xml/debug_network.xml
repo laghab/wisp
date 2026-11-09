@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Debug builds only: lets the update flow be tested against a local server. Release builds allow HTTPS only. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true"><domain includeSubdomains="false">127.0.0.1</domain></domain-config>
+</network-security-config>

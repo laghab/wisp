@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+    <application android:networkSecurityConfig="@xml/debug_network" tools:replace="android:networkSecurityConfig">
+        <!-- Lets the test scripts start the (not exported) practice screen. -->
+        <activity-alias android:name=".PracticeForTests" android:targetActivity=".training.GestureTrainingActivity" android:exported="true" />
+        <activity-alias android:name=".LearnedDataForTests" android:targetActivity=".personal.LearnedDataActivity" android:exported="true" />
+        <!-- Records real swipes for tuning (task 4.5). -->
+        <activity android:name=".TraceRecorderActivity" android:exported="true" />
+        <!-- On-device self tests: adb shell am start -n .../.SelfTestActivity, results in logcat tag SELFTEST. -->
+        <activity android:name=".SelfTestActivity" android:exported="true" />
+        <activity android:name=".SpikeFieldActivity" android:exported="true" android:windowSoftInputMode="stateAlwaysVisible" />
+    </application>
+</manifest>

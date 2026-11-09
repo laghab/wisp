@@ -1,0 +1,6 @@
+{
+  "name": "emoji-bar",
+  "rows": [
+    [{"k": "abc", "w": 1.5}, {"k": "switch"}, {"k": "space", "w": 5}, {"k": "backspace", "w": 1.5}]
+  ]
+}
