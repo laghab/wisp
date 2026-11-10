@@ -12,6 +12,7 @@ object KeyCodes {
     const val EMOJI = -8
     const val ABC = -9
     const val SYMBOLS_MORE = -10
+    const val NUMPAD = -11
     const val SPACE = ' '.code
 }
 

@@ -132,6 +132,7 @@ fun HomeScreen(onOpen: (Target) -> Unit, modifier: Modifier = Modifier) {
             @OptIn(ExperimentalLayoutApi::class)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Quick("Glide typing", style.glide) { v -> edit { it.copy(glide = v) } }
+                Quick("Number row", style.numberRow) { v -> edit { it.copy(numberRow = v) } }
                 Quick("Swipe to delete", style.wordSwipe) { v -> edit { it.copy(wordSwipe = v) } }
                 Quick("Space cursor", style.cursorSlide) { v -> edit { it.copy(cursorSlide = v) } }
                 Quick("Autocorrect", style.autoCorrect) { v -> edit { it.copy(autoCorrect = v) } }

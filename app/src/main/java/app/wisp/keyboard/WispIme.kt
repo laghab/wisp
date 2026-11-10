@@ -50,7 +50,7 @@ import android.content.Intent
 /** Entry point of the keyboard. */
 class WispIme : InputMethodService() {
 
-    private enum class Mode { LETTERS, SYMBOLS, SYMBOLS_MORE, EMOJI, VOICE, CLIPBOARD, REWRITE }
+    private enum class Mode { LETTERS, SYMBOLS, SYMBOLS_MORE, NUMPAD, EMOJI, VOICE, CLIPBOARD, REWRITE }
 
     private val editor = ImeEditor(this)
     private val controller = InputController(editor)
@@ -305,6 +305,7 @@ class WispIme : InputMethodService() {
             KeyCodes.SYMBOLS -> setMode(Mode.SYMBOLS)
             KeyCodes.ABC -> setMode(Mode.LETTERS)
             KeyCodes.SYMBOLS_MORE -> setMode(if (mode == Mode.SYMBOLS) Mode.SYMBOLS_MORE else Mode.SYMBOLS)
+            KeyCodes.NUMPAD -> setMode(Mode.NUMPAD)
             KeyCodes.EMOJI -> setMode(Mode.EMOJI)
             KeyCodes.LANGUAGE -> cycleLanguage()
             else -> controller.onKey(code, x, y)
@@ -319,6 +320,7 @@ class WispIme : InputMethodService() {
             Mode.LETTERS -> k.setSpec(lettersSpec())
             Mode.SYMBOLS -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols))
             Mode.SYMBOLS_MORE -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols_more))
+            Mode.NUMPAD -> k.setSpec(LayoutLoader.load(this, R.raw.layout_numpad))
             Mode.EMOJI, Mode.VOICE, Mode.CLIPBOARD, Mode.REWRITE -> {}
         }
         k.visibility = if (m == Mode.EMOJI || m == Mode.VOICE || m == Mode.CLIPBOARD || m == Mode.REWRITE) View.INVISIBLE else View.VISIBLE
@@ -383,7 +385,11 @@ class WispIme : InputMethodService() {
         placement = p; frame = f
         val d = resources.displayMetrics.density
         val lp = r.layoutParams as FrameLayout.LayoutParams
-        lp.width = (f.width * d).toInt(); lp.leftMargin = (f.left * d).toInt(); lp.bottomMargin = (f.gap * d).toInt()
+        val gapPx = (f.gap * d).toInt(); val floating = p.mode == Placement.Mode.FLOATING
+        lp.width = (f.width * d).toInt(); lp.leftMargin = (f.left * d).toInt()
+        // A raised keyboard is filled down to the bottom of the screen with its own background; only a floating one leaves the app showing below it.
+        lp.bottomMargin = if (floating) gapPx else 0
+        r.setPadding(r.paddingLeft, r.paddingTop, r.paddingRight, if (floating) 0 else gapPx)
         r.layoutParams = lp
         keys?.rowScale = f.rowScale
         keys?.splitGapPx = f.splitGap * d
@@ -444,7 +450,9 @@ class WispIme : InputMethodService() {
             override fun onChange(p: Placement) = applyPlacement(p, save = false)
             override fun onDone() = endPlacementEdit()
             override fun onReset() = applyPlacement(Placement(height = if (landscape()) 0.8f else 1f), save = false)
+            override fun onNumberRow() { style.copy(numberRow = !style.numberRow).save(this@WispIme); applyStyleIfChanged(); view.numberRow = style.numberRow }
         }
+        view.numberRow = style.numberRow
         placementEditor = view
         h.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         applyPlacement(placement, save = false)

@@ -32,6 +32,7 @@ object LayoutParser {
         "emoji" to Triple(KeyCodes.EMOJI, "", KeyKind.SPECIAL),
         "abc" to Triple(KeyCodes.ABC, "ABC", KeyKind.SPECIAL),
         "more" to Triple(KeyCodes.SYMBOLS_MORE, "=\\<", KeyKind.SPECIAL),
+        "numpad" to Triple(KeyCodes.NUMPAD, "123", KeyKind.SPECIAL),
         "switch" to Triple(KeyCodes.SWITCH, "", KeyKind.SPECIAL),
         "space" to Triple(KeyCodes.SPACE, "", KeyKind.SPACE),
         "comma" to Triple(','.code, ",", KeyKind.LETTER),

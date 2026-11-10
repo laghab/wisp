@@ -12,7 +12,7 @@ adds anything a layout may not omit (today: the switch-keyboard key). Imported l
     ["q", "w", "e", "r", "t", "y"],
     [{"pad": 0.5}, "a", "s", "d", "f", {"c": "g", "pop": "ĝğ"}, {"pad": 0.5}],
     [{"k": "shift", "w": 1.5}, "z", "x", "c", {"k": "backspace", "w": 1.5}],
-    [{"k": "symbols", "w": 1.5}, {"k": "switch"}, {"k": "emoji"}, {"k": "space", "w": 3}, {"k": "period"}, {"k": "enter", "w": 1.5}]
+    [{"k": "symbols", "w": 1.5}, {"k": "switch"}, {"k": "space", "w": 5.5}, {"k": "period"}, {"k": "enter", "w": 1.5}]
   ]
 }
 ```
@@ -25,7 +25,7 @@ adds anything a layout may not omit (today: the switch-keyboard key). Imported l
 | Field | Meaning |
 |---|---|
 | `c` | the character the key types (one code point) |
-| `k` | a named key: `shift`, `backspace`, `enter`, `symbols`, `abc`, `more`, `switch`, `emoji`, `space`, `comma`, `period` |
+| `k` | a named key: `shift`, `backspace`, `enter`, `symbols`, `abc`, `more`, `switch`, `numpad`, `space`, `comma`, `period` |
 | `w` | relative width, must be positive |
 | `label` | text drawn on the key (overrides the default) |
 | `pad` | an empty gap of this relative width (takes no key, draws nothing) |

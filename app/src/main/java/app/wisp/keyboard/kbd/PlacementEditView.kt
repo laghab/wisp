@@ -20,9 +20,13 @@ class PlacementEditView(context: Context, private val theme: Theme, private val 
         fun onChange(p: Placement)
         fun onDone()
         fun onReset()
+        fun onNumberRow()
     }
 
     var listener: Listener? = null
+    /** Whether the digit row is on; the panel shows it as a toggle. */
+    var numberRow = false
+        set(v) { field = v; invalidate() }
     private val d = resources.displayMetrics.density
     private val screenW = resources.displayMetrics.widthPixels / d
     private val screenH = resources.displayMetrics.heightPixels / d
@@ -74,7 +78,7 @@ class PlacementEditView(context: Context, private val theme: Theme, private val 
         c.drawRect(0f, 0f, width.toFloat(), panelH, fill)
         var x = 8f * d; val y0 = 6f * d; val h = panelH - 12f * d
         val items: List<Triple<String, Boolean, () -> Unit>> = modes.map { (label, m) -> Triple<String, Boolean, () -> Unit>(label, m == placement.mode) { setMode(m) } } +
-            listOf(Triple<String, Boolean, () -> Unit>("Reset", false) { listener?.onReset() }, Triple<String, Boolean, () -> Unit>("Done", true) { listener?.onDone() })
+            listOf(Triple<String, Boolean, () -> Unit>("Number row", numberRow) { listener?.onNumberRow() }, Triple<String, Boolean, () -> Unit>("Reset", false) { listener?.onReset() }, Triple<String, Boolean, () -> Unit>("Done", true) { listener?.onDone() })
         // Done is always visible: lay the buttons out from the right if they would not fit.
         val widths = items.map { text.measureText(it.first) + 22f * d }
         val total = widths.sum() + (items.size - 1) * 6f * d
