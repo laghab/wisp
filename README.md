@@ -8,7 +8,7 @@ A private, fast Android keyboard with built-in swipe typing and voice typing tha
 - **Yours to shape.** Themes, accent colours, sizes, one-handed and split modes, number row, editable layouts and toolbar.
 - **Private.** No account, no analytics, no ads. Everything Wisp learns stays in a file on your phone that you can see, back up, or erase.
 
-Project page: `docs/index.html` (GitHub Pages, source `master` / `docs`).
+Project page: `docs/index.html` (GitHub Pages, source `main` / `docs`).
 
 Planning artifacts: `~/openspec/changes/build-wisp-keyboard`. Licence: GPL-3.0 (`LICENSE`); reused code and data are listed in `THIRD_PARTY.md`.
 
