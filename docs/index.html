@@ -104,15 +104,15 @@ footer .r{margin-left:auto}
 <nav><div class="wrap">
   <a class="logo" href="#top"><svg viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#352B3D"/><path d="M10 36c10-16 16 6 26-10s12 4 18-4" fill="none" stroke="#FF7A66" stroke-opacity=".3" stroke-width="5" stroke-linecap="round"/><path d="M10 42c10-16 16 6 26-10s12 4 18-4" fill="none" stroke="#FF7A66" stroke-opacity=".6" stroke-width="5" stroke-linecap="round"/><path d="M10 48c10-16 16 6 26-10s12 4 18-4" fill="none" stroke="#FF7A66" stroke-width="5" stroke-linecap="round"/></svg>Wisp</a>
   <div class="links"><a href="#features">Features</a><a href="#gestures">Gestures</a><a href="#themes">Themes</a><a href="#privacy">Privacy</a></div>
-  <a class="btn primary gh" href="#">Get Wisp</a>
+  <a class="btn primary gh" href="#" data-path="">GitHub</a>
 </div></nav>
 
 <header class="hero" id="top"><div class="wrap">
   <div>
-    <div class="pill"><b>Open source</b> · GPL-3.0 · no <code>INTERNET</code> permission</div>
+    <div class="pill"><b>Work in progress</b> · open source · GPL-3.0 · no <code>INTERNET</code> permission</div>
     <h1>The keyboard that <em>keeps quiet.</em></h1>
     <p class="lead">Glide typing, voice typing and AI rewrite, all running on your phone. Fast as a native keyboard, with no account, no analytics and no ads.</p>
-    <div class="cta"><a class="btn primary gh" href="#">Download the APK</a><a class="btn ghost gh" href="#" data-path="">View on GitHub</a></div>
+    <div class="cta"><a class="btn primary" href="#features">See what it does</a><a class="btn ghost gh" href="#" data-path="">Follow on GitHub</a></div>
     <div class="facts"><div><b>11</b>full-skin themes</div><div><b>&lt; 3 ms</b>press to commit</div><div><b>0</b>bytes leave your phone</div></div>
   </div>
   <div>
@@ -173,13 +173,13 @@ footer .r{margin-left:auto}
 </div></section>
 
 <section style="padding-top:0"><div class="wrap"><div class="build">
-  <div class="eyebrow">Try it</div>
-  <h2>Build it, read it, change it.</h2>
-  <p class="sub">Rust core, a thin Kotlin shell. Clone it and have a keyboard on your phone in a few minutes.</p>
-  <div class="cta"><a class="btn primary gh" href="#" data-path="">Get the source</a><a class="btn ghost gh" href="#" data-path="blob/master/README.md">Read the guide</a></div>
+  <div class="eyebrow">Coming soon</div>
+  <h2>Still being built, in the open.</h2>
+  <p class="sub">Wisp is a work in progress. An APK will be published once it is ready. Until then, watch the repo to follow along.</p>
+  <div class="cta"><a class="btn primary gh" href="#" data-path="">Watch on GitHub</a><a class="btn ghost gh" href="#" data-path="blob/main/README.md">Read the README</a></div>
 </div></div></section>
 
-<footer><div class="wrap"><span><b>Wisp</b> · GPL-3.0</span><a class="gh" href="#" data-path="blob/master/THIRD_PARTY.md">Credits</a><a class="gh" href="#" data-path="blob/master/docs/perf.md">Performance</a><span class="r">Small, quiet and private.</span></div></footer>
+<footer><div class="wrap"><span><b>Wisp</b> · GPL-3.0</span><a class="gh" href="#" data-path="blob/main/THIRD_PARTY.md">Credits</a><a class="gh" href="#" data-path="blob/main/docs/perf.md">Performance</a><span class="r">Small, quiet and private.</span></div></footer>
 
 <script>
 // Theme tokens copied from app/src/main/assets/themes (colours, radius, accent); fonts fall back to system stacks.
@@ -233,7 +233,7 @@ setTheme(0);setTimeout(glide,600);
 // link up to the GitHub repo when served from github.io/<user>/<repo>
 (function(){const m=location.hostname.match(/^(.+)\.github\.io$/),r=location.pathname.split("/")[1];
  if(!m||!r)return;const base=`https://github.com/${m[1]}/${r}`;
- document.querySelectorAll("a.gh").forEach(a=>{const p=a.dataset.path;a.href=p===undefined?base+"/releases/latest":base+(p?"/"+p:"")});})();
+ document.querySelectorAll("a.gh").forEach(a=>{const p=a.dataset.path;a.href=base+(p?"/"+p:"")});})();
 </script>
 </body>
 </html>
