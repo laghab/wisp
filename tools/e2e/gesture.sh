@@ -3,7 +3,7 @@
 DEV="${1:?adb serial}"; source "$(dirname "$0")/lib.sh"; FAILED=0
 HERE="$(dirname "$0")"
 swipe() {   # swipe <word> [wobble]
-  python3 "$HERE/swipe.py" "$@" > /tmp/swipe.$$.sh
+  python3 "$E2E/swipe.py" "$@" > /tmp/swipe.$$.sh
   adb -s "$DEV" push /tmp/swipe.$$.sh /data/local/tmp/swipe.sh >/dev/null
   a sh /data/local/tmp/swipe.sh; sleep 0.9
 }
@@ -22,7 +22,7 @@ tap $BKSP; sleep 0.4
 expect "one backspace removes the whole swiped word" "hello "
 
 clear_field
-tap 427 829; tap 239 829; tap 567 900; sleep 0.9; tap 610 1045; sleep 0.5       # tapping still works: t e h space -> the
+type_word the; tap $SPACE; sleep 0.5       # tapping still works next to swiping
 expect "tap typing still works next to swiping" "the "
 
 clear_field

@@ -1,22 +1,23 @@
 #!/usr/bin/env python3
-"""Prints a shell script that swipes a word on the English layout of the 950px-wide Waydroid display.
+"""Prints a shell script that swipes a word on the English layout of the Waydroid display, and is the home of the letter-key positions used by lib.sh.
 
 usage: swipe.py <word> [wobble_px] [bias_x_px] [bias_y_px]    (wobble adds a small deterministic offset so the path is not perfectly straight; the bias shifts the whole swipe, like a personal habit)
 """
 import math, sys
 
-W, PAD = 950.0, 3.9
-U = (W - 2 * PAD) / 10
-ROW_Y = [829, 901, 973]
+# The one table of letter-key positions for the 950x1158 Waydroid display (density 216): first key x, pitch, row y.
+ROWS = (("qwertyuiop", 48, 94.7, 812), ("asdfghjkl", 76, 99.7, 890), ("zxcvbnm", 188, 95.5, 969))
 
 def center(ch):
-    for r, row in enumerate(("qwertyuiop", "asdfghjkl", "zxcvbnm")):
-        if ch in row:
-            i = row.index(ch)
-            x = PAD + U * (i + (0.5, 1.0, 2.0)[r] + (0 if r == 0 else 0))
-            if r == 0: x = PAD + U * (i + 0.5)
-            return x, ROW_Y[r]
+    for keys, x0, pitch, y in ROWS:
+        if ch in keys:
+            return x0 + pitch * keys.index(ch), y
     raise SystemExit(f"no key for {ch!r}")
+
+if sys.argv[1] == "--key":      # lib.sh asks for a key position with: swipe.py --key <letter>
+    print("%d %d" % center(sys.argv[2])); raise SystemExit
+if sys.argv[1] == "--rows":     # ... and for the three letter-row heights
+    print(*(r[3] for r in ROWS)); raise SystemExit
 
 word = sys.argv[1]
 wobble = float(sys.argv[2]) if len(sys.argv) > 2 else 0.0
