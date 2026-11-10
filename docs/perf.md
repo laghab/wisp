@@ -47,7 +47,7 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 | Words said during a 3 s slow model load | all kept (pre-roll) | none lost | met |
 | Audio left on disk after dictation | none | none | met |
 | Dropped frames typing | 0 to 1.4% across runs | under 1% | **inconclusive**: Waydroid quantises to 60 Hz vsync with no missed vsync reported; confirm on the phone |
-| arm64 release APK | 30.4 MB | 45 MB | met |
+| arm64 release APK (speech and rewrite engines included) | 38.4 MB | 45 MB | met |
 | Two clean release builds | identical APK contents | reproducible | met (`docs/reproducible-builds.md`) |
 
 ## Typing core (host, release build)
