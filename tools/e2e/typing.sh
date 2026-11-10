@@ -25,4 +25,9 @@ tap $(K a); tap $(K s)                                  # sets text to "as" (a, 
 drag 620 $R4 505 $R4 300                                        # slide left ~115px (about 8 steps, clamped by text start)
 tap $(K r)                                                   # r
 expect "cursor slide (r inserted before the caret position, not at the end)" "ras"
+# backspace swipe: sliding left selects letter by letter (a step is about 13 px here), release deletes them
+a input keyevent KEYCODE_MOVE_END; hold $BKSP 2500; type_word hello
+read -r bx by <<< "$BKSP"
+drag $bx $by $((bx - 60)) $by 500
+expect "swipe left from backspace removes letters one step at a time (about three)" "he"
 exit $FAILED

@@ -28,8 +28,8 @@ pub struct KeyInfo {
 pub struct Config {
     /// Travel before a touch stops being a tap.
     pub slop: f32,
-    /// Finger travel per word deleted by a backspace swipe.
-    pub word_step: f32,
+    /// Finger travel per character selected by a backspace swipe.
+    pub char_step: f32,
     /// Finger travel per cursor step on the space bar.
     pub cursor_step: f32,
     pub popup_item_w: f32,
@@ -43,7 +43,7 @@ impl Config {
     /// Defaults at 1 px = 1 dp.
     pub const DP: Config = Config {
         slop: 16.0,
-        word_step: 36.0,
+        char_step: 10.0,
         cursor_step: 14.0,
         popup_item_w: 40.0,
         long_press_ms: 350,
@@ -72,7 +72,7 @@ pub enum Action {
     Tap(usize),
     /// Hold repeat: delete one character, or a word.
     Repeat { word: bool },
-    /// A backspace swipe now covers `n` words (0 clears the selection).
+    /// A backspace swipe now covers `n` characters, one per finger step (0 clears the selection).
     WordSelect(u32),
     WordCommit(u32),
     WordCancel,
@@ -423,7 +423,7 @@ impl Touch {
 
     fn words_for(&self, p: &Pointer, x: f32) -> u32 {
         let travel = p.down_x - x - self.cfg.slop;
-        if travel < 0.0 { 0 } else { (travel / self.cfg.word_step) as u32 + 1 }
+        if travel < 0.0 { 0 } else { (travel / self.cfg.char_step) as u32 + 1 }
     }
 
     fn popup_index(&self, key: usize, x: f32) -> usize {
@@ -531,11 +531,11 @@ impl Touch {
         Some(t)
     }
 
-    /// slop, word_step, cursor_step, popup_item_w, long_press_ms, repeat_delay_ms, word_swipe, cursor_slide.
+    /// slop, char_step, cursor_step, popup_item_w, long_press_ms, repeat_delay_ms, word_swipe, cursor_slide.
     pub fn set_config_flat(&mut self, c: &[f32]) {
         self.set_config(Config {
             slop: c[0],
-            word_step: c[1],
+            char_step: c[1],
             cursor_step: c[2],
             popup_item_w: c[3],
             long_press_ms: c[4] as i64,
@@ -653,7 +653,7 @@ mod tests {
     }
 
     #[test]
-    fn swipe_left_from_backspace_deletes_two_words() {
+    fn swipe_left_from_backspace_selects_letter_by_letter() {
         let mut t = rig();
         let (x, y) = at(&t, BKSP);
         let a = replay(&mut t, &[
@@ -662,15 +662,15 @@ mod tests {
             (80, Ev::Move(x - 60.0, y)),
             (120, Ev::Up(x - 60.0, y)),
         ]);
-        // slop 16 + step 36: 20 -> 1 word, 60 -> 2 words.
+        // slop 16 + step 10: 20 -> 1 character, 60 -> 5.
         let sel: Vec<_> = a.iter().filter_map(|x| if let Action::WordSelect(n) = x { Some(*n) } else { None }).collect();
-        assert_eq!(sel, vec![1, 2]);
-        assert_eq!(*a.last().unwrap(), Action::WordCommit(2));
+        assert_eq!(sel, vec![1, 5]);
+        assert_eq!(*a.last().unwrap(), Action::WordCommit(5));
         assert!(!a.iter().any(|x| matches!(x, Action::Tap(_))));
     }
 
     #[test]
-    fn swipe_back_right_deletes_fewer_words() {
+    fn swipe_back_right_selects_fewer_characters() {
         let mut t = rig();
         let (x, y) = at(&t, BKSP);
         let a = replay(&mut t, &[
@@ -681,7 +681,7 @@ mod tests {
             (120, Ev::Move(x - 60.0, y)),
             (150, Ev::Up(x - 60.0, y)),
         ]);
-        assert_eq!(*a.last().unwrap(), Action::WordCommit(2));
+        assert_eq!(*a.last().unwrap(), Action::WordCommit(5));
     }
 
     #[test]

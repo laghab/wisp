@@ -100,17 +100,17 @@ class InputControllerTest {
         return e to c
     }
 
-    @Test fun backspaceSwipeSelectsThenDeletesWords() {
+    @Test fun backspaceSwipeSelectsThenDeletesLetterByLetter() {
         val (e, c) = swipeSetup()
-        c.onWordSwipe(1); assertEquals("morning".length, e.selected)
-        c.onWordSwipe(2); assertEquals("tomorrow morning".length, e.selected)
-        c.onWordSwipeEnd(2); assertEquals("see you", e.shown.trimEnd()); assertEquals(0, e.selected)
+        c.onWordSwipe(1); assertEquals(1, e.selected)
+        c.onWordSwipe(3); assertEquals(3, e.selected)
+        c.onWordSwipeEnd(3); assertEquals("see you tomorrow morn", e.shown); assertEquals(0, e.selected)
     }
 
-    @Test fun backspaceSwipeBackDeletesFewerWords() {
+    @Test fun backspaceSwipeBackDeletesFewerLetters() {
         val (e, c) = swipeSetup()
-        c.onWordSwipe(3); c.onWordSwipe(2)
-        c.onWordSwipeEnd(2); assertEquals("see you", e.shown.trimEnd())
+        c.onWordSwipe(5); c.onWordSwipe(3)
+        c.onWordSwipeEnd(3); assertEquals("see you tomorrow morn", e.shown)
     }
 
     @Test fun backspaceSwipeBackToStartDeletesNothing() {

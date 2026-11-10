@@ -105,8 +105,8 @@ class WispIme : InputMethodService() {
         val listener = object : KeyboardView.Listener {
             override fun onKey(code: Int, x: Int, y: Int) = handleKey(code, x, y)
             override fun onRepeat(word: Boolean) { if (emojiSearching) { emojiView?.backspaceQuery() } else controller.onRepeat(word) }
-            override fun onWordSwipe(words: Int) { if (!emojiSearching) controller.onWordSwipe(words) }
-            override fun onWordSwipeEnd(words: Int) { if (!emojiSearching) controller.onWordSwipeEnd(words) }
+            override fun onWordSwipe(chars: Int) { if (!emojiSearching) controller.onWordSwipe(chars) }
+            override fun onWordSwipeEnd(chars: Int) { if (!emojiSearching) controller.onWordSwipeEnd(chars) }
             override fun onShiftLetter(code: Int, x: Int, y: Int) = controller.onShiftLetter(code, x, y)
             override fun onCursorSteps(steps: Int) { if (!emojiSearching) controller.onCursorSteps(steps) }
             override fun onLongPress(code: Int) { if (code == KeyCodes.SWITCH) showPicker() }

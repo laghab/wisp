@@ -29,9 +29,9 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         /** Backspace held: one character, or a whole word when [word]. */
         fun onRepeat(word: Boolean) {}
         fun onCursorSteps(steps: Int) {}
-        /** A backspace swipe covers [words] words (0 clears the selection); it ends with [onWordSwipeEnd]. */
-        fun onWordSwipe(words: Int) {}
-        fun onWordSwipeEnd(words: Int) {}
+        /** A backspace swipe covers [chars] characters before the cursor, one more per finger step (0 clears the selection); it ends with [onWordSwipeEnd]. */
+        fun onWordSwipe(chars: Int) {}
+        fun onWordSwipeEnd(chars: Int) {}
         /** Shift held and slid onto a letter. */
         fun onShiftLetter(code: Int, x: Int, y: Int) {}
         /** Long press on a key that supports it (currently the switch-keyboard key). */
@@ -220,7 +220,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     }
 
     private fun touchConfig() = floatArrayOf(
-        SLOP_DP * density, WORD_STEP_DP * density, CURSOR_STEP_DP * density, popupCell,
+        SLOP_DP * density, CHAR_STEP_DP * density, CURSOR_STEP_DP * density, popupCell,
         longPressMs.toFloat(), REPEAT_DELAY_MS, if (wordSwipe) 1f else 0f, if (cursorSlide) 1f else 0f,
     )
 
@@ -521,7 +521,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         const val PAD_BOTTOM_DP = 10f
         const val PAD_UNIT_DP = 36f
         const val SLOP_DP = 16f
-        const val WORD_STEP_DP = 36f
+        const val CHAR_STEP_DP = 10f
         const val CURSOR_STEP_DP = 14f
         const val REPEAT_DELAY_MS = 350f
         const val MAX_TRACE = 512

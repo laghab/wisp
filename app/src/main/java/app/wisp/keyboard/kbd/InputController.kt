@@ -135,20 +135,20 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     /** The text before the cursor when the swipe began: once words are selected, the editor's "before" shrinks with them. */
     private var swipeBefore: CharSequence = ""
 
-    /** A backspace swipe now covers [words] words before the cursor: show them selected (0 clears the selection). */
-    fun onWordSwipe(words: Int) = edit {
+    /** A backspace swipe now covers [chars] characters before the cursor, one per finger step: show them selected (0 clears the selection). */
+    fun onWordSwipe(chars: Int) = edit {
         if (!wordSwiping) {
             endWord(null, allowCorrection = false); clearGesture(); forgetRejection()
             wordSwiping = true; swipeBefore = editor.textBefore(WORD_SCAN) ?: ""
         }
-        editor.selectBefore(wordChars(words, swipeBefore))
+        editor.selectBefore(unitsBack(chars, swipeBefore))
     }
 
     /** The finger lifted: delete what is selected, or nothing when the swipe came back to its start. */
-    fun onWordSwipeEnd(words: Int) = edit {
+    fun onWordSwipeEnd(chars: Int) = edit {
         if (!wordSwiping) return@edit
         wordSwiping = false
-        if (words > 0) { editor.backspace(); correction = null; autoShift() } else editor.selectBefore(0)
+        if (chars > 0) { editor.backspace(); correction = null; autoShift() } else editor.selectBefore(0)
     }
 
     /** Shift held, finger slid onto a letter: that letter once in capitals, shift state unchanged. */
@@ -449,6 +449,13 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     private fun autoShift() { if (autoCapitalize && shift == Shift.OFF && editor.capsMode() != 0) setShift(Shift.ONCE) }
 
     private fun setShift(s: Shift) { if (s != shift) { shift = s; onShiftChanged?.invoke(s) } }
+
+    /** How many UTF-16 units the last [n] characters before the cursor take up (an emoji is one character, not two). */
+    private fun unitsBack(n: Int, before: CharSequence): Int {
+        var i = before.length
+        repeat(n) { if (i > 0) i -= Character.charCount(Character.codePointBefore(before, i)) }
+        return before.length - i
+    }
 
     /** How many characters before the cursor the last [words] words (with the spaces after them) take up. */
     private fun wordChars(words: Int, before: CharSequence = editor.textBefore(WORD_SCAN) ?: ""): Int {
