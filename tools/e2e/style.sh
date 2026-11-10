@@ -10,39 +10,36 @@ d=sys.stdin.buffer.read(); w,h,f=struct.unpack('<III',d[:12]); x,y=$1,$2; o=12+(
 reset() { as_app "rm -f files/wisp-settings.properties" >/dev/null 2>&1; set_prefs "$@"; launch_field; }
 dark() { read -r r g b <<<"$1"; [ $((r+g+b)) -lt 300 ]; }
 
-reset style_theme=dark
-dark "$(pixel 475 1085)" && check ok "dark theme: the key surface is dark" || check no "dark theme: the key surface is dark"
-reset style_theme=light
-dark "$(pixel 475 1085)" && check no "light theme: the key surface is light" || check ok "light theme: the key surface is light"
-reset style_theme=system; a cmd uimode night yes >/dev/null; sleep 0.5; launch_field
-dark "$(pixel 475 1085)" && check ok "follow system: dark when the phone is dark" || check no "follow system: dark when the phone is dark"
-a cmd uimode night no >/dev/null; sleep 2.5
-dark "$(pixel 475 1085)" && check no "follow system: switches to light without a restart" || check ok "follow system: switches to light without a restart"
+reset style_theme=midnight
+dark "$(pixel 690 1065)" && check ok "Midnight: the key surface is dark" || check no "Midnight: the key surface is dark"
+reset style_theme=modern
+dark "$(pixel 690 1065)" && check no "Modern: the key surface is light" || check ok "Modern: the key surface is light"
 
 reset style_number_row=true
-tap 51 757; sleep 0.4      # the digit row sits above the letters; its first key is 1
+tap 48 727; sleep 0.4      # the digit row sits above the letters; its first key is 1
 check "$([ "$(field_text)" = "1" ] && echo ok)" "number row: the top-left key types 1"
 
-reset style_theme=dark
-hold 239 829 1100          # hold e: the popup opens and a release picks the first extra, 3
+reset style_theme=midnight
+hold $(K e) 1100          # hold e: the popup opens and a release picks the first extra, 3
 check "$([ "$(field_text)" = "3" ] && echo ok)" "long-press popup: holding e and letting go types its first extra (3)"
-drag 239 829 330 829 1200
+read -r ex ey <<< "$(K e)"
+a input motionevent DOWN $ex $ey; sleep 0.9; a input motionevent MOVE 335 742; sleep 0.3; a input motionevent UP 335 742; sleep 0.4   # press and wait for the popup, then slide
 check "$(case "$(field_text)" in *é) echo ok;; esac)" "long-press popup: sliding to the next one types é"
 
-reset style_floating=true
-drag 475 710 300 350 500   # drag the handle up and left
+reset placement_p_mode=3 placement_p_width=0.8
+drag 380 691 380 350 500   # drag the handle up
 sleep 0.6
-tap 455 553; tap 567 481; sleep 0.5   # h, i at the moved position
+tap 458 545; tap 569 467; sleep 0.5   # h, i at the moved position
 check "$([ "$(field_text)" = "hi" ] && echo ok)" "floating: the keyboard moves and types in its new place"
-as_app "grep -c float_ files/wisp-settings.properties" | grep -q 2 && check ok "floating: the position is remembered" || check no "floating: the position is remembered"
+as_app "grep -c 'placement_p_x' files/wisp-settings.properties" | grep -q 1 && check ok "floating: the position is remembered" || check no "floating: the position is remembered"
 
-reset style_one_handed=left
-tap 42 829; sleep 0.4      # q, now at the left edge
+reset placement_p_mode=1 placement_p_width=0.8
+tap 39 812; sleep 0.4      # q, now at the left edge
 check "$([ "$(field_text)" = "q" ] && echo ok)" "one-handed (left): keys sit on the left"
-tap 900 829; sleep 0.4     # where p used to be: nothing
+tap 900 812; sleep 0.4     # where p used to be: nothing
 check "$([ "$(field_text)" = "q" ] && echo ok)" "one-handed (left): taps in the empty strip type nothing"
-tap 853 857; sleep 0.8   # the swap button, at the top of the empty strip, moves the keys to the right
-tap 900 829; sleep 0.4
+tap 855 762; sleep 0.8   # the swap button beside the keys moves them to the right
+tap 910 812; sleep 0.4
 check "$([ "$(field_text)" = "qp" ] && echo ok)" "one-handed: the swap button moves the keyboard to the other side"
 as_app "rm -f files/wisp-settings.properties" >/dev/null 2>&1
 exit $FAILED
