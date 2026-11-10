@@ -37,7 +37,8 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 | Touch state machine (host), 50,000 taps | 0 allocations, about 23 ns per event | 0 allocations | met |
 | Key surface draw | p50 0.25 ms | one frame | met |
 | Cold start (service to first draw) | p95 116 ms | 300 ms | met |
-| Typing-only PSS | 80.9 MB | 80 MB | **1 MB over in a debug build** (about 30 MB of it is un-minified dex); measure the release build on the phone |
+| Typing-only PSS, release build (settings UI in the same process) | 46 MB | 80 MB | met |
+| Typing-only PSS, debug build | 80.9 to 88.2 MB across runs | 80 MB | over in debug only: about 30 MB is un-minified dex |
 | Wake locks held | 0 | 0 | met |
 | Voice processes while only typing | 0 | model loads only on use | met |
 | Keyboard PSS before / after a dictation | 87.6 MB / 77.6 MB | within 15 MB | met |
@@ -74,4 +75,4 @@ The swipe index is built once per language start from the lexicon file, with sor
 The dot-product build is picked on arm64 phones that report `asimddp`. 32-bit ARM is not built (llama.cpp no longer builds for it) and the panel reports rewrite as unavailable there. Gemma 3 1B and Qwen 2.5 1.5B were not run; the same code path loads any GGUF the catalogue lists.
 
 ## Not yet measured
-On the phone: press-to-commit and frame timing, release-build memory, gesture decode, voice energy per minute, rewrite speed, battery and a 24-hour daily-use run.
+On the phone: press-to-commit and frame timing, memory, gesture decode, voice energy per minute, rewrite speed, battery and a 24-hour daily-use run.
