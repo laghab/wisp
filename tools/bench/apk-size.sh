@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the release APKs and fails if the arm64 one is over the budget in specs/resource-efficiency (45 MB).
+# Builds the release APKs and fails if the arm64 one is over the budget in docs/perf.md (45 MB).
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 BUDGET_MB="${BUDGET_MB:-45}"

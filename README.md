@@ -10,7 +10,7 @@ A private, fast Android keyboard with built-in swipe typing and voice typing tha
 
 Project page and case study: https://raghavdaksh.com/projects/wisp-keyboard
 
-Planning artifacts: `~/openspec/changes/build-wisp-keyboard`. Licence: GPL-3.0 (`LICENSE`); reused code and data are listed in `THIRD_PARTY.md`.
+Licence: GPL-3.0 (`LICENSE`); reused code and data are listed in `THIRD_PARTY.md`.
 
 ## Build and install
 Needs the Rust toolchain with the Android targets and `cargo-ndk` (`rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android && cargo install cargo-ndk`). Gradle builds `core/` automatically.

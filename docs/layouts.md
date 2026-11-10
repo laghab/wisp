@@ -1,7 +1,7 @@
 # Layout files
 
 Layouts are JSON files in `app/src/main/res/raw/layout_*.json`. Wisp reads them with `LayoutParser`, then `LayoutGuard`
-adds anything a layout may not omit (today: the switch-keyboard key). Imported layouts (task 8.3) use the same format.
+adds anything a layout may not omit (today: the switch-keyboard key). Imported layouts use the same format.
 
 ## Format
 
@@ -29,7 +29,7 @@ adds anything a layout may not omit (today: the switch-keyboard key). Imported l
 | `w` | relative width, must be positive |
 | `label` | text drawn on the key (overrides the default) |
 | `pad` | an empty gap of this relative width (takes no key, draws nothing) |
-| `pop` | characters offered on long press (parsed now, shown once long-press popups land in task 8.3) |
+| `pop` | characters offered on long press |
 
 ## Rules
 - Every row needs at least one key; a key needs `c`, `k` or `pad`.

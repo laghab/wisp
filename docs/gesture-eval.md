@@ -7,7 +7,7 @@
 - **Run it:** `cd core && cargo test --release -p wisp-core --test glide_eval -- --nocapture`. The generator and the gate live in `core/wisp-core/tests/glide_eval.rs`; the decoder is `core/wisp-core/src/glide.rs`.
 - **Real traces:** `TraceRecorderActivity` (debug build) records how you actually swipe into `traces_en_US.jsonl`. Not yet recorded by a person on the new key grid (see "Open").
 
-## The gate (task 4.6)
+## The gate
 Thresholds were set from the first baseline of the final algorithm and are enforced by `glide_eval.rs` (results from the Rust decoder, seed 42, 2000 swipes):
 
 | Noise | Top-1 | Top-3 | Result (seed 42, 2000 swipes) |
@@ -16,7 +16,7 @@ Thresholds were set from the first baseline of the final algorithm and are enfor
 | 0.30 normal | at least 80% | at least 92% | **81.7% / 93.1%** |
 | 0.45 sloppy | at least 50% | at least 65% | **52.5% / 67.0%** |
 
-Speed (host, release build, Rust): decode p50 0.9 ms, p95 4.0 ms; 12+ letter words p95 5.3 ms. Budget: p95 within 50 ms (150 ms for 30+ letters). **The phone's own numbers are still to be measured** (task 10.3 of `redesign-wisp-rust-core`).
+Speed (host, release build, Rust): decode p50 0.9 ms, p95 4.0 ms; 12+ letter words p95 5.3 ms. Budget: p95 within 50 ms (150 ms for 30+ letters). **The phone's own numbers are still to be measured**.
 
 ## How accuracy was reached (log)
 | Step | Normal-noise top-1 / top-3 |

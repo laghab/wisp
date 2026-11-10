@@ -13,4 +13,4 @@ Wisp is licensed GPL-3.0 (see `LICENSE`). Code and data reused from other projec
 | Unicode emoji data (`emoji-test.txt`, names and groups) | Unicode License | emoji names for search, in `app/src/main/res/raw/emoji.tsv` | in use |
 | Silero VAD | MIT | voice activity detection model | in use |
 
-Keep each reused file's original copyright header. Dictionary data licences must be checked before bundling (task 3.2).
+Keep each reused file's original copyright header. Dictionary data licences must be checked before bundling.
