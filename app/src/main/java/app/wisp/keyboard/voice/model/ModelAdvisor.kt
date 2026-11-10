@@ -24,6 +24,10 @@ object ModelInfo {
             pros = listOf("The most accurate model here", "Understands 25 European languages and works out which one you are speaking"),
             cons = listOf("A 640 MB download and about 1.1 GB of memory while dictating: only for phones with 8 GB of RAM or more", "Slower to load", "No Hindi"),
         ),
+        "whisper-tiny" to Notes(
+            pros = listOf("99 languages, including Hindi, in the smallest download (99 MB)", "Fast, and light on memory"),
+            cons = listOf("The least accurate multilingual choice: best on quiet, clear speech", "Hindi comes out in Devanagari letters, not Roman (\"Hinglish\") letters"),
+        ),
         "whisper-base" to Notes(
             pros = listOf("99 languages, including Hindi", "Small and light"),
             cons = listOf("Less accurate than the others for English", "Hindi comes out in Devanagari letters, not Roman (\"Hinglish\") letters"),
@@ -31,6 +35,18 @@ object ModelInfo {
         "whisper-small" to Notes(
             pros = listOf("99 languages, including Hindi, with good accuracy", "The best choice here if you speak Hindi"),
             cons = listOf("Slower: noticeable wait after you stop on mid-range phones", "A 358 MB download and about 800 MB of memory while dictating", "Hindi comes out in Devanagari letters, not Roman (\"Hinglish\") letters"),
+        ),
+        "qwen2.5-0.5b" to Notes(
+            pros = listOf("Very small: a 491 MB download and about 700 MB of memory while rewriting", "Quick even on modest phones"),
+            cons = listOf("Handles short, simple rewrites only", "Can miss the point of longer text"),
+        ),
+        "gemma-3-1b" to Notes(
+            pros = listOf("Good tone and grammar for its size", "A sensible default for most phones"),
+            cons = listOf("An 806 MB download and about 1.1 GB of memory while rewriting", "A few seconds per sentence on mid-range phones"),
+        ),
+        "qwen2.5-1.5b" to Notes(
+            pros = listOf("The most capable writing assistant here", "Better with Hindi and longer text"),
+            cons = listOf("A 1.1 GB download and about 1.7 GB of memory while rewriting: for phones with 6 GB or more", "The slowest of the three"),
         ),
         "sense-voice" to Notes(
             pros = listOf("Very fast", "Chinese, Cantonese, Japanese and Korean as well as English"),
@@ -68,9 +84,9 @@ object ModelAdvisor {
 
     /** The most accurate model that fits comfortably. English-only unless [wantsMultilingual]. */
     fun recommend(device: DeviceFacts, wantsMultilingual: Boolean = false): Recommendation {
-        val fitting = ModelCatalog.all.filter { assess(it, device).fit == Fit.GOOD && (!wantsMultilingual || it.selectableLanguages.isNotEmpty() || it.languages.contains("languages")) }
+        val fitting = ModelCatalog.speech.filter { assess(it, device).fit == Fit.GOOD && (!wantsMultilingual || it.selectableLanguages.isNotEmpty() || it.languages.contains("languages")) }
         val best = fitting.maxWithOrNull(compareBy<ModelSpec> { it.accuracy }.thenBy { it.speed }.thenBy { -it.ramMb })
-            ?: ModelCatalog.all.minBy { it.ramMb }
+            ?: ModelCatalog.speech.minBy { it.ramMb }
         val why = when {
             device.totalRamMb < 3_500 -> "Your phone has ${gb(device.totalRamMb)} of memory, so a small, fast model is the right fit."
             device.totalRamMb < 7_500 -> "Your phone has ${gb(device.totalRamMb)} of memory: this is the most accurate model that leaves plenty of room for other apps."

@@ -8,32 +8,47 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-import app.wisp.keyboard.style.Brand
+import app.wisp.keyboard.R
 
-// The settings app wears the same colours as the keyboard (style/Brand.kt).
-private fun c(argb: Int) = Color(argb)
-
+// The settings app wears the Claude Design palette: the Midnight keyboard theme in the dark, the Modern one in the light. Voice and rewrite use amber.
 private val Dark = darkColorScheme(
-    primary = c(Brand.CORAL), onPrimary = Color(0xFF3A0E06), background = c(Brand.DARK.background), onBackground = c(Brand.DARK.text),
-    surface = c(Brand.DARK.surface), onSurface = c(Brand.DARK.text), surfaceVariant = c(Brand.DARK.surfaceVariant), onSurfaceVariant = c(Brand.DARK.onSurfaceVariant),
-    secondaryContainer = Color(0xFF5A3B3C), onSecondaryContainer = Color(0xFFFFDAD3), error = Color(0xFFFFB4A8),
+    primary = Color(0xFF8FA8FF), onPrimary = Color(0xFF0E1116), primaryContainer = Color(0xFF1A2033), onPrimaryContainer = Color(0xFFB5C5FF),
+    secondary = Color(0xFFFFB86B), onSecondary = Color(0xFF1A1206), secondaryContainer = Color(0xFF2A2418), onSecondaryContainer = Color(0xFFFFCF99),
+    tertiary = Color(0xFF6FD3A6), onTertiary = Color(0xFF0E1116),
+    background = Color(0xFF0E1116), onBackground = Color(0xFFE9EDF4),
+    surface = Color(0xFF151920), onSurface = Color(0xFFE9EDF4), surfaceVariant = Color(0xFF1B1F27), onSurfaceVariant = Color(0xFFA3ACBA),
+    surfaceContainerLowest = Color(0xFF0E1116), surfaceContainerLow = Color(0xFF12151B), surfaceContainer = Color(0xFF151920), surfaceContainerHigh = Color(0xFF1B1F27), surfaceContainerHighest = Color(0xFF1B1F27),
+    outline = Color(0xFF3A4253), outlineVariant = Color(0xFF232934), error = Color(0xFFF28D8D), onError = Color(0xFF0E1116),
 )
 private val Light = lightColorScheme(
-    primary = Color(0xFFC0432F), onPrimary = Color.White, background = Color(0xFFFFF8F6), onBackground = c(Brand.INK),
-    surface = c(Brand.LIGHT.surface), onSurface = c(Brand.INK), surfaceVariant = c(Brand.LIGHT.surfaceVariant), onSurfaceVariant = c(Brand.LIGHT.onSurfaceVariant),
-    secondaryContainer = Color(0xFFFFDAD3), onSecondaryContainer = Color(0xFF410B03), error = Color(0xFFBA1A1A),
+    primary = Color(0xFF3B5BFF), onPrimary = Color.White, primaryContainer = Color(0xFFE1E6FF), onPrimaryContainer = Color(0xFF0E1A66),
+    secondary = Color(0xFF8A5A00), onSecondary = Color.White, secondaryContainer = Color(0xFFFFE9CC), onSecondaryContainer = Color(0xFF4A2F00),
+    tertiary = Color(0xFF1F7A56), onTertiary = Color.White,
+    background = Color(0xFFF3F3F5), onBackground = Color(0xFF111216),
+    surface = Color.White, onSurface = Color(0xFF111216), surfaceVariant = Color(0xFFE9EAF0), onSurfaceVariant = Color(0xFF4A4D57),
+    surfaceContainerLowest = Color.White, surfaceContainerLow = Color(0xFFF8F8FA), surfaceContainer = Color.White, surfaceContainerHigh = Color(0xFFEDEEF3), surfaceContainerHighest = Color(0xFFE9EAF0),
+    outline = Color(0xFF9AA0AE), outlineVariant = Color(0xFFD5D7DE), error = Color(0xFFBA1A1A), onError = Color.White,
 )
 
-/** One family (the system's), headings a little heavier than body. */
+private val Heading = FontFamily(Font(R.font.space_grotesk_w700, FontWeight.Bold), Font(R.font.space_grotesk_w700, FontWeight.SemiBold))
+private val Body = FontFamily(Font(R.font.inter_w400, FontWeight.Normal), Font(R.font.inter_w500, FontWeight.Medium), Font(R.font.inter_w500, FontWeight.SemiBold), Font(R.font.inter_w500, FontWeight.Bold))
+
+/** Space Grotesk for headings, Inter for everything else, as in the handoff. */
 private val Type = Typography(
-    displaySmall = TextStyle(fontSize = 36.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
-    headlineMedium = TextStyle(fontSize = 28.sp, fontWeight = FontWeight.SemiBold),
-    titleMedium = TextStyle(fontSize = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.sp),
-    bodyLarge = TextStyle(fontSize = 16.sp),
-    bodyMedium = TextStyle(fontSize = 14.sp),
-    bodySmall = TextStyle(fontSize = 12.sp),
+    displaySmall = TextStyle(fontFamily = Heading, fontSize = 32.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.5).sp),
+    headlineMedium = TextStyle(fontFamily = Heading, fontSize = 28.sp, fontWeight = FontWeight.Bold, letterSpacing = (-0.4).sp),
+    titleLarge = TextStyle(fontFamily = Heading, fontSize = 22.sp, fontWeight = FontWeight.Bold),
+    titleMedium = TextStyle(fontFamily = Body, fontSize = 16.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 0.1.sp),
+    titleSmall = TextStyle(fontFamily = Body, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.sp),
+    labelLarge = TextStyle(fontFamily = Body, fontSize = 14.sp, fontWeight = FontWeight.Medium),
+    labelMedium = TextStyle(fontFamily = Body, fontSize = 12.sp, fontWeight = FontWeight.Medium),
+    bodyLarge = TextStyle(fontFamily = Body, fontSize = 16.sp),
+    bodyMedium = TextStyle(fontFamily = Body, fontSize = 14.sp),
+    bodySmall = TextStyle(fontFamily = Body, fontSize = 12.sp),
 )
 
 @Composable

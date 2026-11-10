@@ -7,7 +7,7 @@ source "$(dirname "$0")/../e2e/lib.sh"
 launch_field
 a dumpsys gfxinfo "$P" reset >/dev/null; a logcat -c
 # one adb shell, many taps: letters across the middle row
-a "for i in \$(seq 1 $N); do input tap \$((60 + (i * 83) % 820)) 900; done"
+a "for i in \$(seq 1 $N); do input tap \$((60 + (i * 83) % 820)) 890; done"
 sleep 1
 echo "--- keyboard latency (debug probe)"
 a logcat -d -s WISP_PROBE | grep -E "tap_up_to_commit|on_draw" | tail -2

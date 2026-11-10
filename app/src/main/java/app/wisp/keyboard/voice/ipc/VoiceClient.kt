@@ -16,7 +16,7 @@ import app.wisp.keyboard.voice.ipc.VoiceProtocol as P
 /**
  * The keyboard side of the conversation with the voice process. It binds when a dictation starts and, importantly,
  * unbinds when the voice process says it is exiting: staying bound would make Android restart the process, and
- * the model would reload without anyone asking (found in spike 1.3, docs/spike-voice-process.md).
+ * the model would reload without anyone asking.
  */
 class VoiceClient(private val context: Context, private val listener: Listener) {
 
@@ -26,6 +26,9 @@ class VoiceClient(private val context: Context, private val listener: Listener) 
         fun onFinal(text: String, finishMs: Long)
         fun onError(message: String)
         fun onBenchmark(loadMs: Long, decodeMs: Long, audioMs: Long) {}
+        fun onRewritePiece(text: String) {}
+        fun onRewriteDone(text: String) {}
+        fun onRewriteError(message: String) {}
     }
 
     private val main = Handler(Looper.getMainLooper())
@@ -40,6 +43,9 @@ class VoiceClient(private val context: Context, private val listener: Listener) 
             P.FINAL -> listener.onFinal(m.data.getString(P.K_TEXT) ?: "", m.data.getLong(P.K_MS))
             P.ERROR -> listener.onError(m.data.getString(P.K_MESSAGE) ?: "The speech engine stopped")
             P.BENCH_RESULT -> listener.onBenchmark(m.data.getLong(P.K_MS), m.data.getLong(P.K_DECODE_MS), m.data.getLong(P.K_AUDIO_MS))
+            P.REWRITE_PIECE -> listener.onRewritePiece(m.data.getString(P.K_TEXT) ?: "")
+            P.REWRITE_DONE -> listener.onRewriteDone(m.data.getString(P.K_TEXT) ?: "")
+            P.REWRITE_ERROR -> listener.onRewriteError(m.data.getString(P.K_MESSAGE) ?: "The rewrite failed")
             P.EXITING -> unbind()
         }
         true
@@ -62,6 +68,8 @@ class VoiceClient(private val context: Context, private val listener: Listener) 
     fun pcm(frame: ShortArray) = send(P.PCM, Bundle().apply { putShortArray(P.K_PCM, frame) })
     fun stop() = send(P.STOP)
     fun cancel() = send(P.CANCEL)
+    fun rewrite(params: Bundle) = send(P.REWRITE, params)
+    fun cancelRewrite() = send(P.REWRITE_CANCEL)
 
     private fun send(what: Int, data: Bundle = Bundle()) {
         val m = Message.obtain(null, what).apply { this.data = data; replyTo = reply }

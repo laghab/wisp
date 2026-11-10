@@ -7,12 +7,8 @@ import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
-import app.wisp.keyboard.gesture.GestureDecoder
-import app.wisp.keyboard.gesture.GestureGeometry
-import app.wisp.keyboard.gesture.GestureIndex
-import app.wisp.keyboard.gesture.GestureIndexStore
 import app.wisp.keyboard.gesture.RecordedTrace
-import app.wisp.keyboard.gesture.alphabetOf
+import app.wisp.keyboard.gesture.Glide
 import app.wisp.keyboard.kbd.KeyboardView
 import app.wisp.keyboard.kbd.LayoutLoader
 import java.io.File
@@ -29,9 +25,7 @@ class TraceRecorderActivity : Activity() {
     private lateinit var prompt: TextView
     private lateinit var result: TextView
     private lateinit var keys: KeyboardView
-    @Volatile private var index: GestureIndex? = null
-    private var decoder: GestureDecoder? = null
-    private val out = GestureDecoder.Results(10)
+    private var glide: Glide? = null
     private lateinit var file: File
     private var hits = 0; private var top3 = 0; private var total = 0
 
@@ -55,30 +49,26 @@ class TraceRecorderActivity : Activity() {
             addView(keys, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             setBackgroundColor(Color.WHITE)
         })
-        show("Preparing the word index...")
-        thread {
-            val idx = GestureIndexStore(this).get(lang, alphabetOf(LayoutLoader.load(this, lang.layoutRes)))
-            index = idx
-            runOnUiThread { show(null) }
-        }
+        show(null)
     }
+
+    override fun onDestroy() { glide?.close(); super.onDestroy() }
 
     private fun show(status: String?) {
         prompt.text = if (status != null) status else if (next < words.size) "swipe: ${words[next]}\n(${next + 1}/${words.size})" else "done: $hits/$total first, $top3/$total in the top 3\nfile: ${file.name}"
     }
 
     private fun record(lang: Language, xs: FloatArray, ys: FloatArray) {
-        val idx = index ?: return
         if (next >= words.size) return
         val word = words[next]
         val layout = keys.compiledLayout ?: return
         val trace = RecordedTrace(word, lang.tag, layout.width.toInt(), layout.height.toInt(), resources.displayMetrics.density, xs, ys)
         file.appendText(trace.toJson() + "\n")
-        val dec = decoder ?: GestureDecoder(idx, GestureGeometry.from(layout, idx.alphabet)).also { decoder = it }
-        dec.decode(xs, ys, xs.size, out)
-        val rank = (0 until out.count).firstOrNull { out.word(it).equals(word, true) } ?: -1
+        val g = glide ?: Glide.build(this, lang, layout)?.also { glide = it } ?: return
+        val found = g.decode(xs, ys, xs.size)
+        val rank = found.indexOfFirst { it.word.equals(word, true) }
         total++; if (rank == 0) hits++; if (rank in 0..2) top3++
-        result.text = "${(0 until minOf(3, out.count)).joinToString { out.word(it) }}   ->   " + if (rank == 0) "right" else if (rank > 0) "rank ${rank + 1}" else "not found"
+        result.text = "${found.take(3).joinToString { it.word }}   ->   " + if (rank == 0) "right" else if (rank > 0) "rank ${rank + 1}" else "not found"
         next++
         show(null)
     }

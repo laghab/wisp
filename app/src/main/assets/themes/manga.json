@@ -1,0 +1,42 @@
+{
+ "id": "manga",
+ "name": "Manga",
+ "dark": false,
+ "board": [
+  "#FFFFFF",
+  {
+   "dots": {
+    "step": 6,
+    "radius": 1.15,
+    "color": "rgba(0,0,0,0.22)"
+   }
+  }
+ ],
+ "key": "#FFFFFF",
+ "mod": "#111111",
+ "fg": "#111111",
+ "modFg": "#FFFFFF",
+ "accent": "#111111",
+ "accentFg": "#FFFFFF",
+ "radius": 2,
+ "border": {
+  "width": 2,
+  "color": "#111111"
+ },
+ "lit": [
+  {
+   "spread": 5,
+   "color": "#111111"
+  },
+  {
+   "spread": 3,
+   "color": "#FFFFFF"
+  }
+ ],
+ "font": "zen-maru",
+ "weight": 700,
+ "size": 20,
+ "stripFg": "#111111",
+ "sep": "#111111",
+ "space": "スペース"
+}

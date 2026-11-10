@@ -11,7 +11,9 @@ A private, fast Android keyboard with built-in swipe typing and voice typing tha
 Planning artifacts: `~/openspec/changes/build-wisp-keyboard`. Licence: GPL-3.0 (`LICENSE`); reused code and data are listed in `THIRD_PARTY.md`.
 
 ## Build and install
+Needs the Rust toolchain with the Android targets and `cargo-ndk` (`rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android && cargo install cargo-ndk`). Gradle builds `core/` automatically.
 ```bash
+(cd core && cargo test)                      # Rust core tests, run on the host
 ./gradlew assembleDebug                      # app/build/outputs/apk/debug/ (one APK per CPU, and a universal one)
 adb install -r app/build/outputs/apk/debug/app-arm64-v8a-debug.apk
 ./gradlew testDebugUnitTest :net:test        # unit tests
@@ -36,6 +38,9 @@ Open **Wisp** from the app list. Three steps: turn the keyboard on in Android's 
 
 ### Voice typing
 Tap the microphone at the right end of the strip. Tap once to talk hands-free and tap again to finish, or hold it to talk while it is held (slide away to cancel). **Undo dictation** removes exactly what was inserted. The first time, Wisp asks for the microphone permission, and if no speech model is installed it takes you to **Voice typing** in settings to pick one.
+
+### Rewrite (writing assistant)
+Tap the sparkle on the strip. Wisp rewrites the selected text, or the sentence before the cursor, with a small AI model that runs on your phone: **Polish, Friendly, Formal, Shorter, Bullets** or **Translate to Hindi**. The result appears in a card; nothing in the field changes until you tap **Replace draft** or **Insert below** (**Regenerate** tries again). No model is installed by default: choose Qwen 2.5 0.5B, Gemma 3 1B or Qwen 2.5 1.5B under *Voice typing, Models*, or switch the writing assistant off. The model is loaded only for a rewrite and freed with the speech model after the idle timeout. The engine is llama.cpp, built by `tools/build-llm.sh` for arm64 and x86_64 and pinned in `docs/native-libs.sha256`.
 
 ### Choosing a speech model (Settings, Voice typing)
 Each model lists what it is good at and what it costs. Wisp recommends the most accurate one that leaves your phone enough memory, and **Test speed** measures any installed model on your own phone. Download over Wi-Fi, or download the archive in a browser and use **From file**.
@@ -69,4 +74,4 @@ Pick a folder once. **Back up now** writes one dated `.zip`. Choose daily or wee
 **Erasing it all:** *What Wisp learned, Erase everything learned*, or clear the app's storage in Android's settings.
 
 ## Layout of the code
-`app/src/main/java/app/wisp/keyboard`: `kbd/` keys, layouts, input logic · `dict/` word suggestions (native engine) · `gesture/` swipe decoder · `personal/` learning · `voice/` dictation (own process) · `downloads/` and `net/` (the only network code) · `backup/` · `style/` brand and themes · `ui/` settings screens (own process).
+`app/src/main/java/app/wisp/keyboard`: `kbd/` keys, layouts, input logic · `dict/` word suggestions (Rust lexicon) · `gesture/` swipe typing (Rust decoder) · `personal/` learning · `voice/` dictation (own process) · `downloads/` and `net/` (the only network code) · `backup/` · `style/` brand and themes · `ui/` settings screens (own process).

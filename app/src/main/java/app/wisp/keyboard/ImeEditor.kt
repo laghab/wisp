@@ -29,6 +29,15 @@ class ImeEditor(private val ime: InputMethodService) : Editor {
         repeat(kotlin.math.abs(steps)) { ime.sendDownUpKeyEvents(key) }
     }
 
+    override fun selectedText(): CharSequence? = ic?.getSelectedText(0)?.takeIf { it.isNotEmpty() }
+
+    override fun selectBefore(count: Int) {
+        val c = ic ?: return
+        val et = c.getExtractedText(android.view.inputmethod.ExtractedTextRequest().apply { hintMaxChars = 0 }, 0) ?: return
+        val end = maxOf(et.selectionStart, et.selectionEnd) + et.startOffset
+        c.setSelection((end - count).coerceAtLeast(0), end)
+    }
+
     override fun enter() {
         val action = enterAction.imeAction
         if (action != null) ic?.performEditorAction(action) else ime.sendDownUpKeyEvents(KeyEvent.KEYCODE_ENTER)

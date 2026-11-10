@@ -22,10 +22,13 @@ class InputControllerTest {
         override fun commit(text: CharSequence) { finishComposing(); committed.append(text); caps = if (committed.endsWith(". ")) 1 else 0 }
         override fun setComposing(text: CharSequence) { composing = text.toString() }
         override fun finishComposing() { committed.append(composing); composing = ""; onSelectionChanged?.invoke() }
-        override fun backspace() { if (composing.isNotEmpty()) composing = composing.dropLast(1) else if (committed.isNotEmpty()) committed.setLength(committed.length - 1) }
+        override fun backspace() { if (selected > 0) { committed.setLength(committed.length - selected); selected = 0 } else if (composing.isNotEmpty()) composing = composing.dropLast(1) else if (committed.isNotEmpty()) committed.setLength(committed.length - 1) }
         override fun deleteBefore(count: Int) { finishComposing(); committed.setLength((committed.length - count).coerceAtLeast(0)) }
         override fun textBefore(count: Int): CharSequence = shown.takeLast(count)
         override fun moveCursor(steps: Int) { cursorMoves += steps }
+        var selected = 0
+        override fun selectBefore(count: Int) { selected = count }
+        override fun selectedText(): CharSequence? = null
         override fun enter() { enters++ }
         override fun capsMode(): Int = caps
         override fun selectAll() {}
@@ -84,9 +87,55 @@ class InputControllerTest {
         val e = FakeEditor(); val c = controller(e)
         c.type("one two three ")
         c.onKey(KeyCodes.BACKSPACE); assertEquals("one two three", e.shown)
-        c.onRepeat(KeyCodes.BACKSPACE, 1); assertEquals("one two thre", e.shown)
-        c.onRepeat(KeyCodes.BACKSPACE, InputController.WORD_DELETE_AFTER + 1); assertEquals("one two ", e.shown)
-        c.onRepeat(KeyCodes.BACKSPACE, InputController.WORD_DELETE_AFTER + 2); assertEquals("one ", e.shown)
+        c.onRepeat(false); assertEquals("one two thre", e.shown)
+        c.onRepeat(true); assertEquals("one two ", e.shown)
+        c.onRepeat(true); assertEquals("one ", e.shown)
+    }
+
+    private fun swipeSetup(): Pair<FakeEditor, InputController> {
+        val e = FakeEditor(); val c = controller(e)
+        c.type("see you tomorrow morning")
+        c.onKey(KeyCodes.SPACE); now += 1_000   // not a double space later
+        e.committed.setLength(e.committed.length - 1)
+        return e to c
+    }
+
+    @Test fun backspaceSwipeSelectsThenDeletesWords() {
+        val (e, c) = swipeSetup()
+        c.onWordSwipe(1); assertEquals("morning".length, e.selected)
+        c.onWordSwipe(2); assertEquals("tomorrow morning".length, e.selected)
+        c.onWordSwipeEnd(2); assertEquals("see you", e.shown.trimEnd()); assertEquals(0, e.selected)
+    }
+
+    @Test fun backspaceSwipeBackDeletesFewerWords() {
+        val (e, c) = swipeSetup()
+        c.onWordSwipe(3); c.onWordSwipe(2)
+        c.onWordSwipeEnd(2); assertEquals("see you", e.shown.trimEnd())
+    }
+
+    @Test fun backspaceSwipeBackToStartDeletesNothing() {
+        val (e, c) = swipeSetup()
+        c.onWordSwipe(2); c.onWordSwipe(0); c.onWordSwipeEnd(0)
+        assertEquals("see you tomorrow morning", e.shown); assertEquals(0, e.selected)
+    }
+
+    @Test fun doubleSpaceMakesAPeriod() {
+        val e = FakeEditor(); val c = controller(e)
+        c.type("done"); c.onKey(KeyCodes.SPACE); now += 200; c.onKey(KeyCodes.SPACE)
+        assertEquals("done. ", e.shown)
+    }
+
+    @Test fun slowSecondSpaceStaysASpace() {
+        val e = FakeEditor(); val c = controller(e)
+        c.type("done"); c.onKey(KeyCodes.SPACE); now += 2_000; c.onKey(KeyCodes.SPACE)
+        assertEquals("done  ", e.shown)
+    }
+
+    @Test fun textShortcutExpandsOnSpace() {
+        val e = FakeEditor(); val c = controller(e)
+        c.shortcuts = mapOf("omw" to "On my way")
+        c.type("omw"); c.onKey(KeyCodes.SPACE)
+        assertEquals("On my way ", e.shown)
     }
 
     @Test fun cursorStepsGoToEditor() {

@@ -1,0 +1,36 @@
+{
+ "id": "modern",
+ "name": "Modern",
+ "dark": false,
+ "board": "#F3F3F5",
+ "key": "#FFFFFF",
+ "mod": "#E2E4EA",
+ "fg": "#111216",
+ "modFg": "#111216",
+ "accent": "#3B5BFF",
+ "accentFg": "#FFFFFF",
+ "radius": 12,
+ "shadow": [
+  {
+   "dy": 1,
+   "color": "rgba(0,0,0,0.12)"
+  },
+  {
+   "dy": 1,
+   "blur": 3,
+   "color": "rgba(0,0,0,0.06)"
+  }
+ ],
+ "lit": [
+  {
+   "spread": 3,
+   "color": "rgba(59,91,255,0.3)"
+  }
+ ],
+ "font": "inter",
+ "weight": 400,
+ "size": 21,
+ "stripFg": "#4A4D57",
+ "sep": "#D5D7DE",
+ "space": "English"
+}

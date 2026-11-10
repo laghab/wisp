@@ -12,6 +12,10 @@ interface Editor {
     fun deleteBefore(count: Int)
     fun textBefore(count: Int): CharSequence?
     fun moveCursor(steps: Int)
+    /** Selects [count] characters before the cursor (the selection's end stays put); 0 collapses to the cursor. */
+    fun selectBefore(count: Int)
+    /** The text that is selected right now, or null when nothing is. */
+    fun selectedText(): CharSequence?
     fun enter()
     /** Non-zero when the next typed letter should be capitalised (sentence/word/all caps). */
     fun capsMode(): Int

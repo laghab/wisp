@@ -1,0 +1,133 @@
+{
+ "id": "y2k",
+ "name": "Y2K Desktop",
+ "dark": false,
+ "board": {
+  "linear": {
+   "angle": 180,
+   "stops": [
+    [
+     0,
+     "#ECE9D8"
+    ],
+    [
+     1,
+     "#D8D2BD"
+    ]
+   ]
+  }
+ },
+ "key": {
+  "linear": {
+   "angle": 180,
+   "stops": [
+    [
+     0,
+     "#FFFFFF"
+    ],
+    [
+     0.45,
+     "#F4F3EE"
+    ],
+    [
+     1,
+     "#E3E0D2"
+    ]
+   ]
+  }
+ },
+ "mod": {
+  "linear": {
+   "angle": 180,
+   "stops": [
+    [
+     0,
+     "#DCE8FC"
+    ],
+    [
+     0.5,
+     "#AFC8F1"
+    ],
+    [
+     1,
+     "#84A7E4"
+    ]
+   ]
+  }
+ },
+ "fg": "#1B1B1B",
+ "modFg": "#0A246A",
+ "accent": {
+  "linear": {
+   "angle": 180,
+   "stops": [
+    [
+     0,
+     "#63C963"
+    ],
+    [
+     0.5,
+     "#3C9A3C"
+    ],
+    [
+     1,
+     "#2E7D2E"
+    ]
+   ]
+  }
+ },
+ "accentFg": "#FFFFFF",
+ "radius": 4,
+ "border": {
+  "width": 1,
+  "color": "#7F9DB9"
+ },
+ "shadow": [
+  {
+   "inset": true,
+   "dy": 1,
+   "color": "#FFFFFF"
+  },
+  {
+   "dy": 1,
+   "blur": 1,
+   "color": "rgba(0,0,0,0.2)"
+  }
+ ],
+ "lit": [
+  {
+   "spread": 2,
+   "color": "#F9B233"
+  },
+  {
+   "blur": 8,
+   "color": "rgba(249,178,51,0.7)"
+  }
+ ],
+ "font": "sans",
+ "weight": 400,
+ "size": 18,
+ "band": {
+  "linear": {
+   "angle": 180,
+   "stops": [
+    [
+     0,
+     "#3A81F3"
+    ],
+    [
+     0.55,
+     "#245EDC"
+    ],
+    [
+     1,
+     "#1C4FC4"
+    ]
+   ]
+  }
+ },
+ "bandHeight": 8,
+ "stripFg": "#0A246A",
+ "sep": "#B8B2A0",
+ "space": "English (United States)"
+}

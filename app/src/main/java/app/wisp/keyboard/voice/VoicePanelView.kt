@@ -3,228 +3,325 @@ package app.wisp.keyboard.voice
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
-import android.graphics.Path
 import android.graphics.RectF
 import android.os.SystemClock
 import android.text.Layout
+import android.text.SpannableString
 import android.text.StaticLayout
 import android.text.TextPaint
+import android.text.style.ForegroundColorSpan
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
-import app.wisp.keyboard.kbd.KeyboardView
-import app.wisp.keyboard.kbd.Palette
+import app.wisp.keyboard.kbd.Icons
+import app.wisp.keyboard.style.Theme
+import app.wisp.keyboard.style.ThemeFonts
 import kotlin.math.abs
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
 
 /**
- * The voice panel: the words as they are recognised, a ribbon that waves with the voice, a mic button and a cancel button.
- * One View drawn directly (no framework UI), and it only animates while the microphone is open.
+ * The voice panel (the handoff's Voice screen): "on-device" and language chips, the words as they are recognised (confirmed ones solid,
+ * the last few still-changing ones grey), a waveform, a pulsing mic, a status line, and Undo phrase / Auto-punctuation / Polish.
+ * One View drawn directly, and it only animates while the microphone is open.
  *
- * The mic button: press and hold to talk and let go to insert; tap once to keep listening hands-free and tap again to insert;
- * slide away while holding to cancel.
+ * The mic: press and hold to talk and let go to insert; tap once to keep listening hands-free, then tap to pause or resume; slide
+ * away while holding to cancel. The back arrow inserts what was said and returns to the keys.
  */
-class VoicePanelView(context: Context, private val voice: VoiceController, private val palette: Palette = Palette()) : View(context) {
+class VoicePanelView(context: Context, private val voice: VoiceController, private var theme: Theme) : View(context) {
 
     interface Listener {
         fun onMicDown()              // start (hold)
-        fun onHandsFree()            // a quick tap: keep listening until the next tap
+        fun onHandsFree()            // a quick tap: keep listening
         fun onFinish()               // insert what was said
         fun onCancel()
+        fun onBack()                 // the arrow: insert what was said, or just go back when nothing is being said
         fun onFix(problem: VoiceController.Problem)
+        fun onUndoPhrase()
+        fun onTogglePunctuation()
+        fun onPolish()
+        fun onLanguage()
     }
 
     var listener: Listener? = null
+    var autoPunctuation = true
+        set(v) { field = v; invalidate() }
+    /** Polish (AI rewrite) is only offered when a rewrite model is installed. */
+    var polishAvailable = false
+        set(v) { field = v; invalidate() }
 
-    private val density = resources.displayMetrics.density
-    private val height3 = KeyboardView.ROW_HEIGHT_DP * 3 * density
-    private val slop = ViewConfiguration.get(context).scaledTouchSlop
+    private val d = resources.displayMetrics.density
+    private val amber = 0xFFFFB86B.toInt()
+    private val amberSoft = 0xFFFFCF99.toInt()
 
-    private val text = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.text; textSize = 20f * density }
-    private val hint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.textMuted; textSize = 14f * density; textAlign = Paint.Align.CENTER }
+    private val words = TextPaint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 18f * d }
+    private val label = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 12f * d; textAlign = Paint.Align.CENTER }
+    private val status = Paint(Paint.ANTI_ALIAS_FLAG).apply { textSize = 13f * d; textAlign = Paint.Align.CENTER }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val ribbon = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 3f * density }
-    private val icon = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 2.4f * density }
-    private val path = Path()
+    private val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1f * d }
     private val box = RectF()
 
-    private var layout: StaticLayout? = null
-    private var layoutText = ""
-    private var layoutWidth = 0
     private var smoothLevel = 0f
+    private var wordLayout: StaticLayout? = null
+    private var wordText = ""
+    private var wordWidth = 0
+
+    fun setTheme(t: Theme) {
+        theme = t
+        words.typeface = ThemeFonts.typeface(context, t.font, 400)
+        label.typeface = ThemeFonts.typeface(context, t.font, 500); status.typeface = label.typeface
+        invalidate()
+    }
+
+    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(MeasureSpec.getSize(w), (HEIGHT_DP * d).toInt())
+
+    // Geometry in dp from the top
+    private val headerH = 40f; private val wordsTop = 40f; private val wordsH = 58f
+    private val barsTop = 102f; private val barsH = 34f
+    private val micCy = 178f; private val micR = 36f
+    private val statusY = 226f
+    private val buttonsTop = 238f; private val buttonsH = 40f
+    private val footerY = 298f
+
+    private val micRect = RectF(); private val backRect = RectF(); private val langRect = RectF()
+    private val undoRect = RectF(); private val punctRect = RectF(); private val polishRect = RectF()
+    private val cancelRect = RectF()
+
+    private fun surface() = theme.mod.base() or (0xFF shl 24)
+
+    override fun onDraw(c: Canvas) {
+        c.drawColor(theme.board.first().base() or (0xFF shl 24))
+        val phase = voice.phase
+        val listening = (phase == VoiceController.Phase.LISTENING || phase == VoiceController.Phase.WARMING)
+        val live = listening && !voice.paused
+        smoothLevel += ((if (live) voice.level else 0f) - smoothLevel) * 0.25f
+
+        drawHeader(c, listening)
+        drawWords(c, listening)
+        drawBars(c, live)
+        drawMic(c, phase, listening)
+        drawStatus(c, phase)
+        drawButtons(c)
+        drawFooter(c)
+        if (live || phase == VoiceController.Phase.FINISHING) postInvalidateOnAnimation()
+    }
+
+    private fun drawHeader(c: Canvas, listening: Boolean) {
+        // "On-device" chip
+        val chip = "On-device · private"
+        val cw = label.measureText(chip) + 36f * d
+        box.set(8f * d, 5f * d, 8f * d + cw, 35f * d)
+        fill.color = 0xFF1F1B14.toInt(); c.drawRoundRect(box, 15f * d, 15f * d, fill)
+        line.color = 0xFF3A2F1E.toInt(); c.drawRoundRect(box, 15f * d, 15f * d, line)
+        Icons.draw(c, Icons.Icon.SHIELD, box.left + 16f * d, box.centerY(), 14f * d, amberSoft, strokeWidth = 2f)
+        label.color = amberSoft
+        c.drawText(chip, box.left + 26f * d + label.measureText(chip) / 2f, box.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
+        // Language chip
+        val lang = "EN ▾"
+        val lw = label.measureText(lang) + 24f * d
+        langRect.set(box.right + 8f * d, 5f * d, box.right + 8f * d + lw, 35f * d)
+        fill.color = surface(); c.drawRoundRect(langRect, 15f * d, 15f * d, fill)
+        line.color = theme.sep; c.drawRoundRect(langRect, 15f * d, 15f * d, line)
+        label.color = theme.stripFg
+        c.drawText(lang, langRect.centerX(), langRect.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
+        // Timer while the microphone is open
+        if (listening) {
+            val secs = ((SystemClock.elapsedRealtime() - voice.startedAt) / 1000).toInt().coerceAtLeast(0)
+            val t = "%d:%02d".format(secs / 60, secs % 60)
+            label.textAlign = Paint.Align.LEFT; label.color = theme.stripFg
+            val x = langRect.right + 14f * d
+            fill.color = app.wisp.keyboard.style.Brand.RECORDING; c.drawCircle(x + 3f * d, 20f * d, 3.5f * d, fill)
+            c.drawText(t, x + 12f * d, 20f * d - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
+            label.textAlign = Paint.Align.CENTER
+        }
+        // Back arrow
+        backRect.set(width - 52f * d, 0f, width - 8f * d, headerH * d)
+        Icons.draw(c, Icons.Icon.BACK_CHEVRON, backRect.centerX(), backRect.centerY(), 22f * d, theme.stripFg)
+    }
+
+    private fun drawWords(c: Canvas, listening: Boolean) {
+        val padX = 20f * d
+        val top = wordsTop * d; val h = wordsH * d
+        val shown = voice.partial
+        val failure = voice.failure
+        if (shown.isEmpty() || failure != null) return
+        val w = (width - 2 * padX).toInt()
+        // Confirmed words solid, the last three (still changing) grey.
+        val parts = shown.trim().split(' ')
+        val cut = if (listening) (parts.size - 3).coerceAtLeast(0) else parts.size
+        val confirmed = parts.take(cut).joinToString(" ")
+        val tentative = parts.drop(cut).joinToString(" ")
+        val full = if (tentative.isEmpty()) confirmed else if (confirmed.isEmpty()) tentative else "$confirmed $tentative"
+        if (wordLayout == null || full != wordText || w != wordWidth) {
+            wordText = full; wordWidth = w
+            val sp = SpannableString(full)
+            sp.setSpan(ForegroundColorSpan(theme.fg), 0, confirmed.length, 0)
+            if (tentative.isNotEmpty()) sp.setSpan(ForegroundColorSpan(0xFF8E97A6.toInt()), full.length - tentative.length, full.length, 0)
+            wordLayout = StaticLayout.Builder.obtain(sp, 0, sp.length, words, w).setAlignment(Layout.Alignment.ALIGN_NORMAL).setLineSpacing(0f, 1.2f).build()
+        }
+        val l = wordLayout!!
+        val dy = min(0f, h - l.height)       // a long dictation scrolls so the newest words stay in view
+        c.save(); c.clipRect(0f, top, width.toFloat(), top + h); c.translate(padX, top + dy); l.draw(c); c.restore()
+    }
+
+    private val heights = floatArrayOf(10f, 18f, 26f, 14f, 30f, 22f, 12f, 34f, 20f, 28f, 16f, 36f, 24f, 12f, 30f, 18f, 26f, 34f, 14f, 22f, 30f, 16f, 28f, 12f, 24f, 32f, 18f, 10f)
+
+    /** 28 bars that rise and fall with the voice (flat and dim when paused or idle). */
+    private fun drawBars(c: Canvas, live: Boolean) {
+        val n = heights.size
+        val bw = 4f * d; val gap = 4f * d
+        val total = n * bw + (n - 1) * gap
+        var x = (width - total) / 2f
+        val cy = (barsTop + barsH / 2f) * d
+        val t = SystemClock.uptimeMillis() / 1000f
+        for (i in 0 until n) {
+            val wave = if (live) 0.35f + 0.65f * (0.5f + 0.5f * sin(t * 6.3f - i * 0.52f)) else 0.12f
+            val amp = if (live) (0.25f + 0.75f * smoothLevel.coerceIn(0f, 1f)) * wave else wave
+            val h = (heights[i] * d * amp).coerceAtLeast(3f * d)
+            fill.color = if (i % 3 == 0) amber else if (i % 3 == 1) amberSoft else 0xFFC98A4A.toInt()
+            fill.alpha = if (live) 255 else 110
+            box.set(x, cy - h / 2f, x + bw, cy + h / 2f)
+            c.drawRoundRect(box, 2f * d, 2f * d, fill)
+            x += bw + gap
+        }
+        fill.alpha = 255
+    }
+
+    private fun drawMic(c: Canvas, phase: VoiceController.Phase, listening: Boolean) {
+        val cx = width / 2f; val cy = micCy * d; val r = micR * d
+        micRect.set(cx - r, cy - r, cx + r, cy + r)
+        val live = listening && !voice.paused
+        if (live) {
+            // Two rings that swell and fade, half a cycle apart.
+            val t = (SystemClock.uptimeMillis() % 1800) / 1800f
+            for (k in 0..1) {
+                val p = (t + k * 0.5f) % 1f
+                fill.color = amber; fill.alpha = ((1f - p) * 140).toInt()
+                c.drawCircle(cx, cy, r * (1f + 0.9f * p), fill)
+            }
+            fill.alpha = 255
+        }
+        val cancel = armed
+        fill.color = if (cancel) theme.mod.base() or (0xFF shl 24) else if (live || phase == VoiceController.Phase.FINISHING) amber else 0xFF2A2418.toInt()
+        c.drawCircle(cx, cy, r, fill)
+        val ink = if (live || phase == VoiceController.Phase.FINISHING) 0xFF1A1206.toInt() else amber
+        if (listening && voice.paused) Icons.draw(c, Icons.Icon.MIC, cx, cy, 30f * d, ink, strokeWidth = 1.9f)
+        else if (listening && voice.handsFree && phase == VoiceController.Phase.LISTENING) {
+            // Pause bars
+            fill.color = ink
+            box.set(cx - 7f * d, cy - 11f * d, cx - 3f * d, cy + 11f * d); c.drawRoundRect(box, 2f * d, 2f * d, fill)
+            box.set(cx + 3f * d, cy - 11f * d, cx + 7f * d, cy + 11f * d); c.drawRoundRect(box, 2f * d, 2f * d, fill)
+        } else Icons.draw(c, Icons.Icon.MIC, cx, cy, 30f * d, ink, strokeWidth = 1.9f)
+        // Cancel, left of the mic, while recording
+        if (voice.isActive) {
+            cancelRect.set(cx - r - 64f * d, cy - 22f * d, cx - r - 20f * d, cy + 22f * d)
+            fill.color = surface(); c.drawCircle(cancelRect.centerX(), cancelRect.centerY(), 22f * d, fill)
+            line.color = theme.fg; line.strokeCap = Paint.Cap.ROUND
+            val q = 7f * d
+            c.drawLine(cancelRect.centerX() - q, cancelRect.centerY() - q, cancelRect.centerX() + q, cancelRect.centerY() + q, line)
+            c.drawLine(cancelRect.centerX() - q, cancelRect.centerY() + q, cancelRect.centerX() + q, cancelRect.centerY() - q, line)
+        } else cancelRect.setEmpty()
+    }
+
+    private fun drawStatus(c: Canvas, phase: VoiceController.Phase) {
+        val failure = voice.failure
+        val s = when {
+            failure != null -> failure.message
+            phase == VoiceController.Phase.WARMING -> "Warming up… you can start talking"
+            phase == VoiceController.Phase.FINISHING -> "Finishing…"
+            phase == VoiceController.Phase.LISTENING && voice.paused -> "Paused. Tap the mic to continue"
+            phase == VoiceController.Phase.LISTENING -> if (voice.handsFree) "Listening, speak naturally" else "Listening… let go to insert"
+            else -> "Hold the mic and talk, or tap it to keep listening"
+        }
+        status.color = if (failure != null) theme.accent.base() or (0xFF shl 24) else 0xFFC9D0DC.toInt().let { if (theme.dark) it else theme.stripFg }
+        val sl = StaticLayout.Builder.obtain(s, 0, s.length, TextPaint(status).also { it.textAlign = Paint.Align.LEFT }, (width - 32f * d).toInt()).setAlignment(Layout.Alignment.ALIGN_CENTER).build()
+        c.save(); c.translate(16f * d, statusY * d - sl.height / 2f); sl.draw(c); c.restore()
+    }
+
+    private fun drawButtons(c: Canvas) {
+        val gap = 8f * d; val left = 10f * d
+        val n = if (polishAvailable) 3 else 2
+        val w = (width - 2 * left - (n - 1) * gap) / n
+        val top = buttonsTop * d; val h = buttonsH * d
+        undoRect.set(left, top, left + w, top + h)
+        punctRect.set(left + w + gap, top, left + 2 * w + gap, top + h)
+        polishRect.set(left + 2 * (w + gap), top, left + 3 * w + 2 * gap, top + h)
+        button(c, undoRect, "Undo phrase", surface(), theme.fg)
+        button(c, punctRect, if (autoPunctuation) "Auto-punctuation: on" else "Auto-punctuation: off", if (autoPunctuation) 0xFF1B2A20.toInt().let { if (theme.dark) it else surface() } else surface(), theme.fg)
+        if (polishAvailable) { button(c, polishRect, "✦ Polish", 0xFF2A2418.toInt(), amberSoft) } else polishRect.setEmpty()
+    }
+
+    private fun button(c: Canvas, r: RectF, text: String, bg: Int, fg: Int) {
+        fill.color = bg; c.drawRoundRect(r, 12f * d, 12f * d, fill)
+        label.color = fg
+        val shown = if (label.measureText(text) > r.width() - 12f * d) text.substringBefore(':') else text
+        c.drawText(shown, r.centerX(), r.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
+    }
+
+    private fun drawFooter(c: Canvas) {
+        line.color = theme.sep; c.drawLine(0f, (footerY - 4f) * d, width.toFloat(), (footerY - 4f) * d, line)
+        Icons.draw(c, Icons.Icon.SHIELD, width / 2f - 118f * d, (footerY + 10f) * d, 13f * d, 0xFF6FD3A6.toInt(), strokeWidth = 2f)
+        status.textSize = 11f * d; status.color = theme.stripFg
+        c.drawText("Audio is processed on this phone and not kept", width / 2f + 8f * d, (footerY + 10f) * d - (status.fontMetrics.ascent + status.fontMetrics.descent) / 2f, status)
+        status.textSize = 13f * d
+    }
+
+    // ---- touch
 
     private var downOnMic = false
     private var startedByThisPress = false
     private var downAt = 0L
     private var downX = 0f; private var downY = 0f
-    private var cancelArmed = false
-    private var downOnCancel = false
-
-    // Geometry (recomputed in onSizeChanged)
-    private var micX = 0f; private var micY = 0f; private var micR = 0f
-    private var cancelX = 0f; private var cancelY = 0f; private var cancelR = 0f
-
-    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(MeasureSpec.getSize(w), height3.toInt())
-
-    override fun onSizeChanged(w: Int, h: Int, ow: Int, oh: Int) {
-        micR = 30f * density; micX = w / 2f; micY = h - micR - 8f * density
-        cancelR = 22f * density; cancelX = 36f * density; cancelY = micY
-    }
-
-    override fun onDraw(c: Canvas) {
-        c.drawColor(palette.background); text.color = palette.text
-        val phase = voice.phase
-        val listening = phase == VoiceController.Phase.LISTENING || phase == VoiceController.Phase.WARMING
-        smoothLevel += ((if (listening) voice.level else 0f) - smoothLevel) * 0.25f
-
-        drawWords(c, phase)
-        if (listening || phase == VoiceController.Phase.FINISHING) drawTimer(c)
-        drawRibbon(c, listening)
-        drawMic(c, phase, listening)
-        if (listening || phase == VoiceController.Phase.FINISHING) drawCancel(c)
-        if (listening) postInvalidateOnAnimation()
-    }
-
-    /** A red dot and the time so far, top right: the microphone is open, and for how long. */
-    private fun drawTimer(c: Canvas) {
-        val secs = ((SystemClock.elapsedRealtime() - voice.startedAt) / 1000).toInt().coerceAtLeast(0)
-        val label = "%d:%02d".format(secs / 60, secs % 60)
-        hint.textAlign = Paint.Align.RIGHT; hint.color = palette.textMuted
-        val x = width - 16f * density; val y = 22f * density
-        c.drawText(label, x, y, hint)
-        fill.color = RECORDING_RED; fill.alpha = 255
-        c.drawCircle(x - hint.measureText(label) - 10f * density, y - 5f * density, 4f * density, fill)
-        hint.textAlign = Paint.Align.CENTER
-    }
-
-    private fun drawWords(c: Canvas, phase: VoiceController.Phase) {
-        val padX = 20f * density
-        val top = 8f * density
-        val areaH = micY - micR - 36f * density - top
-        val shown = voice.partial
-        val failure = voice.failure
-        val status: String? = when {
-            failure != null -> failure.message
-            phase == VoiceController.Phase.WARMING -> "Warming up… you can start talking"
-            phase == VoiceController.Phase.FINISHING -> "Finishing…"
-            phase == VoiceController.Phase.LISTENING && shown.isEmpty() -> if (voice.handsFree) "Listening… tap the mic when you are done" else "Listening… let go to insert"
-            phase == VoiceController.Phase.IDLE -> "Hold the mic and talk, or tap it to keep listening"
-            else -> null
-        }
-        if (shown.isNotEmpty() && failure == null) {
-            val w = (width - 2 * padX).toInt()
-            if (layout == null || shown != layoutText || w != layoutWidth) {
-                layoutText = shown; layoutWidth = w
-                layout = StaticLayout.Builder.obtain(shown, 0, shown.length, text, w).setAlignment(Layout.Alignment.ALIGN_NORMAL).build()
-            }
-            val l = layout!!
-            // Show the newest words: a long dictation scrolls up.
-            val dy = min(0f, areaH - l.height)
-            c.save(); c.clipRect(0f, top, width.toFloat(), top + areaH); c.translate(padX, top + dy); l.draw(c); c.restore()
-        } else if (status != null) {
-            hint.color = if (failure != null) palette.accent else palette.textMuted
-            val sl = StaticLayout.Builder.obtain(status, 0, status.length, hint, (width - 2 * padX).toInt()).setAlignment(Layout.Alignment.ALIGN_CENTER).build()
-            c.save(); c.translate(padX, top + (areaH - sl.height) / 2f); sl.draw(c); c.restore()
-        }
-    }
-
-    /** Three soft waves across the panel; they grow with the voice. The same ribbon is the swipe trail's cousin. */
-    private fun drawRibbon(c: Canvas, listening: Boolean) {
-        val cy = micY - micR - 18f * density
-        val t = SystemClock.uptimeMillis() / 1000f
-        val amp = (2f + 20f * smoothLevel) * density
-        for (k in 0 until 3) {
-            ribbon.color = palette.accent; ribbon.alpha = intArrayOf(230, 120, 60)[k]
-            path.reset()
-            val steps = 48
-            for (i in 0..steps) {
-                val x = width * i / steps.toFloat()
-                val edge = sin(Math.PI * i / steps).toFloat()                 // pinned to the middle at the ends
-                val y = cy + sin(x / (46f * density) + t * (2.2f + k * 0.7f) + k * 1.9f) * amp * edge * (1f - k * 0.25f)
-                if (i == 0) path.moveTo(x, y) else path.lineTo(x, y)
-            }
-            c.drawPath(path, ribbon)
-        }
-    }
-
-    private fun drawMic(c: Canvas, phase: VoiceController.Phase, listening: Boolean) {
-        if (listening) {
-            fill.color = palette.accent; fill.alpha = 60
-            c.drawCircle(micX, micY, micR * (1.08f + 0.32f * smoothLevel), fill)
-        }
-        fill.color = if (cancelArmed) palette.special else palette.accent; fill.alpha = 255
-        c.drawCircle(micX, micY, micR, fill)
-        icon.color = palette.onAccent
-        if (listening && voice.handsFree && phase == VoiceController.Phase.LISTENING) {   // a stop square while hands-free
-            box.set(micX - 9f * density, micY - 9f * density, micX + 9f * density, micY + 9f * density)
-            fill.color = palette.onAccent; c.drawRoundRect(box, 3f * density, 3f * density, fill)
-        } else drawMicShape(c, micX, micY, 1f)
-    }
-
-    private fun drawMicShape(c: Canvas, cx: Float, cy: Float, scale: Float) {
-        val d = density * scale
-        box.set(cx - 5f * d, cy - 13f * d, cx + 5f * d, cy + 3f * d)
-        c.drawRoundRect(box, 5f * d, 5f * d, icon)
-        box.set(cx - 10f * d, cy - 7f * d, cx + 10f * d, cy + 11f * d)
-        c.drawArc(box, 20f, 140f, false, icon)
-        c.drawLine(cx, cy + 11f * d, cx, cy + 16f * d, icon)
-    }
-
-    private fun drawCancel(c: Canvas) {
-        fill.color = palette.special; fill.alpha = 255
-        c.drawCircle(cancelX, cancelY, cancelR, fill)
-        icon.color = palette.text
-        val r = 7f * density
-        c.drawLine(cancelX - r, cancelY - r, cancelX + r, cancelY + r, icon); c.drawLine(cancelX - r, cancelY + r, cancelX + r, cancelY - r, icon)
-    }
-
-    // ------------------------------------------------------------------ touch
+    private var armed = false
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                downX = e.x; downY = e.y; downAt = e.eventTime; cancelArmed = false
-                downOnMic = dist(e.x, e.y, micX, micY) <= micR * 1.5f
-                downOnCancel = (voice.isActive) && dist(e.x, e.y, cancelX, cancelY) <= cancelR * 1.6f
-                startedByThisPress = false
+                downX = e.x; downY = e.y; downAt = e.eventTime; armed = false; startedByThisPress = false
+                downOnMic = micRect.centerX().let { hypot(e.x - it, e.y - micRect.centerY()) <= micR * d * 1.4f }
                 if (downOnMic) {
                     val failure = voice.failure
                     when {
                         failure != null -> { listener?.onFix(failure.problem); downOnMic = false }
-                        voice.isActive -> {}                                   // a tap finishes it (decided on lift)
+                        voice.isActive -> {}                          // a tap pauses or resumes (decided on lift)
                         else -> { listener?.onMicDown(); startedByThisPress = voice.isActive }
                     }
                     invalidate()
                 }
             }
             MotionEvent.ACTION_MOVE -> if (downOnMic && startedByThisPress) {
-                val away = abs(e.x - downX) > 110f * density || (downY - e.y) > 110f * density
-                if (away != cancelArmed) { cancelArmed = away; invalidate() }
+                val away = abs(e.x - downX) > 110f * d || (downY - e.y) > 110f * d
+                if (away != armed) { armed = away; invalidate() }
             }
             MotionEvent.ACTION_UP -> {
-                if (downOnCancel && dist(e.x, e.y, cancelX, cancelY) <= cancelR * 1.6f) listener?.onCancel()
-                else if (downOnMic) {
-                    val held = e.eventTime - downAt
-                    when {
-                        startedByThisPress && cancelArmed -> listener?.onCancel()
-                        startedByThisPress && held >= HOLD_MS -> listener?.onFinish()      // hold to talk: let go to insert
-                        startedByThisPress -> listener?.onHandsFree()                       // a quick tap: keep listening hands-free
-                        voice.isActive -> listener?.onFinish()                              // tapped while listening: finish
+                val x = e.x; val y = e.y
+                when {
+                    downOnMic -> {
+                        val held = e.eventTime - downAt
+                        when {
+                            startedByThisPress && armed -> listener?.onCancel()
+                            startedByThisPress && held >= HOLD_MS -> listener?.onFinish()
+                            startedByThisPress -> listener?.onHandsFree()
+                            voice.isActive -> if (voice.paused) voice.resume() else voice.pause()
+                        }
                     }
+                    cancelRect.contains(x, y) -> listener?.onCancel()
+                    backRect.contains(x, y) -> listener?.onBack()
+                    langRect.contains(x, y) -> listener?.onLanguage()
+                    undoRect.contains(x, y) -> listener?.onUndoPhrase()
+                    punctRect.contains(x, y) -> listener?.onTogglePunctuation()
+                    polishRect.contains(x, y) -> listener?.onPolish()
                 }
-                downOnMic = false; downOnCancel = false; cancelArmed = false; invalidate()
+                downOnMic = false; armed = false; invalidate()
             }
-            MotionEvent.ACTION_CANCEL -> { downOnMic = false; downOnCancel = false; cancelArmed = false }
+            MotionEvent.ACTION_CANCEL -> { downOnMic = false; armed = false }
         }
         return true
     }
 
-    private fun dist(ax: Float, ay: Float, bx: Float, by: Float) = kotlin.math.hypot((ax - bx).toDouble(), (ay - by).toDouble()).toFloat()
+    private fun hypot(a: Float, b: Float) = kotlin.math.hypot(a.toDouble(), b.toDouble()).toFloat()
 
     private companion object {
+        const val HEIGHT_DP = 320f
         const val HOLD_MS = 350L
-        val RECORDING_RED get() = app.wisp.keyboard.style.Brand.RECORDING
     }
 }

@@ -4,30 +4,40 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.RectF
+import android.graphics.Typeface
+import app.wisp.keyboard.style.Theme
+import app.wisp.keyboard.style.ThemeFonts
+import app.wisp.keyboard.style.Themes
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
 import app.wisp.keyboard.BuildConfig
 import app.wisp.keyboard.LatencyStats
 import app.wisp.keyboard.Probe
+import app.wisp.keyboard.core.Act
+import app.wisp.keyboard.core.Native
 
 /**
- * The key surface. One View, one draw pass, no per-key child views. Geometry lives in flat arrays
- * ([CompiledLayout]); touch handling goes through [KeyTouchTracker], which does not allocate.
+ * The key surface. One View, one draw pass, no per-key child views. Geometry and every touch gesture
+ * live in the Rust core ([Native]); this class forwards raw pointer events and acts on what comes back.
  */
 class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: Palette = Palette()) :
-    View(context), KeyTouchTracker.Sink {
+    View(context) {
 
     interface Listener {
         fun onKey(code: Int, x: Int, y: Int)
-        fun onRepeat(code: Int, count: Int) {}
+        /** Backspace held: one character, or a whole word when [word]. */
+        fun onRepeat(word: Boolean) {}
         fun onCursorSteps(steps: Int) {}
+        /** A backspace swipe covers [words] words (0 clears the selection); it ends with [onWordSwipeEnd]. */
+        fun onWordSwipe(words: Int) {}
+        fun onWordSwipeEnd(words: Int) {}
+        /** Shift held and slid onto a letter. */
+        fun onShiftLetter(code: Int, x: Int, y: Int) {}
         /** Long press on a key that supports it (currently the switch-keyboard key). */
         fun onLongPress(code: Int) {}
         /** A swipe across the letters finished. [xs]/[ys] are only valid during this call; copy what you keep. */
         fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) {}
-        /** One of the two buttons in the empty space of one-handed mode: "swap" the side, or go back to "full" width. */
-        fun onOneHanded(action: String) {}
     }
 
     private val density = resources.displayMetrics.density
@@ -41,49 +51,42 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private val drawTime = LatencyStats("on_draw")
     /** Swipe typing on or off (the setting); takes effect the next time the layout is built. */
     var gesturesEnabled = true
-        set(v) { if (field != v) { field = v; layout?.let { tracker?.cancelAll(); tracker = makeTracker(it) } } }
+        set(v) { if (field != v) { field = v; if (width > 0) rebuild(width, height) } }
 
     // Trail: drawn while the finger is down, then fades out.
     private val trailPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 5f * density; color = palette.accent
     }
-    private val fadeX = FloatArray(KeyTouchTracker.MAX_TRACE)
-    private val fadeY = FloatArray(KeyTouchTracker.MAX_TRACE)
+    private val fadeX = FloatArray(MAX_TRACE)
+    private val fadeY = FloatArray(MAX_TRACE)
     private var fadeCount = 0
     private var fadeStart = 0L
-    private var longPressKey = -1
-    private var longPressFired = false
-    private val longPress = Runnable {
-        val l = layout ?: return@Runnable
-        if (longPressKey in 0 until l.count) {
-            longPressFired = true
-            val pop = l.popups[longPressKey]
-            if (pop != null && l.codes[longPressKey] != KeyCodes.SWITCH) showPopup(longPressKey, pop) else listener?.onLongPress(l.codes[longPressKey])
-        }
-    }
 
-    private var repeatCode = 0
-    private var repeatCount = 0
-    private val repeater = object : Runnable {
-        override fun run() {
-            if (repeatCode == 0) return
-            listener?.onRepeat(repeatCode, ++repeatCount)
-            postDelayed(this, if (repeatCount > InputController.WORD_DELETE_AFTER) REPEAT_SLOW_MS else REPEAT_FAST_MS)
-        }
-    }
+    // The Rust touch machine for the current layout, and the buffers its events travel in.
+    private var handle = 0L
+    private val actions = IntArray(72)
+    private val traceX = FloatArray(MAX_TRACE)
+    private val traceY = FloatArray(MAX_TRACE)
+    private var traceCount = 0
+    private var gesturing = false
+    private val tick = Runnable { dispatch(Native.TICK, 0, 0f, 0f, SystemClock.uptimeMillis()) }
 
     private var rowHeightPx = ROW_HEIGHT_DP * density
-    private var gapX = 2.5f * density
-    private var gapY = 3.5f * density
-    private var radius = 9f * density
-    private var oneHanded = "off"
-    private var keysLeft = 0f
-    private var emptyStripTouch = false
-    private var keysRight = 0f
-    private val sideButton = RectF()
-    private val fullButton = RectF()
-    private var split = false
+    private var keyGapPx = KEY_GAP_DP * density
+    private var rowGapPx = ROW_GAP_DP * density
+    private var theme: Theme = Themes.get(context, Themes.DEFAULT)
+    private var renderer = ThemeRenderer(theme, density)
+    private var keyHints = true
+    private var radius = theme.radius[0] * density
+    /** Where the keyboard sits is the host's job; the view only needs the key height scale and the middle gap of split mode. */
+    var rowScale = 1f
+        set(v) { if (field != v) { field = v; rowHeightPx = ROW_HEIGHT_DP * density * v; if (width > 0) { release(); requestLayout(); rebuild(width, contentHeight()) } } }
+    var splitGapPx = 0f
+        set(v) { if (field != v) { field = v; if (width > 0) rebuild(width, contentHeight()) } }
     private var haptic = "light"
+    private var wordSwipe = true
+    private var longPressMs = android.view.ViewConfiguration.getLongPressTimeout()
+    private var cursorSlide = true
     private var sound = false
     private var trailOn = true
     private var vibrator: android.os.Vibrator? = null
@@ -95,7 +98,6 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
 
     /** Called (on the UI thread) whenever the geometry is rebuilt. */
     var onLayoutBuilt: ((CompiledLayout) -> Unit)? = null
-    private var tracker: KeyTouchTracker? = null
     private var pressed = BooleanArray(0)
     /** When each key was let go, for the short fade back from the pressed colour. 0 = not fading. */
     private var releasedAt = LongArray(0)
@@ -104,42 +106,44 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private var labelY = FloatArray(0)
 
     private val fill = Paint()
-    private val bigText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER; textSize = 22f * density; color = palette.text
-    }
-    private val smallText = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER; textSize = 15f * density; color = palette.textMuted
-    }
+    private val bigText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val smallText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val hintText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.RIGHT; typeface = Typeface.MONOSPACE; textSize = 9f * density }
+    private val bitmapPaint = Paint()
+    private val glideLit = java.util.BitSet()
+    private var tintedBigSize = 0f
     private val box = RectF()
 
     override fun onMeasure(widthSpec: Int, heightSpec: Int) {
-        val h = (rowHeightPx * spec.rows.size + (PAD_TOP_DP + PAD_BOTTOM_DP) * density).toInt()
-        setMeasuredDimension(MeasureSpec.getSize(widthSpec), h)
+        setMeasuredDimension(MeasureSpec.getSize(widthSpec), contentHeight())
     }
 
     /** Swaps the layout (e.g. number pad for a numeric field). */
     fun setSpec(newSpec: LayoutSpec) {
         if (newSpec === spec) return
         spec = newSpec
-        layout = null; tracker?.cancelAll(); tracker = null
+        release()
         requestLayout()
-        if (width > 0) rebuild(width, (rowHeightPx * spec.rows.size + (PAD_TOP_DP + PAD_BOTTOM_DP) * density).toInt())
+        if (width > 0) rebuild(width, contentHeight())
         invalidate()
     }
 
     /** Applies the user's look and feel. Cheap to call; geometry is rebuilt only if it changed. */
     fun applyStyle(style: app.wisp.keyboard.style.KeyboardStyle) {
-        val landscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
-        val h = ROW_HEIGHT_DP * density * style.heightPercent(landscape) / 100f
-        val gx = 2.5f * density * style.gap / 100f; val gy = 3.5f * density * style.gap / 100f
-        val geometryChanged = h != rowHeightPx || gx != gapX || style.oneHanded != oneHanded || style.split != split
-        rowHeightPx = h; gapX = gx; gapY = gy; radius = style.cornerDp() * density
-        oneHanded = style.oneHanded; split = style.split
+        val h = ROW_HEIGHT_DP * density * rowScale
+        val gx = KEY_GAP_DP * density * style.gap / 100f; val gy = ROW_GAP_DP * density * style.gap / 100f
+        val bandChanged = style.themeFor(context).bandHeight != theme.bandHeight
+        val geometryChanged = bandChanged || h != rowHeightPx || gx != keyGapPx || gy != rowGapPx 
+        rowHeightPx = h; keyGapPx = gx; rowGapPx = gy
+        setTheme(style.themeFor(context))
+        keyHints = style.keyHints
+        setPhoto(style.photo, style.photoDim)
         haptic = style.haptic; sound = style.sound; trailOn = style.trailOn
+        wordSwipe = style.wordSwipe; cursorSlide = style.cursorSlide; longPressMs = style.longPressMs
+        if (handle != 0L) Native.touchConfig(handle, touchConfig())
         trailPaint.strokeWidth = style.trailWidthDp * density
         trailPaint.color = style.trailColorInt(context)
-        stroke.color = palette.textMuted
-        if (geometryChanged) { layout = null; tracker?.cancelAll(); tracker = null; requestLayout(); if (width > 0) rebuild(width, (rowHeightPx * spec.rows.size + (PAD_TOP_DP + PAD_BOTTOM_DP) * density).toInt()) }
+        if (geometryChanged) { release(); requestLayout(); if (width > 0) rebuild(width, contentHeight()) }
         invalidate()
     }
 
@@ -171,108 +175,171 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) = rebuild(w, h)
 
-    private fun makeTracker(l: CompiledLayout): KeyTouchTracker {
-        val canSwipe = BooleanArray(l.count) { l.kinds[it] == KeyKind.LETTER && Character.isLetter(l.codes[it]) }
-        val letterKey = canSwipe.indexOfFirst { it }
-        val keyWidth = if (letterKey >= 0) l.rects[letterKey * 4 + 2] - l.rects[letterKey * 4] else 40f * density
-        return KeyTouchTracker(
-            KeyGrid(l), this, l.indexOfCode(KeyCodes.SPACE), 24f * density, 14f * density,
-            gestureStart = if (gesturesEnabled && letterKey >= 0) canSwipe else null, gestureSlopPx = 0.6f * keyWidth,
-        )
+    private fun contentHeight() =
+        ((PAD_TOP_DP + PAD_BOTTOM_DP + theme.bandHeight) * density + rowHeightPx * spec.rows.size + rowGapPx * (spec.rows.size - 1)).toInt()
+
+    /** Stops any touch in progress and frees the Rust layout. */
+    private fun release() {
+        removeCallbacks(tick); dismissPopup(); gesturing = false
+        for (i in pressed.indices) pressed[i] = false
+        if (handle != 0L) { Native.touchFree(handle); handle = 0 }
+        layout = null
     }
 
     private fun rebuild(w: Int, h: Int) {
         if (w <= 0 || h <= 0) return
+        release()
         val padX = PAD_X_DP * density
-        // One-handed: the keys use 80% of the width and sit at the chosen side.
-        val shrink = if (oneHanded == "off") 0f else w * 0.2f
-        val left = padX + if (oneHanded == "right") shrink else 0f
-        val right = padX + if (oneHanded == "left") shrink else 0f
-        keysLeft = left; keysRight = w - right
-        val l = CompiledLayout(spec, w.toFloat(), h.toFloat(), left, PAD_TOP_DP * density, PAD_BOTTOM_DP * density, right, if (split) w * 0.08f else 0f)
+        val left = padX; val right = padX
+        val slots = LayoutSlots(spec) { k -> gesturesEnabled && k.kind == KeyKind.LETTER && Character.isLetter(k.code) }
+        val metrics = floatArrayOf(
+            rowHeightPx, rowGapPx, keyGapPx, left, right, (PAD_TOP_DP + theme.bandHeight) * density, PAD_BOTTOM_DP * density,
+            PAD_UNIT_DP * density, splitGapPx,
+        )
+        val rowW = (w - left - right) / 10f
+        popupCell = maxOf(rowW, 44f * density)
+        handle = Native.touchNew(slots.weights, slots.flags, slots.rowLens, w.toFloat(), metrics, slots.keyInfo, touchConfig())
+        if (handle == 0L) return
+        val n = slots.keyInfo.size
+        val rects = FloatArray(n * 4)
+        Native.touchRects(handle, rects)
+        val l = CompiledLayout(spec, w.toFloat(), h.toFloat(), rects)
         layout = l
         pressed = BooleanArray(l.count)
         releasedAt = LongArray(l.count)
-        dirty = IntArray(l.count * 4) { i -> val v = l.rects[i]; if (i % 4 < 2) v.toInt() else v.toInt() + 1 }
+        dirty = IntArray(l.count * 4) { i -> val v = l.rects[i]; if (i % 4 < 2) v.toInt() - 1 else v.toInt() + 1 }
         labelY = FloatArray(l.count) { i ->
             val p = if (l.kinds[i] == KeyKind.LETTER) bigText else smallText
             val fm = p.fontMetrics
             l.centerY(i) - (fm.ascent + fm.descent) / 2f
         }
+        renderer.clear()
         applyOverrides()
+        invalidate()
         onLayoutBuilt?.invoke(l)
-        tracker = makeTracker(l)
+    }
+
+    private fun touchConfig() = floatArrayOf(
+        SLOP_DP * density, WORD_STEP_DP * density, CURSOR_STEP_DP * density, popupCell,
+        longPressMs.toFloat(), REPEAT_DELAY_MS, if (wordSwipe) 1f else 0f, if (cursorSlide) 1f else 0f,
+    )
+
+    override fun onAttachedToWindow() { super.onAttachedToWindow(); if (handle == 0L && width > 0) rebuild(width, height) }
+
+    private var photoPath = ""
+    private var photoBitmap: android.graphics.Bitmap? = null
+
+    private fun setPhoto(path: String, dim: Int) {
+        if (path != photoPath) { photoPath = path; photoBitmap = app.wisp.keyboard.style.PhotoBackground.load(path) }
+        val b = photoBitmap
+        val before = renderer.photo to renderer.photoDim
+        renderer.photo = b
+        // Opaque keys carry their own contrast; only see-through keys need the photo darkened for the labels.
+        val seeThrough = (theme.key.base() ushr 24) < 0xF0
+        renderer.photoDim = if (b == null) 0 else if (seeThrough) app.wisp.keyboard.style.PhotoBackground.effectiveDim(dim, app.wisp.keyboard.style.PhotoBackground.meanLuminance(b), theme.fg) else dim
+        if (before != (renderer.photo to renderer.photoDim)) renderer.boardChanged()
+        invalidate()
+    }
+
+    /** Switches skin: caches are rebuilt on the next draw, and label paints take the theme's font and spacing. */
+    fun setTheme(t: Theme) {
+        if (t == theme) return
+        theme = t
+        renderer.release(); renderer = ThemeRenderer(t, density)
+        val face = ThemeFonts.typeface(context, t.font, t.weight)
+        for (p in arrayOf(bigText, smallText)) { p.typeface = face; p.letterSpacing = t.track }
+        bigText.textSize = t.size * density
+        smallText.textSize = minOf(t.size, 15f) * density
+        radius = t.radius[0] * density
+        if (layout != null) {
+            labelY = FloatArray(layout!!.count) { i -> val p = if (layout!!.kinds[i] == KeyKind.LETTER) bigText else smallText; val fm = p.fontMetrics; layout!!.centerY(i) - (fm.ascent + fm.descent) / 2f }
+        }
+        invalidate()
     }
 
     override fun onDraw(canvas: Canvas) {
         val l = layout ?: return
         val d0 = if (BuildConfig.DEBUG) System.nanoTime() else 0L
         Probe.first("first_draw")
-        canvas.drawColor(palette.background)
+        if (bigText.typeface == null || tintedBigSize != theme.size) { setThemePaints(); tintedBigSize = theme.size }
+        renderer.prepareBackdrop(width, height)
+        renderer.drawBoard(canvas, width, height)
+        renderer.drawBand(canvas, width)
         val r = l.rects
         val now = SystemClock.uptimeMillis()
+        val m = renderer.margin.toFloat()
         fading = false
         for (i in 0 until l.count) {
             val o = i * 4
-            box.set(r[o] + gapX, r[o + 1] + gapY, r[o + 2] - gapX, r[o + 3] - gapY)
-            val base = when {
-                l.kinds[i] == KeyKind.ACCENT -> palette.accent
-                l.kinds[i] == KeyKind.SPECIAL -> palette.special
-                else -> palette.key
-            }
-            fill.color = when {
-                pressed[i] -> if (l.kinds[i] == KeyKind.ACCENT) base else palette.keyPressed
-                releasedAt[i] != 0L && l.kinds[i] != KeyKind.ACCENT -> {
+            val w = Math.round(r[o + 2] - r[o]); val h = Math.round(r[o + 3] - r[o + 1])
+            val role = when (l.kinds[i]) { KeyKind.ACCENT -> ThemeRenderer.Role.ACCENT; KeyKind.SPECIAL -> ThemeRenderer.Role.MOD; else -> ThemeRenderer.Role.KEY }
+            val lit = pressed[i] || glideLit.get(i)
+            val x = r[o] - m; val y = r[o + 1] - m
+            if (lit) canvas.drawBitmap(renderer.key(role, true, w, h, r[o], r[o + 1]), x, y, null)
+            else {
+                canvas.drawBitmap(renderer.key(role, false, w, h, r[o], r[o + 1]), x, y, null)
+                if (releasedAt[i] != 0L) {
                     val t = (now - releasedAt[i]) / RELEASE_FADE_MS.toFloat()
-                    if (t >= 1f) { releasedAt[i] = 0L; base } else { fading = true; blend(palette.keyPressed, base, t) }
+                    if (t >= 1f) releasedAt[i] = 0L
+                    else { fading = true; bitmapPaint.alpha = ((1f - t) * 255).toInt(); canvas.drawBitmap(renderer.key(role, true, w, h, r[o], r[o + 1]), x, y, bitmapPaint); bitmapPaint.alpha = 255 }
                 }
-                else -> base
             }
-            canvas.drawRoundRect(box, radius, radius, fill)
-            if (l.codes[i] == KeyCodes.SWITCH) { drawGlobe(canvas, l.centerX(i), l.centerY(i)); continue }
-            if (l.codes[i] == KeyCodes.EMOJI) { drawSmiley(canvas, l.centerX(i), l.centerY(i)); continue }
-            val label = if (shifted) l.labelsUpper[i] else l.labels[i]
-            if (label.isNotEmpty()) {
-                val p = if (l.kinds[i] == KeyKind.LETTER) bigText else smallText
-                p.color = if (l.kinds[i] == KeyKind.ACCENT) palette.onAccent else if (p === bigText) palette.text else palette.textMuted
-                canvas.drawText(label, l.centerX(i), labelY[i], p)
-            }
+            val ink = if (lit || role == ThemeRenderer.Role.ACCENT) theme.accentFg else if (role == ThemeRenderer.Role.MOD) theme.modFg else theme.fg
+            drawKeyFace(canvas, l, i, ink)
         }
         if (fading) postInvalidateOnAnimation()
-        if (oneHanded != "off") drawOneHandedButtons(canvas)
         drawTrail(canvas)
         if (BuildConfig.DEBUG) drawTime.record(System.nanoTime() - d0)
     }
 
-    /** In the empty strip beside a one-handed keyboard: swap sides, and go back to full width. */
-    private fun drawOneHandedButtons(c: Canvas) {
-        val gapW = if (oneHanded == "left") width - keysRight else keysLeft
-        if (gapW < 40f * density) return
-        val x0 = if (oneHanded == "left") keysRight else 0f
-        val size = minOf(gapW - 16f * density, 56f * density)
-        val cx = x0 + gapW / 2f
-        sideButton.set(cx - size / 2, height * 0.12f, cx + size / 2, height * 0.12f + size)
-        fullButton.set(cx - size / 2, sideButton.bottom + 14f * density, cx + size / 2, sideButton.bottom + 14f * density + size)
-        for (r in arrayOf(sideButton, fullButton)) { fill.color = palette.special; c.drawRoundRect(r, radius, radius, fill) }
-        stroke.style = Paint.Style.STROKE
-        // swap: an arrow each way
-        val sx = sideButton.centerX(); val sy = sideButton.centerY(); val a = size * 0.26f; val k = size * 0.1f
-        c.drawLine(sx - a, sy - k, sx + a, sy - k, stroke); c.drawLine(sx + a, sy - k, sx + a - k, sy - 2 * k, stroke); c.drawLine(sx + a, sy - k, sx + a - k, sy, stroke)
-        c.drawLine(sx + a, sy + k, sx - a, sy + k, stroke); c.drawLine(sx - a, sy + k, sx - a + k, sy, stroke); c.drawLine(sx - a, sy + k, sx - a + k, sy + 2 * k, stroke)
-        // full width: arrows pointing apart
-        val fx = fullButton.centerX(); val fy = fullButton.centerY()
-        c.drawLine(fx - a, fy, fx + a, fy, stroke)
-        c.drawLine(fx - a, fy, fx - a + k, fy - k, stroke); c.drawLine(fx - a, fy, fx - a + k, fy + k, stroke)
-        c.drawLine(fx + a, fy, fx + a - k, fy - k, stroke); c.drawLine(fx + a, fy, fx + a - k, fy + k, stroke)
+    private fun setThemePaints() {
+        val face = ThemeFonts.typeface(context, theme.font, theme.weight)
+        for (p in arrayOf(bigText, smallText)) { p.typeface = face; p.letterSpacing = theme.track }
+        bigText.textSize = theme.size * density
+        smallText.textSize = minOf(theme.size, 15f) * density
     }
 
-    /** True if a touch at [x] in one-handed mode is in the empty strip (and so is not a key press). */
-    private fun inEmptyStrip(x: Float) = oneHanded != "off" && (x < keysLeft - 2f * density || x > keysRight + 2f * density)
+    private fun drawKeyFace(c: Canvas, l: CompiledLayout, i: Int, ink: Int) {
+        val code = l.codes[i]
+        val cx = l.centerX(i); val cy = l.centerY(i)
+        val d = density
+        when (code) {
+            KeyCodes.SHIFT -> { Icons.draw(c, Icons.Icon.SHIFT, cx, cy, 22f * d, ink, fill = shifted); return }
+            KeyCodes.BACKSPACE -> { Icons.draw(c, Icons.Icon.BACK, cx, cy, 24f * d, ink); return }
+            KeyCodes.EMOJI -> { Icons.draw(c, Icons.Icon.EMOJI, cx, cy, 22f * d, ink); return }
+            KeyCodes.SWITCH -> { Icons.draw(c, Icons.Icon.GLOBE, cx, cy, 20f * d, ink); return }
+            KeyCodes.ENTER -> if (l.labels[i].length <= 1) { Icons.draw(c, Icons.Icon.ENTER, cx, cy, 22f * d, ink, strokeWidth = 2f); return }
+        }
+        val letter = l.kinds[i] == KeyKind.LETTER
+        val raw = if (shifted) l.labelsUpper[i] else l.labels[i]
+        val label = if (theme.upper && !raw.isEmpty()) raw.uppercase() else raw
+        if (label.isNotEmpty()) {
+            val p = if (letter) bigText else smallText
+            p.color = ink
+            if (l.kinds[i] == KeyKind.SPACE || code == KeyCodes.SPACE) { p.alpha = 166 }
+            canvas_text(c, label, cx, labelY[i], p)
+            p.alpha = 255
+        } else if (code == KeyCodes.SPACE) {
+            smallText.color = ink; smallText.alpha = 166
+            val fm = smallText.fontMetrics
+            canvas_text(c, theme.spaceLabel, cx, cy - (fm.ascent + fm.descent) / 2f, smallText.also { it.textSize = 12f * density })
+            smallText.alpha = 255; smallText.textSize = minOf(theme.size, 15f) * density
+        }
+        if (keyHints && letter && Character.isLetter(code)) {
+            val hint = l.popups[i]?.takeIf { it.isNotEmpty() }?.let { String(Character.toChars(it.codePointAt(0))) }
+            if (hint != null) {
+                hintText.color = ink; hintText.alpha = 140
+                c.drawText(hint, l.rects[i * 4 + 2] - 5f * density, l.rects[i * 4 + 1] + 12f * density, hintText)
+            }
+        }
+    }
+
+    private fun canvas_text(c: Canvas, text: String, x: Float, y: Float, p: Paint) = c.drawText(text, x, y, p)
+
 
     private fun drawTrail(c: Canvas) {
         if (!trailOn) return
-        val t = tracker
-        if (t != null && t.gesturing) { strokeTrail(c, t.traceX, t.traceY, t.traceCount, 1f); return }
+        if (gesturing) { strokeTrail(c, traceX, traceY, traceCount, 1f); return }
         if (fadeCount > 1) {
             val age = SystemClock.uptimeMillis() - fadeStart
             if (age >= FADE_MS) { fadeCount = 0; return }
@@ -281,172 +348,154 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         }
     }
 
-    /** Draws the newest part of the path, older segments fainter, all scaled by [strength] (1 = fully visible). */
+    private val trailPath = android.graphics.Path()
+    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeWidth = 1.6f * density }
+
+    /** The swipe path: a wide faint stroke under a narrow bright one, round caps (the handoff's trail), scaled by [strength]. */
     private fun strokeTrail(c: Canvas, xs: FloatArray, ys: FloatArray, n: Int, strength: Float) {
-        val from = maxOf(1, n - TRAIL_POINTS)
-        for (i in from until n) {
-            val frac = (i - from + 1f) / (n - from)
-            trailPaint.alpha = (255 * strength * (0.15f + 0.85f * frac)).toInt()
-            c.drawLine(xs[i - 1], ys[i - 1], xs[i], ys[i], trailPaint)
-        }
+        if (n < 2) return
+        trailPath.rewind(); trailPath.moveTo(xs[0], ys[0])
+        for (i in 1 until n) trailPath.lineTo(xs[i], ys[i])
+        val base = trailPaint.color
+        val thin = trailPaint.strokeWidth
+        trailPaint.strokeJoin = Paint.Join.ROUND
+        trailPaint.strokeWidth = maxOf(thin * 3.4f, 12f * density); trailPaint.color = base; trailPaint.alpha = (255 * 0.28f * strength).toInt()
+        c.drawPath(trailPath, trailPaint)
+        trailPaint.strokeWidth = thin; trailPaint.color = app.wisp.keyboard.style.Brand.mixColours(base, 0xFFFFFFFF.toInt(), 0.5f); trailPaint.alpha = (255 * strength).toInt()
+        c.drawPath(trailPath, trailPaint)
+        trailPaint.color = base
     }
 
-    override fun gestureStarted() { invalidate() }
-    override fun gestureMoved(count: Int) { invalidate() }
-    override fun gestureEnded(xs: FloatArray, ys: FloatArray, count: Int) {
-        System.arraycopy(xs, 0, fadeX, 0, count); System.arraycopy(ys, 0, fadeY, 0, count)
-        fadeCount = count; fadeStart = SystemClock.uptimeMillis()
-        invalidate()
-        listener?.onGesture(xs, ys, count)
-    }
-    override fun gestureCancelled() { invalidate() }
-
-    private val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE; strokeWidth = 1.6f * density; color = palette.textMuted
-    }
-
-    /** A small globe: circle, meridian ellipse, equator. Drawn, not a font glyph, so it looks the same everywhere. */
-    private fun drawGlobe(c: Canvas, cx: Float, cy: Float) {
-        val r = 9f * density
-        c.drawCircle(cx, cy, r, stroke)
-        c.drawLine(cx - r, cy, cx + r, cy, stroke)
-        box.set(cx - r * 0.45f, cy - r, cx + r * 0.45f, cy + r)
-        c.drawOval(box, stroke)
-    }
-
-    private fun drawSmiley(c: Canvas, cx: Float, cy: Float) {
-        val r = 9f * density
-        c.drawCircle(cx, cy, r, stroke)
-        stroke.style = Paint.Style.FILL
-        c.drawCircle(cx - r * 0.35f, cy - r * 0.25f, r * 0.11f, stroke)
-        c.drawCircle(cx + r * 0.35f, cy - r * 0.25f, r * 0.11f, stroke)
-        stroke.style = Paint.Style.STROKE
-        box.set(cx - r * 0.5f, cy - r * 0.25f, cx + r * 0.5f, cy + r * 0.5f)
-        c.drawArc(box, 20f, 140f, false, stroke)
-    }
-
-    // ---- long-press popups: hold a key, slide to a character, let go --------------------------------------------------
+    // ---- long-press popups: the Rust machine tracks the finger; this only draws and commits -------------------------
 
     private var popupWindow: android.widget.PopupWindow? = null
     private var popupChars = ""
-    private var popupLeft = 0f
     private var popupCell = 0f
     private var popupIndex = 0
     private var popupView: View? = null
+    private var switchHeld = false
+
+    private fun openPopup(key: Int) {
+        val l = layout ?: return
+        if (l.codes[key] == KeyCodes.SWITCH) { switchHeld = true; listener?.onLongPress(l.codes[key]); return }
+        showPopup(key, l.popups[key] ?: return)
+    }
 
     private fun showPopup(key: Int, chars: String) {
         val l = layout ?: return
-        tracker?.cancelAll()
         val list = chars.codePoints().toArray().map { String(Character.toChars(it)) }
         if (list.isEmpty()) return
         popupChars = chars
-        val cell = maxOf(l.rects[key * 4 + 2] - l.rects[key * 4], 44f * density)
+        val cell = popupCell
         val h = (rowHeightPx * 0.95f).toInt()
         val loc = IntArray(2); getLocationInWindow(loc)
-        val screenW = resources.displayMetrics.widthPixels
         val total = cell * list.size
-        var left = loc[0] + l.rects[key * 4] - (if (list.size > 1) 0f else 0f)
-        left = left.coerceIn(0f, maxOf(0f, screenW - total))
-        popupLeft = left; popupCell = cell; popupIndex = 0
+        // Same placement as the Rust machine uses to map the finger to an item.
+        val left = l.rects[key * 4].coerceIn(0f, maxOf(0f, width - total))
+        popupIndex = 0
+        val inset = 3f * density
         val v = object : View(context) {
             private val bg = Paint(Paint.ANTI_ALIAS_FLAG); private val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; textSize = 22f * density }
             override fun onDraw(c: Canvas) {
                 bg.color = palette.special; c.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius, bg)
                 for (i in list.indices) {
-                    if (i == popupIndex) { bg.color = palette.accent; c.drawRoundRect(i * popupCell + gapX, gapY, (i + 1) * popupCell - gapX, height - gapY, radius, radius, bg) }
+                    if (i == popupIndex) { bg.color = palette.accent; c.drawRoundRect(i * cell + inset, inset, (i + 1) * cell - inset, height - inset, radius, radius, bg) }
                     tp.color = if (i == popupIndex) palette.onAccent else palette.text
                     val fm = tp.fontMetrics
-                    c.drawText(if (shifted) list[i].uppercase() else list[i], i * popupCell + popupCell / 2f, height / 2f - (fm.ascent + fm.descent) / 2f, tp)
+                    c.drawText(if (shifted) list[i].uppercase() else list[i], i * cell + cell / 2f, height / 2f - (fm.ascent + fm.descent) / 2f, tp)
                 }
             }
         }
         popupView = v
         val w = android.widget.PopupWindow(v, total.toInt(), h, false).apply { isTouchable = false; isClippingEnabled = false; elevation = 8f * density }
         val top = (loc[1] + l.rects[key * 4 + 1] - h - 4 * density).toInt()
-        w.showAtLocation(this, android.view.Gravity.NO_GRAVITY, left.toInt(), top)
+        w.showAtLocation(this, android.view.Gravity.NO_GRAVITY, loc[0] + left.toInt(), top)
         popupWindow = w
         performHapticFeedback(android.view.HapticFeedbackConstants.LONG_PRESS)
     }
 
-    private fun dismissPopup() { popupWindow?.dismiss(); popupWindow = null; popupView = null }
+    private fun dismissPopup() { popupWindow?.dismiss(); popupWindow = null; popupView = null; popupChars = "" }
 
-    private fun handlePopupTouch(e: MotionEvent): Boolean {
+    private fun commitPopup(index: Int, x: Float, y: Float) {
+        if (switchHeld) { switchHeld = false; return }
+        if (popupChars.isEmpty()) return
         val count = popupChars.codePointCount(0, popupChars.length)
-        when (e.actionMasked) {
-            MotionEvent.ACTION_MOVE -> {
-                val i = ((e.rawX - popupLeft) / popupCell).toInt().coerceIn(0, count - 1)
-                if (i != popupIndex) { popupIndex = i; popupView?.invalidate() }
-            }
-            MotionEvent.ACTION_UP -> {
-                val cp = popupChars.codePointAt(popupChars.offsetByCodePoints(0, popupIndex))
-                dismissPopup()
-                val ch = if (shifted) String(Character.toChars(cp)).uppercase().codePointAt(0) else cp
-                listener?.onKey(ch, e.x.toInt(), e.y.toInt())
-            }
-            MotionEvent.ACTION_CANCEL -> dismissPopup()
-        }
-        return true
+        val cp = popupChars.codePointAt(popupChars.offsetByCodePoints(0, index.coerceIn(0, count - 1)))
+        dismissPopup()
+        val ch = if (shifted) String(Character.toChars(cp)).uppercase().codePointAt(0) else cp
+        listener?.onKey(ch, x.toInt(), y.toInt())
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        if (popupWindow != null) return handlePopupTouch(e)
-        if (oneHanded != "off" && (e.actionMasked == MotionEvent.ACTION_DOWN || emptyStripTouch) && inEmptyStrip(e.x)) {
-            emptyStripTouch = e.actionMasked != MotionEvent.ACTION_UP && e.actionMasked != MotionEvent.ACTION_CANCEL
-            if (e.actionMasked == MotionEvent.ACTION_UP) {
-                if (sideButton.contains(e.x, e.y)) listener?.onOneHanded("swap") else if (fullButton.contains(e.x, e.y)) listener?.onOneHanded("full")
-            }
-            return true
-        }
-        val t = tracker ?: return false
+        if (handle == 0L) return false
         val t0 = if (BuildConfig.DEBUG) System.nanoTime() else 0L
+        val now = e.eventTime
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val i = e.actionIndex
-                t.onDown(e.getPointerId(i), e.getX(i), e.getY(i))
+                dispatch(Native.DOWN, e.getPointerId(i), e.getX(i), e.getY(i), now)
             }
-            MotionEvent.ACTION_MOVE -> for (i in 0 until e.pointerCount) t.onMove(e.getPointerId(i), e.getX(i), e.getY(i))
+            MotionEvent.ACTION_MOVE -> for (i in 0 until e.pointerCount) dispatch(Native.MOVE, e.getPointerId(i), e.getX(i), e.getY(i), now)
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP -> {
                 val i = e.actionIndex
-                t.onUp(e.getPointerId(i), e.getX(i), e.getY(i))
+                dispatch(Native.UP, e.getPointerId(i), e.getX(i), e.getY(i), now)
                 if (BuildConfig.DEBUG) tapLatency.record(System.nanoTime() - t0)
             }
-            MotionEvent.ACTION_CANCEL -> t.cancelAll()
+            MotionEvent.ACTION_CANCEL -> { dispatch(Native.CANCEL_ALL, 0, 0f, 0f, now); dismissPopup(); switchHeld = false }
         }
         return true
     }
 
-    // KeyTouchTracker.Sink
-    override fun pressed(key: Int) {
-        setPressed(key, true)
-        val code = layout?.codes?.get(key) ?: return
-        if (code != KeyCodes.SHIFT) feedback()
-        if (code == KeyCodes.SWITCH || layout?.popups?.get(key) != null) {
-            longPressKey = key; longPressFired = false
-            removeCallbacks(longPress); postDelayed(longPress, android.view.ViewConfiguration.getLongPressTimeout().toLong())
+    /** Sends one event to the Rust machine, acts on what it answers, and arms the timer for what it wants next. */
+    private fun dispatch(kind: Int, id: Int, x: Float, y: Float, now: Long) {
+        if (handle == 0L) return
+        val n = Native.touchEvent(handle, kind, id, x, y, now, actions)
+        for (i in 0 until n) act(actions[i * 3], actions[i * 3 + 1], actions[i * 3 + 2], x, y)
+        removeCallbacks(tick)
+        val d = Native.touchDeadline(handle)
+        if (d >= 0) postDelayed(tick, maxOf(0L, d - SystemClock.uptimeMillis()))
+    }
+
+    private fun act(code: Int, a: Int, b: Int, x: Float, y: Float) {
+        when (code) {
+            Act.PRESS -> {
+                setPressed(a, true)
+                if (layout?.codes?.get(a) != KeyCodes.SHIFT) feedback()
+            }
+            Act.RELEASE -> setPressed(a, false)
+            Act.TAP -> layout?.codes?.get(a)?.let { listener?.onKey(it, x.toInt(), y.toInt()) }
+            Act.REPEAT -> listener?.onRepeat(a != 0)
+            Act.WORD_SELECT -> { listener?.onWordSwipe(a); performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) }
+            Act.WORD_COMMIT -> listener?.onWordSwipeEnd(a)
+            Act.WORD_CANCEL -> listener?.onWordSwipeEnd(0)
+            Act.CURSOR -> { listener?.onCursorSteps(a); performHapticFeedback(android.view.HapticFeedbackConstants.CLOCK_TICK) }
+            Act.POPUP_OPEN -> openPopup(a)
+            Act.POPUP_SELECT -> if (a != popupIndex) { popupIndex = a; popupView?.invalidate() }
+            Act.POPUP_COMMIT -> commitPopup(b, x, y)
+            Act.SHIFT_LETTER -> layout?.codes?.get(a)?.let { listener?.onShiftLetter(it, x.toInt(), y.toInt()) }
+            Act.GLIDE_START, Act.GLIDE_MOVE -> { traceCount = Native.touchTrace(handle, traceX, traceY); gesturing = true; lightKeyAt(traceX[traceCount - 1], traceY[traceCount - 1]); invalidate() }
+            Act.GLIDE_END -> {
+                traceCount = Native.touchTrace(handle, traceX, traceY); gesturing = false; glideLit.clear()
+                System.arraycopy(traceX, 0, fadeX, 0, traceCount); System.arraycopy(traceY, 0, fadeY, 0, traceCount)
+                fadeCount = traceCount; fadeStart = SystemClock.uptimeMillis()
+                invalidate()
+                listener?.onGesture(traceX, traceY, traceCount)
+            }
+            Act.GLIDE_CANCEL -> { gesturing = false; glideLit.clear(); invalidate() }
         }
-        if (code == KeyCodes.BACKSPACE) {
-            // Acts on touch-down and repeats while held, like every other keyboard.
-            listener?.onKey(code, -1, -1)
-            repeatCode = code; repeatCount = 0
-            removeCallbacks(repeater); postDelayed(repeater, REPEAT_START_MS)
+    }
+
+    /** Keys the swipe passes over light up in the accent colour while the finger is down. */
+    private fun lightKeyAt(x: Float, y: Float) {
+        val l = layout ?: return
+        for (i in 0 until l.count) {
+            if (l.kinds[i] != KeyKind.LETTER) continue
+            val o = i * 4
+            if (x >= l.rects[o] && x < l.rects[o + 2] && y >= l.rects[o + 1] && y < l.rects[o + 3]) { if (!glideLit.get(i)) { glideLit.set(i); val d = dirty; invalidate(d[o], d[o + 1], d[o + 2], d[o + 3]) }; return }
         }
     }
 
-    override fun released(key: Int) {
-        setPressed(key, false)
-        if (key == longPressKey) removeCallbacks(longPress)
-        if (repeatCode != 0 && layout?.codes?.get(key) == repeatCode) { repeatCode = 0; removeCallbacks(repeater) }
-    }
-
-    override fun tapped(key: Int, x: Float, y: Float) {
-        val code = layout?.codes?.get(key) ?: return
-        if (code == KeyCodes.SWITCH && longPressFired && key == longPressKey) { longPressFired = false; return }
-        if (code != KeyCodes.BACKSPACE) listener?.onKey(code, x.toInt(), y.toInt())
-    }
-
-    override fun slid(steps: Int) { listener?.onCursorSteps(steps) }
-
-    override fun onDetachedFromWindow() { dismissPopup(); repeatCode = 0; removeCallbacks(repeater); removeCallbacks(longPress); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() { release(); renderer.release(); super.onDetachedFromWindow() }
 
     private fun blend(a: Int, b: Int, t: Float): Int {
         val u = 1f - t
@@ -463,15 +512,21 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     }
 
     companion object {
-        const val ROW_HEIGHT_DP = 54f
-        const val PAD_X_DP = 3f
-        const val PAD_TOP_DP = 6f
-        const val PAD_BOTTOM_DP = 8f
+        // The Claude Design handoff grid.
+        const val ROW_HEIGHT_DP = 48f
+        const val ROW_GAP_DP = 10f
+        const val KEY_GAP_DP = 6f
+        const val PAD_X_DP = 4f
+        const val PAD_TOP_DP = 8f
+        const val PAD_BOTTOM_DP = 10f
+        const val PAD_UNIT_DP = 36f
+        const val SLOP_DP = 16f
+        const val WORD_STEP_DP = 36f
+        const val CURSOR_STEP_DP = 14f
+        const val REPEAT_DELAY_MS = 350f
+        const val MAX_TRACE = 512
         const val FADE_MS = 260L
         const val RELEASE_FADE_MS = 90L
         const val TRAIL_POINTS = 40
-        const val REPEAT_START_MS = 400L
-        const val REPEAT_FAST_MS = 55L
-        const val REPEAT_SLOW_MS = 160L
     }
 }

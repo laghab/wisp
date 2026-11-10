@@ -12,12 +12,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import app.wisp.keyboard.Language
 import app.wisp.keyboard.Languages
-import app.wisp.keyboard.gesture.GestureDecoder
-import app.wisp.keyboard.gesture.GestureGeometry
-import app.wisp.keyboard.gesture.GestureIndex
-import app.wisp.keyboard.gesture.GestureIndexStore
-import app.wisp.keyboard.gesture.GestureStyle
-import app.wisp.keyboard.gesture.alphabetOf
+import app.wisp.keyboard.gesture.Glide
+import app.wisp.keyboard.dict.DictionaryProvider
 import app.wisp.keyboard.kbd.KeyboardView
 import app.wisp.keyboard.kbd.LayoutLoader
 import java.io.File
@@ -41,15 +37,12 @@ class GestureTrainingActivity : Activity() {
     private lateinit var again: Button
     private lateinit var reset: Button
 
-    private val style = GestureStyle()
     private val stats = TrainingStats()
-    private var index: GestureIndex? = null
-    private var decoder: GestureDecoder? = null
+    private var glide: Glide? = null
     private var candidates: List<String> = emptyList()
     private var session: List<String> = emptyList()
     private var position = 0
     private var firstTry = 0
-    private val out = GestureDecoder.Results(10)
     private val rnd = Random()
 
     private fun dir() = File(filesDir, "personal")
@@ -58,7 +51,7 @@ class GestureTrainingActivity : Activity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        style.load(styleFile()); stats.load(statsFile())
+        stats.load(statsFile())
         title = "Practice swiping"
         fun text(size: Float, color: Int, bold: Boolean = false) = TextView(this).apply {
             textSize = size; setTextColor(color); gravity = Gravity.CENTER; setPadding(32, 8, 32, 8)
@@ -87,14 +80,14 @@ class GestureTrainingActivity : Activity() {
         })
         prompt.text = "..."; progress.text = "Getting the word list ready"
         thread {
-            val idx = GestureIndexStore(this).get(language, alphabetOf(LayoutLoader.load(this, language.layoutRes)))
-            if (idx != null) {
-                index = idx
-                candidates = (0 until idx.count).filter { val n = idx.foldedLen(it); n in 3..9 && idx.prob(it) >= 105 }.map { idx.original(it) }.filter { w -> w.all { it.isLowerCase() } }
-            }
-            runOnUiThread { if (index != null) startSession() else progress.text = "Could not load the dictionary" }
+            val sources = DictionaryProvider(this).open(language)
+            candidates = sources.firstOrNull()?.dict?.words().orEmpty().filter { (w, p) -> w.length in 3..9 && p >= 105 && w.all { it in 'a'..'z' } }.map { it.first }
+            sources.forEach { it.dict.close() }
+            runOnUiThread { if (candidates.isNotEmpty()) startSession() else progress.text = "Could not load the dictionary" }
         }
     }
+
+    override fun onDestroy() { glide?.close(); super.onDestroy() }
 
     private fun startSession() {
         session = stats.pick(candidates, SESSION, rnd); position = 0; firstTry = 0
@@ -109,22 +102,18 @@ class GestureTrainingActivity : Activity() {
     }
 
     private fun swiped(xs: FloatArray, ys: FloatArray) {
-        val idx = index ?: return
         if (position >= session.size) return
         val layout = keys.compiledLayout ?: return
         val word = session[position]
-        val dec = decoder ?: GestureDecoder(idx, GestureGeometry.from(layout, idx.alphabet)).also { decoder = it }
-        dec.style = style
-        dec.decode(xs, ys, xs.size, out)
-        val rank = (0 until out.count).firstOrNull { out.word(it) == word } ?: -1
+        val g = glide ?: Glide.build(this, language, layout)?.also { it.loadStyle(styleFile()); glide = it } ?: return
+        val found = g.decode(xs, ys, xs.size)
+        val rank = found.indexOfFirst { it.word == word }
         // The word is known, so this swipe teaches the style whether or not it was decoded right.
-        val aIdx = idx.alphabet.withIndex().associate { it.value to it.index }
-        val tmp = ByteArray(64); val n = GestureIndex.fold(word, aIdx, tmp)
-        if (n >= 2) style.observe(xs, ys, xs.size, IntArray(n) { tmp[it].toInt() and 0xFF }, GestureGeometry.from(layout, idx.alphabet), 3f)
+        g.observe(xs, ys, xs.size, word, 3f)
         stats.record(word, rank == 0)
         if (rank == 0) firstTry++
-        feedback.text = if (rank == 0) "Got it" else "Read as: " + (0 until minOf(2, out.count)).joinToString(" or ") { out.word(it) }.ifEmpty { "nothing close" }
-        style.save(styleFile()); stats.save(statsFile())
+        feedback.text = if (rank == 0) "Got it" else "Read as: " + found.take(2).joinToString(" or ") { it.word }.ifEmpty { "nothing close" }
+        g.saveStyle(styleFile()); stats.save(statsFile())
         position++
         show()
     }
@@ -132,13 +121,14 @@ class GestureTrainingActivity : Activity() {
     private fun finish_() {
         prompt.text = "$firstTry / ${session.size}"
         progress.text = "decoded first try"
-        feedback.text = if (style.isNeutral) "" else "Wisp now knows your style: swipes land %+.2f across and %+.2f down from the ideal line (in key widths), at %d%% of the ideal length.".format(style.biasX, style.biasY, Math.round(style.lengthRatio * 100))
+        val style = glide?.style
+        feedback.text = if (style == null || style.isNeutral) "" else "Wisp now knows your style: swipes land %+.2f across and %+.2f down from the ideal line (in key widths), at %d%% of the ideal length.".format(style.biasX, style.biasY, Math.round(style.lengthRatio * 100))
         again.visibility = android.view.View.VISIBLE
     }
 
     private fun confirmReset() {
         AlertDialog.Builder(this).setTitle("Reset swiping style?").setMessage("This forgets how you swipe and which words gave you trouble. Your learned words stay.")
-            .setPositiveButton("Reset") { _, _ -> style.reset(); stats.clear(); styleFile().delete(); statsFile().delete(); startSession() }
+            .setPositiveButton("Reset") { _, _ -> glide?.resetStyle(); stats.clear(); styleFile().delete(); statsFile().delete(); startSession() }
             .setNegativeButton("Cancel", null).show()
     }
 

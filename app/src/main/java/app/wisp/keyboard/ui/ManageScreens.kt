@@ -11,6 +11,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
@@ -56,6 +58,7 @@ fun LayoutsScreen(modifier: Modifier = Modifier) {
         message?.let { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Text(it, Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium) } }
         @Suppress("UNUSED_EXPRESSION") revision
         Text("Key layouts are plain text files. Edit one here, or export it, change it on a computer and import it again. A file with a mistake is refused with the line and the reason, and your current layout stays. The switch-keyboard key is always kept.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        LetterLayoutPicker()
         LayoutSlot.values().forEach { slot ->
             Section(slot.title) {
                 Text(if (LayoutStore.isCustom(context, slot)) "Using your own layout" else "Using the built-in layout", style = MaterialTheme.typography.bodyMedium)
@@ -195,5 +198,32 @@ fun BackupScreen(modifier: Modifier = Modifier) {
             text = { Text("Made ${DateFormat.getDateTimeInstance().format(Date(parsed.createdAt))}. It replaces your current $what with the ones in the backup.") },
             confirmButton = { TextButton({ confirm = null; message = try { manager.restore(parsed); "Restored. Wisp uses it from now on." } catch (e: Exception) { e.message ?: "The restore failed. Nothing was changed." } }) { Text("Restore") } },
             dismissButton = { TextButton({ confirm = null }) { Text("Cancel") } })
+    }
+}
+
+/** The letter arrangement for every Latin-script language, with a preview of the top row. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun LetterLayoutPicker() {
+    val context = LocalContext.current
+    var style by remember { mutableStateOf(app.wisp.keyboard.style.KeyboardStyle.load(context)) }
+    Section("Letter layout") {
+        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            for (o in app.wisp.keyboard.kbd.LetterLayouts.all) {
+                val on = style.layout == o.id
+                Card(
+                    onClick = { style = style.copy(layout = o.id).also { it.save(context) } },
+                    colors = CardDefaults.cardColors(containerColor = if (on) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.5.dp, if (on) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.width(104.dp).semantics { stateDescription = if (on) "Selected" else "Not selected" },
+                ) {
+                    Column(Modifier.padding(horizontal = 8.dp, vertical = 10.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Text(o.preview, style = MaterialTheme.typography.labelMedium, fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                        Text(o.name, style = MaterialTheme.typography.titleMedium)
+                    }
+                }
+            }
+        }
+        Text("Applies to English and Hinglish the next time the keyboard opens. Edit the letter layout below to make your own.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

@@ -12,6 +12,8 @@ object VoiceProtocol {
     const val STOP = 3       // finish: decode what is left and answer with FINAL
     const val CANCEL = 4
     const val BENCH = 5      // same parameters as START: load the model and time it on a short clip
+    const val REWRITE = 6    // modelPath, tone, text, idleMs, threads: rewrite the text with the writing-assistant model
+    const val REWRITE_CANCEL = 7
 
     // voice -> keyboard
     const val READY = 10     // loadMs
@@ -19,6 +21,9 @@ object VoiceProtocol {
     const val FINAL = 12     // text, finishMs
     const val ERROR = 13     // message
     const val BENCH_RESULT = 15   // loadMs, decodeMs, audioMs
+    const val REWRITE_PIECE = 16  // text: the rewrite so far
+    const val REWRITE_DONE = 17   // text
+    const val REWRITE_ERROR = 18  // message
     const val EXITING = 14   // the voice process is about to exit: unbind and bind again when needed
 
     const val K_MODEL_ID = "modelId"
@@ -33,6 +38,8 @@ object VoiceProtocol {
     const val K_DECODE_MS = "decodeMs"
     const val K_AUDIO_MS = "audioMs"
     const val K_MESSAGE = "message"
+    const val K_MODEL_PATH = "modelPath"
+    const val K_TONE = "tone"
 
     const val SAMPLE_RATE = 16_000
     const val FRAME = 512      // samples per chunk: 32 ms, the size the voice detector works on

@@ -42,6 +42,8 @@ object Brand {
         return a
     }
 
+    fun mixColours(a: Int, b: Int, t: Float): Int = mix(a, b, t)
+
     private fun mix(a: Int, b: Int, t: Float): Int {
         fun ch(shift: Int) = (((a shr shift) and 0xFF) * (1 - t) + ((b shr shift) and 0xFF) * t).toInt()
         return (0xFF shl 24) or (ch(16) shl 16) or (ch(8) shl 8) or ch(0)

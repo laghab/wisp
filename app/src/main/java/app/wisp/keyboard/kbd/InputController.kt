@@ -40,6 +40,10 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     /** False in fields that must not be suggested for or learned from (passwords). Letters are then committed directly. */
     var suggestionsEnabled = true
     var autoCorrect = true
+    /** Capitalise the first letter of a sentence when the field asks for it. */
+    var autoCapitalize = true
+    /** A swiped word was inserted on its own (counted for the home screen). */
+    var onGestureInserted: (() -> Unit)? = null
 
     private var lastShiftTapAt = 0L
     private var editing = 0
@@ -88,7 +92,28 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         if (editing > 0) return
         clearGesture(); forgetRejection(); if (composer.isNotEmpty) { resetWord(); publishBar() } else publishBar() }
 
+    /** Words that expand when followed by a space ("omw" to "On my way"). */
+    var shortcuts: Map<String, String> = emptyMap()
+    var doubleSpacePeriod = true
+    private var lastSpaceAt = 0L
+
+    private fun doubleSpace(): Boolean {
+        val now = clock()
+        val quick = now - lastSpaceAt <= DOUBLE_SPACE_MS
+        lastSpaceAt = now
+        if (!doubleSpacePeriod || !quick || composer.isNotEmpty) return false
+        val t = editor.textBefore(2)?.toString() ?: return false
+        if (t.length < 2 || t[1] != ' ' || !(t[0].isLetterOrDigit() || t[0] == ')' || t[0] == '"')) return false
+        editor.deleteBefore(1)
+        editor.commit(". ")
+        correction = null; previousWord = null; lastSpaceAt = 0L
+        autoShift()
+        return true
+    }
+
     fun onKey(code: Int, x: Int = -1, y: Int = -1) = edit {
+        if (code == KeyCodes.SPACE && doubleSpace()) return@edit
+        if (code == KeyCodes.SPACE && composer.isNotEmpty) shortcuts[composer.text]?.let { composer.set(it); editor.setComposing(it) }
         when {
             code == KeyCodes.SHIFT -> tapShift()
             code == KeyCodes.BACKSPACE -> backspace()
@@ -98,13 +123,40 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         }
     }
 
-    /** Held-key repeat. Backspace deletes characters, then whole words once the repeat runs long. */
-    fun onRepeat(code: Int, count: Int) = edit {
-        if (code != KeyCodes.BACKSPACE) return@edit
-        if (composer.isNotEmpty) { if (count > WORD_DELETE_AFTER) clearWord() else backspace(); return@edit }
-        if (count > WORD_DELETE_AFTER) deleteWord() else editor.backspace()
+    /** Held backspace: one character per repeat, or a whole word once the touch machine says the hold has run long. */
+    fun onRepeat(word: Boolean) = edit {
+        if (composer.isNotEmpty) { if (word) clearWord() else backspace(); return@edit }
+        if (word) editor.deleteBefore(wordChars(1)) else editor.backspace()
         correction = null
         autoShift()
+    }
+
+    private var wordSwiping = false
+    /** The text before the cursor when the swipe began: once words are selected, the editor's "before" shrinks with them. */
+    private var swipeBefore: CharSequence = ""
+
+    /** A backspace swipe now covers [words] words before the cursor: show them selected (0 clears the selection). */
+    fun onWordSwipe(words: Int) = edit {
+        if (!wordSwiping) {
+            endWord(null, allowCorrection = false); clearGesture(); forgetRejection()
+            wordSwiping = true; swipeBefore = editor.textBefore(WORD_SCAN) ?: ""
+        }
+        editor.selectBefore(wordChars(words, swipeBefore))
+    }
+
+    /** The finger lifted: delete what is selected, or nothing when the swipe came back to its start. */
+    fun onWordSwipeEnd(words: Int) = edit {
+        if (!wordSwiping) return@edit
+        wordSwiping = false
+        if (words > 0) { editor.backspace(); correction = null; autoShift() } else editor.selectBefore(0)
+    }
+
+    /** Shift held, finger slid onto a letter: that letter once in capitals, shift state unchanged. */
+    fun onShiftLetter(code: Int, x: Int, y: Int) = edit {
+        val keep = shift
+        setShift(Shift.ONCE)
+        onKey(code, x, y)
+        if (shift == Shift.ONCE) setShift(keep)
     }
 
     fun onCursorSteps(steps: Int) = edit {
@@ -131,7 +183,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         if (composer.isEmpty && dictation != null) { undoDictation(); return@edit }
         if (composer.isEmpty && gestureItems != null) { onGestureItemTapped(index); return@edit }
         if (composer.isEmpty) return@edit
-        val item = currentItems().getOrNull(index) ?: return
+        val item = currentItems().getOrNull(index)?.takeIf { it.text.isNotEmpty() } ?: return
         val typed = composer.text
         editor.setComposing(item.text)
         editor.finishComposing()
@@ -246,20 +298,25 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     // ------------------------------------------------------------------ suggestion strip
 
+    /** The three strip slots, left to right: the best word goes in the middle, the typed word (in quotes) on its left when it is not a word. */
     private fun currentItems(): List<BarItem> {
         if (composer.isEmpty) return emptyList()
         val typed = composer.text
         val r = result
         val target = if (r != null && autoCorrect && keepAsTyped != typed) AutoCorrectPolicy.choose(typed, r) else null
-        val items = ArrayList<BarItem>(3)
-        if (r == null || !r.typedInDictionary) items.add(BarItem(typed, false))
+        val words = ArrayList<BarItem>(3)
         if (r != null) for (cand in r.candidates) {
-            if (items.size >= 3) break
+            if (words.size >= 3) break
             val w = applyCase(typed, cand.word)
-            if (items.any { it.text.equals(w, ignoreCase = true) }) continue
-            items.add(BarItem(w, cand === target))
+            if (words.any { it.text.equals(w, ignoreCase = true) }) continue
+            words.add(BarItem(w, cand === target))
         }
-        return items
+        val empty = BarItem("", false)
+        return if (r == null || !r.typedInDictionary) {
+            listOf(BarItem(typed, false, quoted = r != null), words.getOrNull(0) ?: empty, words.getOrNull(1) ?: empty)
+        } else {
+            listOf(words.getOrNull(1) ?: empty, words.getOrNull(0) ?: BarItem(typed, false), words.getOrNull(2) ?: empty)
+        }
     }
 
     private fun publishBar() {
@@ -321,7 +378,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         if (items.isEmpty()) { publishBar(); return@edit }
         gesturePrevious = previousWord
         gestureItems = items
-        if (o.confident) { insertGestureWord(items[0]); gestureInserted = true; gestureSelected = 0 }
+        if (o.confident) { insertGestureWord(items[0]); gestureInserted = true; gestureSelected = 0; onGestureInserted?.invoke() }
         publishBar()
     }
 
@@ -389,21 +446,24 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         )
     }
 
-    private fun autoShift() { if (shift == Shift.OFF && editor.capsMode() != 0) setShift(Shift.ONCE) }
+    private fun autoShift() { if (autoCapitalize && shift == Shift.OFF && editor.capsMode() != 0) setShift(Shift.ONCE) }
 
     private fun setShift(s: Shift) { if (s != shift) { shift = s; onShiftChanged?.invoke(s) } }
 
-    private fun deleteWord() {
-        val before = editor.textBefore(64) ?: return
-        if (before.isEmpty()) return
+    /** How many characters before the cursor the last [words] words (with the spaces after them) take up. */
+    private fun wordChars(words: Int, before: CharSequence = editor.textBefore(WORD_SCAN) ?: ""): Int {
+        if (words <= 0) return 0
         var i = before.length
-        while (i > 0 && before[i - 1].isWhitespace()) i--
-        while (i > 0 && !before[i - 1].isWhitespace()) i--
-        editor.deleteBefore(before.length - i)
+        repeat(words) {
+            while (i > 0 && before[i - 1].isWhitespace()) i--
+            while (i > 0 && !before[i - 1].isWhitespace()) i--
+        }
+        return before.length - i
     }
 
     companion object {
-        const val WORD_DELETE_AFTER = 12
+        private const val WORD_SCAN = 400
+        const val DOUBLE_SPACE_MS = 450L
         const val DOUBLE_TAP_MS = 350L
 
         private const val CLOSING_PUNCTUATION = ".,!?;:)"

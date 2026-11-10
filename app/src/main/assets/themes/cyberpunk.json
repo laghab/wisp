@@ -1,0 +1,118 @@
+{
+ "id": "cyberpunk",
+ "name": "Cyberpunk",
+ "dark": true,
+ "board": [
+  "#0B0A12",
+  {
+   "linear": {
+    "angle": 180,
+    "stops": [
+     [
+      0,
+      "rgba(0,240,255,0.07)"
+     ],
+     [
+      0.0625,
+      "rgba(0,240,255,0.07)"
+     ],
+     [
+      0.0625,
+      "transparent"
+     ],
+     [
+      1,
+      "transparent"
+     ]
+    ],
+    "length": 16
+   }
+  },
+  {
+   "linear": {
+    "angle": 90,
+    "stops": [
+     [
+      0,
+      "rgba(0,240,255,0.07)"
+     ],
+     [
+      0.0625,
+      "rgba(0,240,255,0.07)"
+     ],
+     [
+      0.0625,
+      "transparent"
+     ],
+     [
+      1,
+      "transparent"
+     ]
+    ],
+    "length": 16
+   }
+  }
+ ],
+ "key": "rgba(12,12,26,0.92)",
+ "mod": "rgba(40,8,32,0.92)",
+ "fg": "#00F0FF",
+ "modFg": "#FF2A6D",
+ "accent": "#FCEE0A",
+ "accentFg": "#0B0A12",
+ "radius": 0,
+ "border": {
+  "width": 1,
+  "color": "rgba(0,240,255,0.55)"
+ },
+ "shadow": [
+  {
+   "inset": true,
+   "blur": 10,
+   "color": "rgba(0,240,255,0.10)"
+  }
+ ],
+ "lit": [
+  {
+   "inset": true,
+   "spread": 1,
+   "color": "#FCEE0A"
+  },
+  {
+   "blur": 18,
+   "color": "rgba(252,238,10,0.6)"
+  }
+ ],
+ "font": "orbitron",
+ "weight": 700,
+ "size": 15,
+ "upper": true,
+ "track": 0.04,
+ "cut": 8,
+ "band": {
+  "linear": {
+   "angle": 90,
+   "stops": [
+    [
+     0,
+     "#FF2A6D"
+    ],
+    [
+     0.45,
+     "#FCEE0A"
+    ],
+    [
+     1,
+     "#00F0FF"
+    ]
+   ]
+  }
+ },
+ "bandHeight": 2,
+ "stripFg": "#00F0FF",
+ "sep": "rgba(0,240,255,0.35)",
+ "micGlow": {
+  "blur": 16,
+  "color": "rgba(252,238,10,0.55)"
+ },
+ "space": "NET//LINK"
+}

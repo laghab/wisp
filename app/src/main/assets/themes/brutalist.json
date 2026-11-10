@@ -1,0 +1,38 @@
+{
+ "id": "brutalist",
+ "name": "Brutalist",
+ "dark": false,
+ "board": "#F2EFE8",
+ "key": "#FFFFFF",
+ "mod": "#FFFFFF",
+ "fg": "#000000",
+ "modFg": "#000000",
+ "accent": "#FF4A1C",
+ "accentFg": "#000000",
+ "radius": 0,
+ "border": {
+  "width": 2,
+  "color": "#000000"
+ },
+ "shadow": [
+  {
+   "dx": 3,
+   "dy": 3,
+   "color": "#000000"
+  }
+ ],
+ "lit": [
+  {
+   "dx": 3,
+   "dy": 3,
+   "color": "#000000"
+  }
+ ],
+ "font": "space-grotesk",
+ "weight": 700,
+ "size": 18,
+ "upper": true,
+ "stripFg": "#000000",
+ "sep": "#000000",
+ "space": "SPACE"
+}

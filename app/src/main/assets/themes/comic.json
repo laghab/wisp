@@ -1,0 +1,62 @@
+{
+ "id": "comic",
+ "name": "Comic",
+ "dark": false,
+ "board": [
+  "#FFD93B",
+  {
+   "dots": {
+    "step": 9,
+    "radius": 1.5,
+    "color": "rgba(230,60,60,0.38)"
+   }
+  }
+ ],
+ "key": "#FFFFFF",
+ "mod": "#5BC0F8",
+ "fg": "#111111",
+ "modFg": "#111111",
+ "accent": "#FF3D3D",
+ "accentFg": "#FFFFFF",
+ "radius": [
+  12,
+  9,
+  13,
+  8
+ ],
+ "border": {
+  "width": 2.5,
+  "color": "#111111"
+ },
+ "shadow": [
+  {
+   "dx": 3,
+   "dy": 3,
+   "color": "#111111"
+  }
+ ],
+ "lit": [
+  {
+   "dx": 3,
+   "dy": 3,
+   "color": "#111111"
+  },
+  {
+   "spread": 4,
+   "color": "#FFFFFF"
+  }
+ ],
+ "font": "bangers",
+ "weight": 400,
+ "size": 23,
+ "upper": true,
+ "track": 0.04,
+ "stripFg": "#111111",
+ "sep": "#111111",
+ "micGlow": {
+  "dx": 2,
+  "dy": 2,
+  "color": "#111111"
+ },
+ "space": "KA-CHUNK!"
+}

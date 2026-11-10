@@ -18,6 +18,8 @@ import app.wisp.keyboard.voice.engine.DeviceProfile
 import app.wisp.keyboard.voice.engine.PcmBuffer
 import app.wisp.keyboard.voice.engine.VoiceEngine
 import app.wisp.keyboard.voice.ipc.VoiceProtocol as P
+import app.wisp.keyboard.voice.llm.RewriteEngine
+import app.wisp.keyboard.voice.llm.Tone
 import app.wisp.keyboard.voice.text.LoopGuard
 import app.wisp.keyboard.voice.text.NonSpeech
 import app.wisp.keyboard.voice.text.TextProcessor
@@ -36,6 +38,7 @@ class VoiceService : Service() {
     private val workerThread = HandlerThread("wisp-voice", Process.THREAD_PRIORITY_FOREGROUND).apply { start() }
     private val worker = Handler(workerThread.looper)
     private val engine by lazy { VoiceEngine(this) }
+    private val rewriter = RewriteEngine()
 
     private var session: Session? = null
     private var client: Messenger? = null
@@ -44,7 +47,8 @@ class VoiceService : Service() {
 
     private val inbox = Messenger(Handler(Looper.getMainLooper()) { m ->
         val data = Bundle(m.data); val what = m.what; val reply = m.replyTo
-        worker.post { dispatch(what, data, reply) }
+        // A rewrite in progress blocks the worker, so cancelling it is done here, on the service's own thread, not queued behind it.
+        if (what == P.REWRITE_CANCEL) rewriter.cancel() else worker.post { dispatch(what, data, reply) }
         true
     })
 
@@ -72,6 +76,7 @@ class VoiceService : Service() {
                 P.STOP -> stop()
                 P.CANCEL -> cancel()
                 P.BENCH -> benchmark(data, replyTo)
+                P.REWRITE -> rewrite(data, replyTo)
             }
         } catch (t: Throwable) {
             Log.e(TAG, "voice request $what failed", t)
@@ -85,6 +90,7 @@ class VoiceService : Service() {
         worker.removeCallbacks(idleExit)
         client = replyTo ?: client
         endSession()
+        rewriter.release()                      // one model in memory at a time
         idleMs = data.getLong(P.K_IDLE_MS, DEFAULT_IDLE_MS)
         // Debug builds can make the load slow, to prove that nothing said while the model loads is lost.
         if (app.wisp.keyboard.BuildConfig.DEBUG) Thread.sleep(app.wisp.keyboard.settings.WispSettings.get(this).getLong("debug_load_delay_ms", 0L))
@@ -94,6 +100,23 @@ class VoiceService : Service() {
         )
         session = Session(live = data.getBoolean(P.K_LIVE, true), vad = engine.newVad())
         send(P.READY) { putLong(P.K_MS, loadMs) }
+    }
+
+    /** Rewrites a text with the writing-assistant model and sends it back as it is generated. The speech model is freed first. */
+    private fun rewrite(data: Bundle, replyTo: Messenger?) {
+        worker.removeCallbacks(idleExit)
+        client = replyTo ?: client
+        endSession(); engine.release()          // one model in memory at a time
+        idleMs = data.getLong(P.K_IDLE_MS, DEFAULT_IDLE_MS)
+        val path = data.getString(P.K_MODEL_PATH) ?: error("no rewrite model")
+        val out = try {
+            rewriter.rewrite(File(path), Tone.byName(data.getString(P.K_TONE)), data.getString(P.K_TEXT) ?: "", data.getInt(P.K_THREADS, DeviceProfile.recommendedThreads())) { sofar ->
+                send(P.REWRITE_PIECE) { putString(P.K_TEXT, sofar) }
+            }
+        } catch (t: Throwable) { Log.e(TAG, "rewrite failed", t); null }
+        if (out.isNullOrBlank()) send(P.REWRITE_ERROR) { putString(P.K_MESSAGE, if (!rewriter.available) "Rewrite is not available on this phone" else "The rewrite did not finish. Your text is unchanged.") }
+        else send(P.REWRITE_DONE) { putString(P.K_TEXT, out) }
+        startIdleTimer()
     }
 
     /** Loads the model and times it on a short recorded sentence: the figure shown next to each model in the list. */
@@ -201,7 +224,7 @@ class VoiceService : Service() {
     /** Unloads the model and ends this process; the keyboard side unbinds on EXITING and binds again at the next dictation. */
     private fun exitNow(why: String) {
         Log.i(TAG, "exiting ($why)")
-        endSession(); engine.release()
+        endSession(); engine.release(); rewriter.release()
         send(P.EXITING) {}
         Process.killProcess(Process.myPid())
     }

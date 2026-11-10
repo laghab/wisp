@@ -3,20 +3,20 @@
 ## How it is measured
 - **Synthetic swipes.** `SyntheticGestures` draws a finger path for a word through its letters' key centres. Each letter is hit off-centre by a random miss (Gaussian, `noise` in key widths), the whole swipe is shifted a little, corners are rounded over 0.1-0.5 key widths, and the points are sampled unevenly with jitter. Noise levels: **0.15** careful, **0.30** normal, **0.45** sloppy.
 - **Words** are drawn the way people use them: weight grows with the dictionary probability (`exp(0.06 * p)`), words of 3+ letters only (shorter ones are usually tapped).
-- **Dictionary:** the shipped English (US) list, 160,715 entries, 125,999 swipeable after folding and de-duplication (`eval/words_en_US.tsv`, created by `tools/export-wordlists.sh`).
-- **Run it:** `./gradlew testDebugUnitTest --tests '*GestureGateTest*'` (needs `eval/words_en_US.tsv`). On a device: `tools/e2e/selftest.sh <serial> gesture`.
-- **Real traces:** `TraceRecorderActivity` (debug build) records how you actually swipe; `GestureRecordedTraceTest` replays `eval/traces_en_US.jsonl`. Not yet recorded by a person (see "Open").
+- **Dictionary:** the shipped English (US) list, 160,715 entries, 143,749 swipeable after folding and de-duplication (`app/src/main/assets/wordlists/en_US.tsv`).
+- **Run it:** `cd core && cargo test --release -p wisp-core --test glide_eval -- --nocapture`. The generator and the gate live in `core/wisp-core/tests/glide_eval.rs`; the decoder is `core/wisp-core/src/glide.rs`.
+- **Real traces:** `TraceRecorderActivity` (debug build) records how you actually swipe into `traces_en_US.jsonl`. Not yet recorded by a person on the new key grid (see "Open").
 
 ## The gate (task 4.6)
-Thresholds were set from the first baseline of the final algorithm and are enforced by `GestureGateTest`:
+Thresholds were set from the first baseline of the final algorithm and are enforced by `glide_eval.rs` (results from the Rust decoder, seed 42, 2000 swipes):
 
 | Noise | Top-1 | Top-3 | Result (seed 42, 2000 swipes) |
 |---|---|---|---|
-| 0.15 careful | at least 93% | at least 98% | **95.3% / 99.3%** |
-| 0.30 normal | at least 80% | at least 92% | **82.6% / 94.2%** |
-| 0.45 sloppy | at least 50% | at least 65% | **55.8% / 68.7%** (top-5 73.0%) |
+| 0.15 careful | at least 93% | at least 98% | **94.1% / 99.0%** |
+| 0.30 normal | at least 80% | at least 92% | **81.7% / 93.1%** |
+| 0.45 sloppy | at least 50% | at least 65% | **52.5% / 67.0%** |
 
-Speed (desktop JVM, so optimistic for a phone): decode median 1.1 ms, p95 5.9 ms, p99 9.7 ms; 12+ letter words p95 7 ms. Budget: p95 within 50 ms (150 ms for 30+ letters). On the device runtime (Waydroid, ART, same desktop CPU): median 4.9 ms, p95 15 ms. **The phone's own numbers are still to be measured** (task 11.2); if they exceed the budget the decoder moves to C++ (`design.md` D6).
+Speed (host, release build, Rust): decode p50 0.9 ms, p95 4.0 ms; 12+ letter words p95 5.3 ms. Budget: p95 within 50 ms (150 ms for 30+ letters). **The phone's own numbers are still to be measured** (task 10.3 of `redesign-wisp-rust-core`).
 
 ## How accuracy was reached (log)
 | Step | Normal-noise top-1 / top-3 |

@@ -8,8 +8,10 @@ import android.view.View
 
 /** The grip along the top of a floating keyboard: drag it to move the keyboard. */
 class FloatHandle(context: Context, private val palette: Palette) : View(context) {
-    /** (dx, dy) since the last call, and whether the finger has lifted. */
+    /** How far the finger has moved since it went down (px), and whether it has lifted. Measured from the start so one odd sample cannot accumulate. */
     var onMoved: ((Float, Float, Boolean) -> Unit)? = null
+    /** The finger went down: remember where the keyboard is. */
+    var onGrab: (() -> Unit)? = null
     private val d = resources.displayMetrics.density
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { strokeCap = Paint.Cap.ROUND; strokeWidth = 4f * d }
     private var lastX = 0f; private var lastY = 0f
@@ -25,9 +27,9 @@ class FloatHandle(context: Context, private val palette: Palette) : View(context
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
         when (e.actionMasked) {
-            MotionEvent.ACTION_DOWN -> { lastX = e.rawX; lastY = e.rawY }
-            MotionEvent.ACTION_MOVE -> { onMoved?.invoke(e.rawX - lastX, e.rawY - lastY, false); lastX = e.rawX; lastY = e.rawY }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> onMoved?.invoke(0f, 0f, true)
+            MotionEvent.ACTION_DOWN -> { lastX = e.rawX; lastY = e.rawY; onGrab?.invoke() }
+            MotionEvent.ACTION_MOVE -> onMoved?.invoke(e.rawX - lastX, e.rawY - lastY, false)
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> onMoved?.invoke(e.rawX - lastX, e.rawY - lastY, true)
         }
         return true
     }

@@ -34,9 +34,7 @@ class SuggestionEngine(
     private var sources: List<DictionaryProvider.Source> = emptyList()
     private var dictFailed = false
     private val provider = DictionaryProvider(context)
-    private val scratch = Suggestions()
     private var proximity: Proximity? = null
-    private val out = Suggestions()
     private var language = app.wisp.keyboard.Languages.ENGLISH_US
     private val store = PersonalStore(context)
     private var personal = PersonalDictionary()
@@ -61,35 +59,30 @@ class SuggestionEngine(
 
     override fun request(word: String, xs: IntArray, ys: IntArray, count: Int, previousWord: String?) {
         val gen = ++generation
-        val x = xs.copyOf(count); val y = ys.copyOf(count)
         worker.post {
             if (gen != generation) return@post     // a newer keystroke has already replaced this request
-            val result = query(word, x, y, previousWord) ?: return@post
+            val result = query(word, previousWord) ?: return@post
             if (gen == generation) main.post { if (gen == generation) onResult(result) }
         }
     }
 
     override fun cancel() { generation++ }
 
-    private fun query(word: String, xs: IntArray, ys: IntArray, prev: String?): SuggestionResult? {
+    private fun query(word: String, prev: String?): SuggestionResult? {
         val srcs = sources.ifEmpty { open() } ?: return null
-        val p = proximity ?: return null
         val lower = word.lowercase()
         val pd = personalFor()
-        // Ask every dictionary of the language (its own words first, then mixed-in ones) and keep each word's best score.
+        // Ask every lexicon of the language (its own words first, then mixed-in ones) and keep each word's best score.
         val best = LinkedHashMap<String, Candidate>()
         var known = false
         for (src in srcs) {
-            val d = src.dict
-            d.suggest(lower, p, xs, ys, prev, scratch)
-            for (i in 0 until scratch.count) {
-                val w = scratch.word(i)
-                val score = scratch.scores[i] + pd.bonus(w) + pd.pairBonus(prev, w) + if (src.own) OWN_WORDS_BONUS else 0
-                val key = w.lowercase()
+            for (c in src.dict.suggest(lower, proximity, prev)) {
+                val score = c.score + pd.bonus(c.word) + pd.pairBonus(prev, c.word) + if (src.own) OWN_WORDS_BONUS else 0
+                val key = c.word.lowercase()
                 val cur = best[key]
-                if (cur == null || score > cur.score) best[key] = Candidate(w, score, scratch.types[i])
+                if (cur == null || score > cur.score) best[key] = Candidate(c.word, score, c.type)
             }
-            if (d.probability(lower) >= 0) known = true
+            if (src.dict.probability(lower) >= 0) known = true
         }
         val list = ArrayList<Candidate>(best.values)
         // Words the user has made their own (names the dictionary lacks) complete what is being typed.
@@ -97,7 +90,7 @@ class SuggestionEngine(
             if (list.none { it.word.equals(w, true) }) list.add(Candidate(w, PERSONAL_BASE_SCORE + pd.bonus(w) + pd.pairBonus(prev, w), Candidate.KIND_COMPLETION))
         }
         list.sortByDescending { it.score }
-        return SuggestionResult(word, list.take(Suggestions.MAX), known || pd.isKnown(lower))
+        return SuggestionResult(word, list.take(Lexicon.MAX), known || pd.isKnown(lower))
     }
 
     private fun open(): List<DictionaryProvider.Source>? {

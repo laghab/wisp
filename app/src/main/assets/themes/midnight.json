@@ -1,0 +1,37 @@
+{
+ "id": "midnight",
+ "name": "Midnight",
+ "dark": true,
+ "board": "#12151B",
+ "key": "#262B35",
+ "mod": "#1B1F27",
+ "fg": "#E9EDF4",
+ "modFg": "#E9EDF4",
+ "accent": "#8FA8FF",
+ "accentFg": "#0E1116",
+ "radius": 10,
+ "shadow": [
+  {
+   "inset": true,
+   "dy": -1,
+   "color": "rgba(0,0,0,0.35)"
+  }
+ ],
+ "lit": [
+  {
+   "spread": 3,
+   "color": "rgba(143,168,255,0.3)"
+  },
+  {
+   "dy": 6,
+   "blur": 16,
+   "color": "rgba(143,168,255,0.25)"
+  }
+ ],
+ "font": "inter",
+ "weight": 400,
+ "size": 21,
+ "stripFg": "#AEB6C4",
+ "sep": "#2A303B",
+ "space": "English · Wisp"
+}

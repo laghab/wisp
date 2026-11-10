@@ -17,6 +17,7 @@ import androidx.core.content.FileProvider
 import app.wisp.keyboard.BuildConfig
 import app.wisp.keyboard.settings.WispSettings
 import app.wisp.keyboard.voice.model.ModelCatalog
+import app.wisp.keyboard.voice.model.ModelKind
 import app.wisp.keyboard.voice.model.ModelInstaller
 import app.wisp.keyboard.voice.model.ModelSource
 import app.wisp.keyboard.voice.model.ModelSpec
@@ -101,7 +102,8 @@ class ModelDownloads private constructor(private val appContext: Context) {
                     }
                 }
                 settings.putInt("modelvercode_${spec.id}", versionCode)
-                if (store.selectedId == null || store.active() == null || store.active()?.id == spec.id) store.selectedId = spec.id
+                if (spec.kind == ModelKind.REWRITE) { if (store.rewriteId == null) store.rewriteId = spec.id }
+                else if (store.selectedId == null || store.active() == null || store.active()?.id == spec.id) store.selectedId = spec.id
                 transfers.remove(spec.id); modelUpdates.remove(spec.id)
                 revision++
             } catch (t: Throwable) {
@@ -131,10 +133,14 @@ class ModelDownloads private constructor(private val appContext: Context) {
         ModelInstaller.remove(store.dirFor(spec))
         transfers.remove(spec.id)
         if (store.selectedId == spec.id) store.selectedId = null
+        if (store.rewriteId == spec.id) store.rewriteId = null
         revision++
     }
 
-    fun select(spec: ModelSpec) { store.selectedId = spec.id; revision++ }
+    fun select(spec: ModelSpec) { if (spec.kind == ModelKind.REWRITE) store.rewriteId = spec.id else store.selectedId = spec.id; revision++ }
+
+    /** Turns the writing assistant off (the rewrite button then says so) or back on with the model that was chosen. */
+    fun setRewriteOff(off: Boolean) { store.rewriteId = if (off) "off" else store.installedRewrite().firstOrNull()?.id; revision++ }
 
     fun dismiss(spec: ModelSpec) { if (transfers[spec.id] is Transfer.Failed) transfers.remove(spec.id) }
 

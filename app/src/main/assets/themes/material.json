@@ -1,0 +1,26 @@
+{
+ "id": "material",
+ "name": "Material You",
+ "dark": false,
+ "dynamic": true,
+ "board": "#EEF2E6",
+ "key": "#FDFEF7",
+ "mod": "#D7E3C8",
+ "fg": "#1A1C17",
+ "modFg": "#2E4A1A",
+ "accent": "#4C6A2E",
+ "accentFg": "#FFFFFF",
+ "radius": 14,
+ "lit": [
+  {
+   "spread": 3,
+   "color": "rgba(76,106,46,0.35)"
+  }
+ ],
+ "font": "sans",
+ "weight": 500,
+ "size": 21,
+ "stripFg": "#44483E",
+ "sep": "#C5CBB9",
+ "space": "English"
+}

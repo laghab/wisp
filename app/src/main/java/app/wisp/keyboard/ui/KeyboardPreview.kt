@@ -19,7 +19,7 @@ import app.wisp.keyboard.style.KeyboardStyle
 fun KeyboardPreview(style: KeyboardStyle, modifier: Modifier = Modifier) {
     val context = LocalContext.current
     AndroidView(
-        modifier = modifier.fillMaxWidth().padding(bottom = style.bottomGap.dp),
+        modifier = modifier.fillMaxWidth(),
         factory = { c -> KeyboardView(c, LayoutLoader.load(c, R.raw.layout_qwerty), Palette()).also { it.gesturesEnabled = false } },
         update = { v ->
             val base = LayoutLoader.load(context, R.raw.layout_qwerty)

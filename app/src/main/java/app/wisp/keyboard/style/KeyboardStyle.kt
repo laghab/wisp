@@ -8,53 +8,66 @@ import app.wisp.keyboard.settings.WispSettings
 
 /** Everything the user can change about how the keyboard looks and feels, read from the settings file. */
 data class KeyboardStyle(
-    val theme: String = "system",
-    val accent: String = "coral",
-    val shape: String = "round",
+    /** Id of the skin (see [Themes]). */
+    val theme: String = Themes.DEFAULT,
+    /** Material You: take the colours from the wallpaper (Android 12 and later). */
+    val wallpaperColours: Boolean = false,
+    val keyBorders: Boolean = true,
+    val keyHints: Boolean = true,
+    /** A photo behind the keys (a file in the app's storage), with [photoDim] percent darkening; empty for none. */
+    val photo: String = "",
+    val photoDim: Int = 40,
     val trailOn: Boolean = true,
     val trailColor: String = "accent",
     val trailWidthDp: Int = 5,
-    val heightPortrait: Int = 100,
-    val heightLandscape: Int = 100,
     val gap: Int = 100,
     val numberRow: Boolean = false,
-    val oneHanded: String = "off",
-    val split: Boolean = false,
-    val floating: Boolean = false,
-    /** Empty space under the keys, in dp (room for the thumb, or the phone's gesture bar). */
-    val bottomGap: Int = 0,
     val haptic: String = "light",
     val sound: Boolean = false,
+    /** Touch gestures, each switchable: swipe left from backspace deletes words; slide on the space bar moves the cursor. */
+    val wordSwipe: Boolean = true,
+    val cursorSlide: Boolean = true,
+    /** Typing behaviour, applied to the open keyboard the next time it is shown. */
+    /** Letter arrangement: one of [app.wisp.keyboard.kbd.LetterLayouts]. */
+    val layout: String = "qwerty",
+    val glide: Boolean = true,
+    val autoCorrect: Boolean = true,
+    val autoCaps: Boolean = true,
+    val doubleSpacePeriod: Boolean = true,
+    /** How long a key is held before its extra characters appear, 150 to 700 ms. */
+    val longPressMs: Int = 350,
+    /** `word=expansion` per line: typing the word and a space types the expansion. */
+    val shortcuts: String = "",
 ) {
     /** A short string that changes whenever any option changes; views re-style only when it does. */
-    val signature: String get() = listOf(theme, accent, shape, trailOn, trailColor, trailWidthDp, heightPortrait, heightLandscape, gap, numberRow, oneHanded, split, floating, bottomGap, haptic, sound).joinToString("|")
+    val signature: String get() = listOf(theme, wallpaperColours, keyBorders, keyHints, photo, photoDim, trailOn, trailColor, trailWidthDp, gap, numberRow, haptic, sound, wordSwipe, cursorSlide, layout, glide, autoCorrect, autoCaps, doubleSpacePeriod, longPressMs, shortcuts).joinToString("|")
 
-    fun heightPercent(landscape: Boolean) = if (landscape) heightLandscape else heightPortrait
-    fun cornerDp() = when (shape) { "square" -> 3f; "pill" -> 18f; else -> 9f }
-
-    fun isDark(context: Context): Boolean = when (theme) {
-        "light" -> false
-        "dark" -> true
-        else -> context.resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK == Configuration.UI_MODE_NIGHT_YES
+    /** The skin to draw: the chosen theme, with wallpaper colours, border and photo options applied. */
+    fun themeFor(context: Context): Theme {
+        var t = Themes.get(context, theme)
+        if (t.dynamic && wallpaperColours && DYNAMIC_AVAILABLE) t = DynamicColours.apply(context, t)
+        if (!keyBorders && t.border != null) t = t.copy(border = null)
+        return t
     }
 
-    fun accentColor(context: Context): Int = colorOf(context, accent)
-    fun trailColorInt(context: Context): Int = if (trailColor == "accent") accentColor(context) else colorOf(context, trailColor)
+    fun isDark(context: Context): Boolean = themeFor(context).dark
 
-    fun palette(context: Context): Palette {
-        val t = if (isDark(context)) Brand.DARK else Brand.LIGHT
-        val a = Brand.accentOn(accentColor(context), t.background)
-        return Palette(background = t.background, key = t.key, keyPressed = t.keyPressed, special = t.special, accent = a, onAccent = Brand.onAccent(a), text = t.text, textMuted = t.textMuted)
-    }
+    fun trailColorInt(context: Context): Int = if (trailColor == "accent") themeFor(context).accent.base() else colorOf(context, trailColor)
+
+    fun palette(context: Context): Palette = themeFor(context).toPalette()
 
     /** Writes every option to the settings file. */
     fun save(context: Context) {
         val s = WispSettings.get(context)
-        s.putString("style_theme", theme); s.putString("style_accent", accent); s.putString("style_shape", shape)
+        s.putString("style_theme", theme); s.putBoolean("style_wallpaper", wallpaperColours); s.putBoolean("style_borders", keyBorders); s.putBoolean("style_hints", keyHints)
+        s.putString("style_photo", photo); s.putInt("style_photo_dim", photoDim)
         s.putBoolean("style_trail_on", trailOn); s.putString("style_trail_color", trailColor); s.putInt("style_trail_width", trailWidthDp)
-        s.putInt("style_height_portrait", heightPortrait); s.putInt("style_height_landscape", heightLandscape); s.putInt("style_gap", gap)
-        s.putBoolean("style_number_row", numberRow); s.putString("style_one_handed", oneHanded); s.putBoolean("style_split", split); s.putBoolean("style_floating", floating); s.putInt("style_bottom_gap", bottomGap)
+        s.putInt("style_gap", gap)
+        s.putBoolean("style_number_row", numberRow)
         s.putString("style_haptic", haptic); s.putBoolean("style_sound", sound)
+        s.putBoolean("gesture_word_swipe", wordSwipe); s.putBoolean("gesture_cursor_slide", cursorSlide)
+        s.putBoolean("typing_glide", glide); s.putBoolean("typing_autocorrect", autoCorrect); s.putBoolean("typing_autocaps", autoCaps); s.putBoolean("double_space_period", doubleSpacePeriod)
+        s.putString("letter_layout", layout); s.putInt("long_press_ms", longPressMs); s.putString("text_shortcuts", shortcuts)
     }
 
     companion object {
@@ -68,12 +81,14 @@ data class KeyboardStyle(
         fun load(context: Context): KeyboardStyle {
             val s = WispSettings.get(context)
             return KeyboardStyle(
-                theme = s.getString("style_theme", "system")!!, accent = s.getString("style_accent", "coral")!!, shape = s.getString("style_shape", "round")!!,
+                theme = s.getString("style_theme", Themes.DEFAULT)!!, wallpaperColours = s.getBoolean("style_wallpaper", false), keyBorders = s.getBoolean("style_borders", true), keyHints = s.getBoolean("style_hints", true),
+                photo = s.getString("style_photo", "")!!, photoDim = s.getInt("style_photo_dim", 40).coerceIn(0, 80),
                 trailOn = s.getBoolean("style_trail_on", true), trailColor = s.getString("style_trail_color", "accent")!!, trailWidthDp = s.getInt("style_trail_width", 5).coerceIn(2, 12),
-                heightPortrait = s.getInt("style_height_portrait", 100).coerceIn(70, 130), heightLandscape = s.getInt("style_height_landscape", 100).coerceIn(60, 130),
                 gap = s.getInt("style_gap", 100).coerceIn(40, 200), numberRow = s.getBoolean("style_number_row", false),
-                oneHanded = s.getString("style_one_handed", "off")!!, split = s.getBoolean("style_split", false), floating = s.getBoolean("style_floating", false), bottomGap = s.getInt("style_bottom_gap", 0).coerceIn(0, 80),
                 haptic = s.getString("style_haptic", "light")!!, sound = s.getBoolean("style_sound", false),
+                wordSwipe = s.getBoolean("gesture_word_swipe", true), cursorSlide = s.getBoolean("gesture_cursor_slide", true),
+                layout = s.getString("letter_layout", "qwerty")!!, glide = s.getBoolean("typing_glide", true), autoCorrect = s.getBoolean("typing_autocorrect", true), autoCaps = s.getBoolean("typing_autocaps", true), doubleSpacePeriod = s.getBoolean("double_space_period", true),
+                longPressMs = s.getInt("long_press_ms", 350).coerceIn(150, 700), shortcuts = s.getString("text_shortcuts", "").orEmpty(),
             )
         }
     }

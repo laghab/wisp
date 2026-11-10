@@ -11,7 +11,9 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import app.wisp.keyboard.dict.SuggestionEngine
 import app.wisp.keyboard.gesture.GestureEngine
-import app.wisp.keyboard.kbd.EmojiGridView
+import app.wisp.keyboard.emoji.EmojiData
+import app.wisp.keyboard.emoji.EmojiPanelView
+import app.wisp.keyboard.emoji.RecentEmoji
 import app.wisp.keyboard.kbd.FieldInfo
 import app.wisp.keyboard.kbd.FieldKind
 import app.wisp.keyboard.kbd.InputController
@@ -24,20 +26,31 @@ import app.wisp.keyboard.kbd.SuggestionBarView
 import app.wisp.keyboard.personal.LearningPolicy
 import app.wisp.keyboard.settings.WispSettings
 import app.wisp.keyboard.kbd.Palette
+import app.wisp.keyboard.clipboard.ClipItem
+import app.wisp.keyboard.clipboard.ClipboardHistory
+import app.wisp.keyboard.clipboard.ClipboardPanelView
+import app.wisp.keyboard.clipboard.Kind
 import app.wisp.keyboard.kbd.FloatHandle
+import app.wisp.keyboard.kbd.LetterLayouts
+import app.wisp.keyboard.kbd.Placement
+import app.wisp.keyboard.kbd.PlacementEditView
+import app.wisp.keyboard.kbd.PlacementRail
 import android.inputmethodservice.InputMethodService.Insets
 import app.wisp.keyboard.kbd.LayoutGuard
 import app.wisp.keyboard.style.KeyboardStyle
 import app.wisp.keyboard.voice.MicPermissionActivity
 import app.wisp.keyboard.voice.VoiceController
 import app.wisp.keyboard.voice.VoicePanelView
+import app.wisp.keyboard.voice.llm.RewriteController
+import app.wisp.keyboard.voice.llm.RewritePanelView
+import app.wisp.keyboard.voice.llm.Tone
 import app.wisp.keyboard.voice.text.TextProcessor
 import android.content.Intent
 
 /** Entry point of the keyboard. */
 class WispIme : InputMethodService() {
 
-    private enum class Mode { LETTERS, SYMBOLS, SYMBOLS_MORE, EMOJI, VOICE }
+    private enum class Mode { LETTERS, SYMBOLS, SYMBOLS_MORE, EMOJI, VOICE, CLIPBOARD, REWRITE }
 
     private val editor = ImeEditor(this)
     private val controller = InputController(editor)
@@ -68,10 +81,15 @@ class WispIme : InputMethodService() {
         super.onCreate()
         incognito = WispSettings.get(this).getBoolean("incognito", false)
         language = Languages.byTag(WispSettings.get(this).getString("language")) ?: Languages.ENGLISH_US
+        getSystemService(android.content.ClipboardManager::class.java).addPrimaryClipChangedListener(clipListener)
         Probe.mark("ime_created")
     }
 
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+
     override fun onDestroy() {
+        getSystemService(android.content.ClipboardManager::class.java).removePrimaryClipChangedListener(clipListener)
+        main.removeCallbacks(clipSave); clipHistory.save(clipFile)
         engine?.close(); engine = null
         gestureEngine?.close(); gestureEngine = null
         voice?.release(); voice = null
@@ -86,15 +104,13 @@ class WispIme : InputMethodService() {
     override fun onCreateInputView(): View {
         val listener = object : KeyboardView.Listener {
             override fun onKey(code: Int, x: Int, y: Int) = handleKey(code, x, y)
-            override fun onRepeat(code: Int, count: Int) = controller.onRepeat(code, count)
-            override fun onCursorSteps(steps: Int) = controller.onCursorSteps(steps)
+            override fun onRepeat(word: Boolean) { if (emojiSearching) { emojiView?.backspaceQuery() } else controller.onRepeat(word) }
+            override fun onWordSwipe(words: Int) { if (!emojiSearching) controller.onWordSwipe(words) }
+            override fun onWordSwipeEnd(words: Int) { if (!emojiSearching) controller.onWordSwipeEnd(words) }
+            override fun onShiftLetter(code: Int, x: Int, y: Int) = controller.onShiftLetter(code, x, y)
+            override fun onCursorSteps(steps: Int) { if (!emojiSearching) controller.onCursorSteps(steps) }
             override fun onLongPress(code: Int) { if (code == KeyCodes.SWITCH) showPicker() }
-            override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) { gestureEngine?.decode(xs, ys, count, null) }
-            override fun onOneHanded(action: String) {
-                val side = when (action) { "swap" -> if (style.oneHanded == "left") "right" else "left"; else -> "off" }
-                WispSettings.get(this@WispIme).putString("style_one_handed", side)
-                applyStyleIfChanged()
-            }
+            override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) { if (!emojiSearching) gestureEngine?.decode(xs, ys, count, null) }
         }
         Probe.mark("p_start")
         val spec0 = lettersSpec()
@@ -123,10 +139,7 @@ class WispIme : InputMethodService() {
         Probe.mark("p_bar")
         b.listener = object : SuggestionBarView.Listener {
             override fun onMicDown() = openVoice(handsFree = false)
-            override fun onSettings() {
-                startActivity(Intent(this@WispIme, SettingsActivity::class.java).putExtra(SettingsActivity.EXTRA_SCREEN, "look").addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-                requestHideSelf(0)
-            }
+            override fun onSettings() = openSettings(null)
             override fun onMicUp(heldMs: Long) { if (heldMs >= HOLD_TO_TALK_MS) voice?.stop() else voice?.makeHandsFree() }
             override fun onSuggestion(index: Int) = controller.onSuggestionTapped(index)
             override fun onTool(tool: SuggestionBarView.Tool) = when (tool) {
@@ -134,36 +147,50 @@ class WispIme : InputMethodService() {
                 SuggestionBarView.Tool.CUT -> controller.cut()
                 SuggestionBarView.Tool.COPY -> controller.copy()
                 SuggestionBarView.Tool.PASTE -> controller.paste()
+                SuggestionBarView.Tool.CLIPBOARD -> setMode(Mode.CLIPBOARD)
+                SuggestionBarView.Tool.REWRITE -> setMode(Mode.REWRITE)
+                SuggestionBarView.Tool.EMOJI -> setMode(Mode.EMOJI)
+                SuggestionBarView.Tool.RESIZE -> startPlacementEdit()
+                SuggestionBarView.Tool.THEMES -> openSettings("look")
+                SuggestionBarView.Tool.SETTINGS -> openSettings(null)
                 SuggestionBarView.Tool.INCOGNITO -> { incognito = !incognito; b.incognito = incognito; WispSettings.get(this@WispIme).putBoolean("incognito", incognito); updateLearning() }
             }
         }
         controller.onBarChanged = { b.setState(it) }
+        controller.onGestureInserted = { app.wisp.keyboard.gesture.GlideStats.record(this) }
 
-        // Emoji panel: scrolling grid on top, a one-row bar (ABC, globe, space, backspace) below.
+        // Emoji panel: the panel view (made when it opens, dropped when it closes) over a one-row bar (ABC, globe, space, backspace).
         Probe.mark("p_pre_emoji")
-        val grid = EmojiGridView(this, loadEmoji(), palette)
-        grid.listener = EmojiGridView.Listener { editor.commit(it) }
         val eb = KeyboardView(this, LayoutLoader.load(this, R.raw.layout_emoji_bar), palette)
         eb.listener = listener
         val panel = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
-            addView(grid, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(eb, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             visibility = View.GONE
         }
 
         // Voice panel: the words as you speak, the ribbon, the mic. It shares the one-row bar (ABC, globe, ...) with the emoji panel's layout.
         Probe.mark("p_panels")
-        val vc = VoiceController(this, onChange = { voicePanel?.invalidate() }, onResult = { text -> controller.onDictation(text); setMode(Mode.LETTERS) })
+        val vc = VoiceController(this, onChange = { voicePanel?.invalidate() }, onResult = { text -> controller.onDictation(text); setMode(if (pendingPolish) Mode.REWRITE else Mode.LETTERS); pendingPolish = false })
         voice = vc
-        val vp = VoicePanelView(this, vc, palette)
+        val vp = VoicePanelView(this, vc, style.themeFor(this))
         vp.listener = object : VoicePanelView.Listener {
             override fun onMicDown() { vc.start(handsFree = false) }
             override fun onHandsFree() = vc.makeHandsFree()
             override fun onFinish() = vc.stop()
             override fun onCancel() { vc.cancel(); setMode(Mode.LETTERS) }
             override fun onFix(problem: VoiceController.Problem) = fixVoiceProblem(problem)
+            override fun onBack() { if (vc.isActive) vc.stop() else setMode(Mode.LETTERS) }
+            override fun onUndoPhrase() { controller.undoDictation() }
+            override fun onTogglePunctuation() {
+                val on = !WispSettings.get(this@WispIme).getBoolean("voice_auto_punct", true)
+                WispSettings.get(this@WispIme).putBoolean("voice_auto_punct", on); vp.autoPunctuation = on
+            }
+            override fun onPolish() { if (vc.isActive) { pendingPolish = true; vc.stop() } else setMode(Mode.REWRITE) }
+            override fun onLanguage() = cycleLanguage()
         }
+        vp.autoPunctuation = WispSettings.get(this).getBoolean("voice_auto_punct", true)
+        vp.polishAvailable = true
         voicePanel = vp
         val vbar = KeyboardView(this, LayoutLoader.load(this, R.raw.layout_emoji_bar), palette).also { it.listener = listener }
         val voiceBox = LinearLayout(this).apply {
@@ -174,15 +201,20 @@ class WispIme : InputMethodService() {
         }
         voiceBar = voiceBox
         // The names and words the user has taught Wisp also correct what the speech model mishears.
-        controller.dictationProcessor = { TextProcessor.process(it, null, removeFillers = true, customWords = personalWords, threshold = 0.18) }
+        controller.dictationProcessor = { raw ->
+            val t = TextProcessor.process(raw, null, removeFillers = true, customWords = personalWords, threshold = 0.18)
+            // With auto-punctuation off the words come out plain, as spoken.
+            if (WispSettings.get(this).getBoolean("voice_auto_punct", true)) t else t.replace(Regex("[.,!?;:]"), "").lowercase()
+        }
 
         Probe.mark("p_voice")
         val stack = FrameLayout(this)
+        panelStack = stack
         stack.addView(k, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         stack.addView(voiceBox, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        val grip = FloatHandle(this, palette).also { it.visibility = View.GONE; it.onMoved = ::onFloatMoved }
+        val grip = FloatHandle(this, palette).also { it.visibility = View.GONE; it.onMoved = ::onFloatMoved; it.onGrab = { grabbed = frame } }
         root.addView(grip, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         root.addView(b, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         root.addView(stack, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -194,16 +226,80 @@ class WispIme : InputMethodService() {
         Probe.mark("view_created")
         val outer = FrameLayout(this)
         outer.addView(root, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, android.view.Gravity.BOTTOM))
-        host = outer; floatRoot = root; floatGrip = grip
+        val railView = PlacementRail(this, style.themeFor(this)).also { it.visibility = View.GONE; it.onAction = ::onRail }
+        outer.addView(railView, FrameLayout.LayoutParams(0, 0, android.view.Gravity.BOTTOM))
+        host = outer; floatRoot = root; floatGrip = grip; rail = railView
         applyStyleIfChanged(force = true)
         return outer
     }
 
-    private fun loadEmoji(): Array<String> =
-        resources.openRawResource(R.raw.emoji).bufferedReader().use { it.readText() }
-            .split(' ', '\n').filter { it.isNotBlank() }.toTypedArray()
+    // ---- emoji, kaomoji and symbols: opened on demand, released on close; search types through the keyboard's own keys -----------
+
+    private var emojiView: EmojiPanelView? = null
+    private var emojiSearching = false
+    private val emojiData by lazy {
+        fun raw(id: Int) = resources.openRawResource(id).bufferedReader().use { it.readText() }
+        val probe = android.graphics.Paint()
+        EmojiData.parse(raw(R.raw.emoji), raw(R.raw.kaomoji), raw(R.raw.symbols)) { probe.hasGlyph(it) }       // only emoji this phone can draw
+    }
+    private val recentEmoji by lazy { RecentEmoji({ WispSettings.get(this).getString("emoji_recent", "").orEmpty() }, { WispSettings.get(this).putString("emoji_recent", it) }) }
+
+    private fun showEmojiPanel() {
+        val panel = emojiPanel as? LinearLayout ?: return
+        if (emojiView != null) return
+        val d = resources.displayMetrics.density
+        val v = EmojiPanelView(this, emojiData, recentEmoji, style.themeFor(this))
+        v.setTheme(style.themeFor(this))
+        v.listener = object : EmojiPanelView.Listener {
+            override fun onInsert(text: String, isEmoji: Boolean) { controller.finishWord(); editor.commit(text); if (isEmoji) recentEmoji.add(text) }
+            override fun onSearchTapped() = setEmojiSearching(true)
+        }
+        emojiView = v
+        panel.addView(v, 0, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (300 * d).toInt()))
+    }
+
+    private fun hideEmojiPanel() {
+        setEmojiSearching(false, leaving = true)
+        val v = emojiView ?: return
+        emojiView = null
+        (emojiPanel as? LinearLayout)?.removeView(v)
+    }
+
+    /** Search mode: the panel shrinks to the box and a couple of result rows, the keys show below it and type into the box. */
+    private fun setEmojiSearching(on: Boolean, leaving: Boolean = false) {
+        val v = emojiView; val k = keys; val panel = emojiPanel ?: return
+        if (on == emojiSearching && !(on && v == null)) return
+        emojiSearching = on
+        val d = resources.displayMetrics.density
+        val compactH = (150 * d).toInt()
+        v?.compact = on
+        v?.layoutParams = (v?.layoutParams as? LinearLayout.LayoutParams)?.also { it.height = if (on) compactH else (300 * d).toInt() }
+        emojiBar?.visibility = if (on) View.GONE else View.VISIBLE
+        // The keys sit under the panel while searching.
+        if (k != null) {
+            (k.layoutParams as? FrameLayout.LayoutParams)?.let { it.topMargin = if (on) compactH else 0; k.layoutParams = it }
+            if (on) { k.setSpec(lettersSpec()); k.visibility = View.VISIBLE; panel.layoutParams = (panel.layoutParams as FrameLayout.LayoutParams).also { it.height = compactH; it.gravity = android.view.Gravity.TOP } }
+            else { if (!leaving) k.visibility = View.INVISIBLE; panel.layoutParams = (panel.layoutParams as FrameLayout.LayoutParams).also { it.height = ViewGroup.LayoutParams.WRAP_CONTENT } }
+        }
+        panel.requestLayout()
+    }
+
+    /** While searching, the keys edit the search box and nothing else. Returns true when the key was handled here. */
+    private fun searchKey(code: Int): Boolean {
+        if (!emojiSearching) return false
+        val v = emojiView ?: return false
+        when {
+            code == KeyCodes.BACKSPACE -> if (!v.backspaceQuery()) setEmojiSearching(false)
+            code == KeyCodes.ENTER -> setEmojiSearching(false)
+            code == KeyCodes.SPACE -> v.appendQuery(" ")
+            code > 0 -> v.appendQuery(String(Character.toChars(if (controller.shift != Shift.OFF) Character.toUpperCase(code) else code)).lowercase())
+            code == KeyCodes.SHIFT -> return false
+        }
+        return true
+    }
 
     private fun handleKey(code: Int, x: Int, y: Int) {
+        if (searchKey(code)) return
         when (code) {
             KeyCodes.SWITCH -> switchKeyboard()
             KeyCodes.SYMBOLS -> setMode(Mode.SYMBOLS)
@@ -223,12 +319,15 @@ class WispIme : InputMethodService() {
             Mode.LETTERS -> k.setSpec(lettersSpec())
             Mode.SYMBOLS -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols))
             Mode.SYMBOLS_MORE -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols_more))
-            Mode.EMOJI, Mode.VOICE -> {}
+            Mode.EMOJI, Mode.VOICE, Mode.CLIPBOARD, Mode.REWRITE -> {}
         }
-        k.visibility = if (m == Mode.EMOJI || m == Mode.VOICE) View.INVISIBLE else View.VISIBLE
+        k.visibility = if (m == Mode.EMOJI || m == Mode.VOICE || m == Mode.CLIPBOARD || m == Mode.REWRITE) View.INVISIBLE else View.VISIBLE
+        if (m == Mode.REWRITE) showRewritePanel() else hideRewritePanel()
+        if (m == Mode.EMOJI) showEmojiPanel() else hideEmojiPanel()
+        if (m == Mode.CLIPBOARD) showClipboardPanel() else hideClipboardPanel()
         fadeTo(emojiPanel, m == Mode.EMOJI)
         fadeTo(voiceBar, m == Mode.VOICE)
-        if (m != Mode.EMOJI && m != Mode.VOICE) {
+        if (m != Mode.EMOJI && m != Mode.VOICE && m != Mode.CLIPBOARD && m != Mode.REWRITE) {
             k.setLabel(KeyCodes.ENTER, field.enter.label)
             k.setLabel(KeyCodes.LANGUAGE, language.code)
             k.shifted = m == Mode.LETTERS && controller.shift != Shift.OFF
@@ -250,7 +349,8 @@ class WispIme : InputMethodService() {
 
     /** Ordinary text fields use the current language's layout (with the language key when there are several); other fields keep their special layouts. */
     private fun lettersSpec(): LayoutSpec {
-        val base = if (field.kind == FieldKind.TEXT) LayoutLoader.load(this, language.layoutRes, withLanguageKey = enabledLanguages.size > 1)
+        val letterRes = if (language.layoutRes == R.raw.layout_qwerty) LetterLayouts.res(style.layout) else language.layoutRes
+        val base = if (field.kind == FieldKind.TEXT) LayoutLoader.load(this, letterRes, withLanguageKey = enabledLanguages.size > 1)
         else LayoutLoader.load(this, layoutFor(field.kind))
         val letters = field.kind == FieldKind.TEXT || field.kind == FieldKind.EMAIL || field.kind == FieldKind.URL
         return if (style.numberRow && letters) LayoutGuard.withNumberRow(base) else base
@@ -259,62 +359,124 @@ class WispIme : InputMethodService() {
     // ---- look and feel (task group 8) --------------------------------------------------------------------------
 
     private val backups by lazy { app.wisp.keyboard.backup.BackupManager(this) }
-    // ---- floating mode: a smaller keyboard the user drags, with the app behind it left alone ----------------------------
+    // ---- where the keyboard sits: docked, raised with a gap, narrower, one-handed, floating or split (see Placement) -----------------
 
     private var host: FrameLayout? = null
     private var floatRoot: View? = null
     private var floatGrip: FloatHandle? = null
+    private var rail: PlacementRail? = null
+    private var placementEditor: PlacementEditView? = null
+    private var placement = Placement()
+    private var frame: Placement.Frame? = null
 
-    private fun screenSize() = resources.displayMetrics.let { it.widthPixels to it.heightPixels }
+    private fun landscape() = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    private fun screenDp() = resources.displayMetrics.let { it.widthPixels / it.density to it.heightPixels / it.density }
 
-    /** Places the keyboard: full width at the bottom normally; in floating mode 80% wide at the remembered spot. */
-    private fun applyFloating() {
+    /** Shows the saved placement for the current orientation. */
+    private fun loadPlacement() { applyPlacement(Placement.load(this, landscape()), save = false) }
+
+    /** Solves [p] for this screen and applies it live: the keyboard's width, position and key height, the gap, and the rail. */
+    private fun applyPlacement(p: Placement, save: Boolean) {
         val h = host ?: return; val r = floatRoot ?: return
+        val (sw, sh) = screenDp()
+        val f = p.solve(sw, sh)
+        placement = p; frame = f
+        val d = resources.displayMetrics.density
         val lp = r.layoutParams as FrameLayout.LayoutParams
-        if (!style.floating) {
-            lp.width = ViewGroup.LayoutParams.MATCH_PARENT; lp.leftMargin = 0; lp.bottomMargin = 0
-            h.minimumHeight = 0; floatGrip?.visibility = View.GONE
-        } else {
-            val (w, sh) = screenSize()
-            val settings = WispSettings.get(this)
-            lp.width = (w * 0.8f).toInt()
-            h.minimumHeight = (sh * 0.7f).toInt()
-            lp.leftMargin = ((w - lp.width) * settings.getInt("float_x", 50) / 100f).toInt()
-            lp.bottomMargin = ((h.minimumHeight - 1) * settings.getInt("float_y", 0) / 100f * 0.6f).toInt()
-            floatGrip?.visibility = View.VISIBLE
-        }
+        lp.width = (f.width * d).toInt(); lp.leftMargin = (f.left * d).toInt(); lp.bottomMargin = (f.gap * d).toInt()
         r.layoutParams = lp
+        keys?.rowScale = f.rowScale
+        keys?.splitGapPx = f.splitGap * d
+        floatGrip?.visibility = if (p.mode == Placement.Mode.FLOATING && placementEditor == null) View.VISIBLE else View.GONE
+        val editing = placementEditor
+        // The window must not change size while a finger is dragging the keyboard, or the touch coordinates shift under it: floating keeps
+        // the window at its full height (only the keyboard takes touches), and so does edit mode, which needs room above for the raised keyboard.
+        h.minimumHeight = when {
+            editing != null || p.mode == Placement.Mode.FLOATING -> ((sh - 96f) * d).toInt()
+            else -> 0
+        }
+        editing?.show(p, f)
+        updateRail(p, f)
         h.requestLayout()
+        if (save) Placement.save(this, landscape(), p)
     }
 
+    private fun updateRail(p: Placement, f: Placement.Frame) {
+        val rl = rail ?: return; val d = resources.displayMetrics.density
+        val oneHanded = (p.mode == Placement.Mode.ONE_HANDED_LEFT || p.mode == Placement.Mode.ONE_HANDED_RIGHT) && placementEditor == null
+        rl.visibility = if (oneHanded) View.VISIBLE else View.GONE
+        if (!oneHanded) return
+        val (sw, _) = screenDp()
+        val lp = rl.layoutParams as FrameLayout.LayoutParams
+        lp.width = ((sw - f.width) * d).toInt().coerceAtLeast(0)
+        lp.height = (f.height * d).toInt()
+        lp.gravity = android.view.Gravity.BOTTOM or if (p.mode == Placement.Mode.ONE_HANDED_LEFT) android.view.Gravity.END else android.view.Gravity.START
+        lp.bottomMargin = (f.gap * d).toInt()
+        rl.layoutParams = lp
+    }
+
+    private fun onRail(action: String) {
+        val p = placement
+        applyPlacement(when (action) {
+            "swap" -> p.copy(mode = if (p.mode == Placement.Mode.ONE_HANDED_LEFT) Placement.Mode.ONE_HANDED_RIGHT else Placement.Mode.ONE_HANDED_LEFT)
+            else -> p.copy(mode = Placement.Mode.FULL, width = 1f)
+        }, save = true)
+    }
+
+    private var grabbed: Placement.Frame? = null
+
+    /** Floating: the grip along the top drags the keyboard; positions are measured from where the finger went down. */
     private fun onFloatMoved(dx: Float, dy: Float, done: Boolean) {
-        val r = floatRoot ?: return; val h = host ?: return
-        val lp = r.layoutParams as FrameLayout.LayoutParams
-        val (w, _) = screenSize()
-        lp.leftMargin = (lp.leftMargin + dx).toInt().coerceIn(0, maxOf(0, w - lp.width))
-        lp.bottomMargin = (lp.bottomMargin - dy).toInt().coerceIn(0, maxOf(0, h.height - r.height))
-        r.layoutParams = lp
-        if (done) {
-            val settings = WispSettings.get(this)
-            val rangeX = maxOf(1, w - lp.width); val rangeY = maxOf(1f, (h.minimumHeight - 1) * 0.6f)
-            settings.putInt("float_x", (lp.leftMargin * 100f / rangeX).toInt().coerceIn(0, 100))
-            settings.putInt("float_y", (lp.bottomMargin * 100f / rangeY).toInt().coerceIn(0, 100))
-        }
+        val f = grabbed ?: return
+        val d = resources.displayMetrics.density
+        val (sw, _) = screenDp()
+        val left = f.left + dx / d
+        val x = if (sw - f.width > 1f) (left / (sw - f.width)).coerceIn(0f, 1f) else 0f
+        applyPlacement(placement.copy(x = x, gap = f.gap - dy / d), save = done)
     }
 
-    /** In floating mode the window is tall and mostly empty: tell the system the app behind is not covered, and that only the keyboard takes touches. */
+    /** Edit mode, from the keyboard: resize, move and mode changes are applied live; Done keeps them, Reset starts again. */
+    private fun startPlacementEdit() {
+        val h = host ?: return
+        if (placementEditor != null) return
+        val view = PlacementEditView(this, style.themeFor(this), palette.accent)
+        view.listener = object : PlacementEditView.Listener {
+            override fun onChange(p: Placement) = applyPlacement(p, save = false)
+            override fun onDone() = endPlacementEdit()
+            override fun onReset() = applyPlacement(Placement(height = if (landscape()) 0.8f else 1f), save = false)
+        }
+        placementEditor = view
+        h.addView(view, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        applyPlacement(placement, save = false)
+    }
+
+    private fun endPlacementEdit() {
+        val view = placementEditor ?: return
+        placementEditor = null
+        host?.removeView(view)
+        applyPlacement(placement, save = true)
+    }
+
+    /**
+     * When the keyboard does not fill the bottom of the window (a gap below it, narrower, floating), only the keyboard takes touches and the
+     * app behind is told the keyboard is where it is, or, for floating, that nothing is covered.
+     */
     override fun onComputeInsets(outInsets: Insets) {
         super.onComputeInsets(outInsets)
-        val r = floatRoot; val h = host
-        if (!style.floating || r == null || h == null || !isInputViewShown) return
-        val top = h.height
+        val r = floatRoot; val h = host; val f = frame
+        if (r == null || h == null || f == null || !isInputViewShown || placementEditor != null) return
+        val (sw, _) = screenDp()
+        if (f.gap == 0f && f.width >= sw - 0.5f && placement.mode != Placement.Mode.FLOATING) return
+        val d = resources.displayMetrics.density
+        val top = if (placement.mode == Placement.Mode.FLOATING) h.height else h.height - ((f.gap + f.height) * d).toInt()
         outInsets.contentTopInsets = top; outInsets.visibleTopInsets = top
         outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_REGION
         val loc = IntArray(2); r.getLocationInWindow(loc)
         outInsets.touchableRegion.set(loc[0], loc[1], loc[0] + r.width, loc[1] + r.height)
+        rail?.takeIf { it.visibility == View.VISIBLE }?.let { rl -> val l2 = IntArray(2); rl.getLocationInWindow(l2); outInsets.touchableRegion.union(android.graphics.Rect(l2[0], l2[1], l2[0] + rl.width, l2[1] + rl.height)) }
     }
 
-    override fun onEvaluateFullscreenMode(): Boolean = if (style.floating) false else super.onEvaluateFullscreenMode()
+    override fun onEvaluateFullscreenMode(): Boolean = if (placement.mode == Placement.Mode.FLOATING) false else super.onEvaluateFullscreenMode()
 
     private val palette = Palette()
     private var style = KeyboardStyle()
@@ -329,12 +491,14 @@ class WispIme : InputMethodService() {
         val numberRowChanged = next.numberRow != style.numberRow
         styleKey = key; style = next
         palette.set(next.palette(this))
-        val barStyle = next.copy(oneHanded = "off", split = false)      // the one-row bars under the emoji and voice panels stay full width
-        keys?.applyStyle(next); emojiBar?.applyStyle(barStyle); voiceKeys?.applyStyle(barStyle)
+        bar?.setTheme(next.themeFor(this))
+        (voicePanel as? VoicePanelView)?.setTheme(next.themeFor(this))
+        keys?.applyStyle(next); emojiBar?.applyStyle(next); voiceKeys?.applyStyle(next)
         bar?.invalidate(); voicePanel?.invalidate()
         if (numberRowChanged && !force) setMode(mode)
-        floatRoot?.let { it.setPadding(0, 0, 0, (next.bottomGap * resources.displayMetrics.density).toInt()); it.setBackgroundColor(palette.background) }
-        applyFloating()
+        floatRoot?.setBackgroundColor(palette.background)
+        rail?.setTheme(next.themeFor(this))
+        loadPlacement()
     }
 
     override fun onConfigurationChanged(newConfig: android.content.res.Configuration) {
@@ -349,7 +513,7 @@ class WispIme : InputMethodService() {
         WispSettings.get(this).putString("language", language.tag)
         engine?.setLanguage(language)
         gestureEngine?.setLanguage(language)
-        controller.autoCorrect = language.autoCorrect
+        controller.autoCorrect = language.autoCorrect && style.autoCorrect
         setMode(Mode.LETTERS)
     }
 
@@ -387,7 +551,134 @@ class WispIme : InputMethodService() {
         controller.learningEnabled = LearningPolicy.allowed(field, incognito, packageName, excluded)
     }
 
+    /** "omw=On my way" per line. */
+    private fun parseShortcuts(text: String?): Map<String, String> =
+        text.orEmpty().lineSequence().mapNotNull { l -> l.indexOf('=').takeIf { it > 0 }?.let { l.substring(0, it).trim() to l.substring(it + 1).trim() } }
+            .filter { it.second.isNotEmpty() }.toMap()
+
+    /** Opens Wisp's settings (the home screen, or [screen]) and hides the keyboard. */
+    private fun openSettings(screen: String?) {
+        startActivity(Intent(this, SettingsActivity::class.java).apply { if (screen != null) putExtra(SettingsActivity.EXTRA_SCREEN, screen) }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
+        requestHideSelf(0)
+    }
+
+    // ---- rewrite: a small on-device model rewrites the selected text or the current sentence; nothing changes until the user chooses ----
+
+    private var pendingPolish = false
+    private var rewritePanel: RewritePanelView? = null
+    private var rewriteControl: RewriteController? = null
+    private var rewriteDraft = ""
+    private var rewriteTrailing = ""
+    private var rewriteSelectedByUs = false
+
+    private fun showRewritePanel() {
+        val stack = panelStack ?: return
+        if (rewritePanel != null) return
+        val d = resources.displayMetrics.density
+        val ctl = RewriteController(this) { rewritePanel?.invalidate() }
+        rewriteControl = ctl
+        val panel = RewritePanelView(this, ctl, style.themeFor(this))
+        panel.setTheme(style.themeFor(this))
+        // What to rewrite: the selection, or else the sentence before the cursor (selected so it shows in the app).
+        controller.finishWord()
+        val chosen = editor.selectedText()?.toString()
+        rewriteTrailing = ""; rewriteSelectedByUs = false
+        if (chosen != null) rewriteDraft = chosen
+        else {
+            val before = editor.textBefore(600)?.toString().orEmpty()
+            var e = before.length; while (e > 0 && before[e - 1].isWhitespace()) e--
+            var st = e; while (st > 0 && before[st - 1] !in ".!?\n") st--
+            while (st < e && before[st].isWhitespace()) st++
+            rewriteDraft = before.substring(st, e)
+            rewriteTrailing = before.substring(e)
+            if (rewriteDraft.isNotBlank()) { editor.selectBefore(before.length - st); rewriteSelectedByUs = true }
+        }
+        panel.hasText = rewriteDraft.isNotBlank()
+        panel.listener = object : RewritePanelView.Listener {
+            override fun onTone(tone: Tone) { if (!ctl.working) ctl.start(tone, rewriteDraft) else { ctl.cancel(); ctl.start(tone, rewriteDraft) } }
+            override fun onReplace(text: String) { editor.commit(text + rewriteTrailing); rewriteSelectedByUs = false; setMode(Mode.LETTERS) }
+            override fun onInsertBelow(text: String) { editor.selectBefore(0); editor.commit("\n" + text); rewriteSelectedByUs = false; setMode(Mode.LETTERS) }
+            override fun onRegenerate() = ctl.start(ctl.tone, rewriteDraft)
+            override fun onClose() = setMode(Mode.LETTERS)
+            override fun onOpenModels() { openSettings("voice") }
+        }
+        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, (RewritePanelView.HEIGHT_DP * d).toInt())
+        rewritePanel = panel
+        if (ctl.model != null && rewriteDraft.isNotBlank()) ctl.start(Tone.POLISH, rewriteDraft)
+    }
+
+    /** Closing the panel leaves the field as it was: the sentence we selected is deselected, and a rewrite still running is stopped. */
+    private fun hideRewritePanel() {
+        val panel = rewritePanel ?: return
+        rewritePanel = null
+        rewriteControl?.cancel(); rewriteControl?.release(); rewriteControl = null
+        if (rewriteSelectedByUs) { editor.selectBefore(0); rewriteSelectedByUs = false }
+        panelStack?.removeView(panel)
+    }
+
+    // ---- clipboard history: recent copies kept for an hour, never from password fields or flagged-sensitive copies --------------------
+
+    private var panelStack: FrameLayout? = null
+    private var clipPanel: ClipboardPanelView? = null
+    private val clipFile get() = java.io.File(filesDir, "clipboard.tsv")
+    private val clipHistory by lazy { ClipboardHistory().also { it.load(clipFile); it.enabled = WispSettings.get(this).getBoolean("clipboard_history", true) } }
+    private val clipSave = Runnable { clipHistory.save(clipFile) }
+    private val clipListener = android.content.ClipboardManager.OnPrimaryClipChangedListener { onClipChanged() }
+
+    private fun onClipChanged() {
+        val clip = getSystemService(android.content.ClipboardManager::class.java).primaryClip ?: return
+        if (clip.itemCount == 0) return
+        val sensitive = clip.description.extras?.getBoolean("android.content.extra.IS_SENSITIVE") == true
+        val noStore = field.kind == FieldKind.PASSWORD || incognito
+        val item = clip.getItemAt(0)
+        val stored = if (item.uri != null && clip.description.hasMimeType("image/*")) clipHistory.add("Image", sensitive, noStore, imageUri = item.uri.toString())
+        else clipHistory.add(item.coerceToText(this), sensitive, noStore)
+        if (stored) { saveClipSoon(); clipPanel?.refresh() }
+    }
+
+    private fun saveClipSoon() { main.removeCallbacks(clipSave); main.postDelayed(clipSave, 2_000) }
+
+    private fun showClipboardPanel() {
+        val stack = panelStack ?: return
+        if (clipPanel != null) return
+        val d = resources.displayMetrics.density
+        val panel = ClipboardPanelView(this, clipHistory, style.themeFor(this))
+        panel.setTheme(style.themeFor(this))
+        panel.listener = object : ClipboardPanelView.Listener {
+            override fun onInsert(item: ClipItem) { insertClip(item); setMode(Mode.LETTERS) }
+            override fun onBack() = setMode(Mode.LETTERS)
+            override fun onHistoryToggled(on: Boolean) { WispSettings.get(this@WispIme).putBoolean("clipboard_history", on); saveClipSoon() }
+            override fun onChanged() = saveClipSoon()
+        }
+        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, maxOf(keys?.height ?: 0, (340 * d).toInt()))
+        panel.refresh()
+        clipPanel = panel
+    }
+
+    /** The panel's views are removed when it closes, so a closed panel costs nothing. */
+    private fun hideClipboardPanel() {
+        val panel = clipPanel ?: return
+        clipPanel = null
+        panelStack?.removeView(panel)
+    }
+
+    private fun insertClip(item: ClipItem) {
+        controller.finishWord()
+        if (item.kind != Kind.IMAGE || item.uri == null) { editor.commit(item.text); return }
+        val info = currentInputEditorInfo; val ic = currentInputConnection
+        val mime = contentResolver.getType(android.net.Uri.parse(item.uri))
+        val accepted = info != null && androidx.core.view.inputmethod.EditorInfoCompat.getContentMimeTypes(info).any { it == mime || (mime != null && it.endsWith("/*") && mime.startsWith(it.dropLast(1))) }
+        if (ic == null || info == null || mime == null || !accepted) { android.widget.Toast.makeText(this, "This field cannot take images", android.widget.Toast.LENGTH_SHORT).show(); return }
+        val content = androidx.core.view.inputmethod.InputContentInfoCompat(android.net.Uri.parse(item.uri), android.content.ClipDescription("image", arrayOf(mime)), null)
+        androidx.core.view.inputmethod.InputConnectionCompat.commitContent(ic, info, content, androidx.core.view.inputmethod.InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION, null)
+    }
+
     private fun showPicker() { getSystemService(InputMethodManager::class.java).showInputMethodPicker() }
+
+    override fun onFinishInputView(finishingInput: Boolean) {
+        endPlacementEdit()          // keep whatever was changed if the keyboard goes away mid-edit
+        super.onFinishInputView(finishingInput)
+    }
 
     override fun onStartInputView(info: EditorInfo, restarting: Boolean) {
         super.onStartInputView(info, restarting)
@@ -400,12 +691,15 @@ class WispIme : InputMethodService() {
         editor.enterAction = f.enter
         // Suggestions and auto-correct only make sense for ordinary text; not for passwords, e-mail, URLs or numbers.
         controller.suggestionsEnabled = f.suggest && f.kind == FieldKind.TEXT
-        controller.autoCorrect = language.autoCorrect
+        controller.autoCorrect = language.autoCorrect && style.autoCorrect
+        controller.autoCapitalize = style.autoCaps
+        controller.doubleSpacePeriod = style.doubleSpacePeriod
+        controller.shortcuts = parseShortcuts(style.shortcuts)
         packageName = info.packageName
         bar?.micEnabled = f.kind != FieldKind.PASSWORD && f.suggest
         engine?.refreshSources(); gestureEngine?.refreshSources()
         updateLearning()
-        keys?.gesturesEnabled = controller.suggestionsEnabled
+        keys?.gesturesEnabled = controller.suggestionsEnabled && style.glide
         if (!restarting) mode = Mode.LETTERS
         setMode(mode)
         controller.onFieldStarted(restarting)

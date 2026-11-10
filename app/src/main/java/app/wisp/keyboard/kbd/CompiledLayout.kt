@@ -1,23 +1,11 @@
 package app.wisp.keyboard.kbd
 
 /**
- * A layout with geometry applied for one view size, flattened into primitive arrays so drawing and hit
- * testing never allocate. Rectangles are the full touch areas (gaps included); the view insets them
- * when drawing.
+ * A layout with geometry applied for one view size, flattened into primitive arrays so drawing never
+ * allocates. The geometry itself comes from the Rust core: [rects] are the rectangles to draw.
  */
-class CompiledLayout(
-    val spec: LayoutSpec,
-    val width: Float,
-    val height: Float,
-    padX: Float,
-    padTop: Float,
-    padBottom: Float,
-    padRight: Float = padX,
-    /** Extra empty space down the middle of every row of letters (split keyboard). */
-    splitGap: Float = 0f,
-) {
+class CompiledLayout(val spec: LayoutSpec, val width: Float, val height: Float, val rects: FloatArray) {
     val count: Int
-    val rects: FloatArray      // left, top, right, bottom per key
     val codes: IntArray
     val kinds: IntArray
     val labels: Array<String>
@@ -26,48 +14,39 @@ class CompiledLayout(
     val popups: Array<String?>
 
     init {
-        var n = 0
-        for (row in spec.rows) for (k in row) if (!k.spacer) n++
-        count = n
-        rects = FloatArray(n * 4)
-        codes = IntArray(n)
-        kinds = IntArray(n)
-        val l = arrayOfNulls<String>(n)
-        val u = arrayOfNulls<String>(n)
-        val pops = arrayOfNulls<String>(n)
-
-        val rowH = (height - padTop - padBottom) / spec.rows.size
-        var idx = 0
-        for ((r, row) in spec.rows.withIndex()) {
-            val total = row.sumOf { it.weight.toDouble() }.toFloat()
-            val splitHere = splitGap > 0f && row.none { it.code == KeyCodes.SPACE } && total >= 8f
-            val unit = (width - padX - padRight - (if (splitHere) splitGap else 0f)) / total
-            var x = padX
-            var seen = 0f
-            var gapDone = false
-            val top = padTop + r * rowH
-            for (k in row) {
-                if (splitHere && !gapDone && seen >= total / 2f - 0.01f) { x += splitGap; gapDone = true }
-                seen += k.weight
-                val w = k.weight * unit
-                if (!k.spacer) {
-                    val o = idx * 4
-                    rects[o] = x; rects[o + 1] = top; rects[o + 2] = x + w; rects[o + 3] = top + rowH
-                    codes[idx] = k.code; kinds[idx] = k.kind
-                    l[idx] = k.label; u[idx] = k.labelUpper; pops[idx] = k.popups
-                    idx++
-                }
-                x += w
-            }
-        }
-        @Suppress("UNCHECKED_CAST")
-        labels = l as Array<String>
-        @Suppress("UNCHECKED_CAST")
-        labelsUpper = u as Array<String>
-        popups = pops
+        val keys = spec.rows.flatten().filter { !it.spacer }
+        count = keys.size
+        require(rects.size >= count * 4) { "rects hold ${rects.size / 4} keys, layout has $count" }
+        codes = IntArray(count) { keys[it].code }
+        kinds = IntArray(count) { keys[it].kind }
+        labels = Array(count) { keys[it].label }
+        labelsUpper = Array(count) { keys[it].labelUpper }
+        popups = Array(count) { keys[it].popups }
     }
 
     fun centerX(i: Int) = (rects[i * 4] + rects[i * 4 + 2]) / 2f
     fun centerY(i: Int) = (rects[i * 4 + 1] + rects[i * 4 + 3]) / 2f
     fun indexOfCode(code: Int): Int { for (i in 0 until count) if (codes[i] == code) return i; return -1 }
+}
+
+/** A [LayoutSpec] as the flat arrays the Rust layout takes. */
+class LayoutSlots(spec: LayoutSpec, glide: (KeySpec) -> Boolean) {
+    val weights: FloatArray
+    /** Per slot: 1 = spacer, 2 = space bar. */
+    val flags: IntArray
+    val rowLens: IntArray = IntArray(spec.rows.size) { spec.rows[it].size }
+    /** Per key: kind (0 plain, 1 backspace, 2 space, 3 shift), 4 = glide may start, bits 8+ = long-press alternates. */
+    val keyInfo: IntArray
+
+    init {
+        val slots = spec.rows.flatten()
+        weights = FloatArray(slots.size) { slots[it].weight }
+        flags = IntArray(slots.size) { (if (slots[it].spacer) 1 else 0) or (if (slots[it].code == KeyCodes.SPACE && !slots[it].spacer) 2 else 0) }
+        keyInfo = slots.filter { !it.spacer }.map { k ->
+            val kind = when (k.code) { KeyCodes.BACKSPACE -> 1; KeyCodes.SPACE -> 2; KeyCodes.SHIFT -> 3; else -> 0 }
+            // The switch-keyboard key has a long-press too: it opens the keyboard picker.
+            val pops = if (k.code == KeyCodes.SWITCH) 1 else k.popups?.let { it.codePointCount(0, it.length) } ?: 0
+            kind or (if (glide(k)) 4 else 0) or (minOf(pops, 255) shl 8)
+        }.toIntArray()
+    }
 }

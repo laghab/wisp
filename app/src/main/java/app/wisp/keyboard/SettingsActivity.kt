@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import app.wisp.keyboard.dict.WordListImporter
 import app.wisp.keyboard.ui.HomeScreen
+import app.wisp.keyboard.ui.TypingScreen
 import app.wisp.keyboard.ui.VoiceModelsScreen
 import app.wisp.keyboard.ui.WispTheme
 
@@ -52,7 +53,8 @@ class SettingsActivity : ComponentActivity() {
                         }
                         val fill = Modifier.fillMaxSize()
                         when (screen) {
-                            SettingsIndex.WELCOME -> WelcomeScreen(onDone = { settings.putBoolean("first_run_done", true); screen = SettingsIndex.HOME }, modifier = fill)
+                            SettingsIndex.WELCOME -> WelcomeScreen(onDone = { settings.putBoolean("first_run_done", true); screen = SettingsIndex.HOME }, onOpen = ::open, modifier = fill)
+                            SettingsIndex.TYPING -> TypingScreen(fill)
                             SettingsIndex.LOOK -> LookScreen(fill)
                             SettingsIndex.SIZE -> SizeScreen(fill)
                             SettingsIndex.FEEDBACK -> FeedbackScreen(fill)

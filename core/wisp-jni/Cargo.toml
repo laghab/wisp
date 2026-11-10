@@ -1,0 +1,13 @@
+[package]
+name = "wisp-jni"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-only"
+
+[lib]
+name = "wisp_jni"
+crate-type = ["cdylib"]
+
+[dependencies]
+wisp-core = { path = "../wisp-core" }
+jni = "0.21"

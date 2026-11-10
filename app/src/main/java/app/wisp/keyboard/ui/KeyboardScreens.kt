@@ -10,7 +10,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
 import app.wisp.keyboard.style.KeyboardStyle
+import app.wisp.keyboard.style.PhotoBackground
+import app.wisp.keyboard.style.Theme
+import app.wisp.keyboard.style.Themes
 
 /** The style being edited. Every change is saved at once and shown in the preview at once. */
 @Composable
@@ -28,25 +38,37 @@ private fun PreviewAnd(modifier: Modifier, style: KeyboardStyle, content: @Compo
     }
 }
 
+@OptIn(androidx.compose.foundation.layout.ExperimentalLayoutApi::class)
 @Composable
 fun LookScreen(modifier: Modifier = Modifier) {
     val (style, edit) = rememberEditableStyle()
+    val context = LocalContext.current
     PreviewAnd(modifier, style) {
         Section("Theme") {
-            ChoiceRow("Colours", listOf("system" to "Follow the phone", "light" to "Light", "dark" to "Dark"), style.theme) { v -> edit { it.copy(theme = v) } }
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                for (t in Themes.all(context)) ThemeCard(t, selected = t.id == style.theme) { edit { it.copy(theme = t.id) } }
+            }
+            val current = Themes.get(context, style.theme)
+            if (current.dynamic && KeyboardStyle.DYNAMIC_AVAILABLE) SwitchRow("Colour from wallpaper", "Material You colours from your wallpaper", style.wallpaperColours) { v -> edit { it.copy(wallpaperColours = v) } }
         }
-        Section("Accent colour") {
-            val options = KeyboardStyle.ACCENTS.map { (n, c) -> n to Color(c) } + if (KeyboardStyle.DYNAMIC_AVAILABLE) listOf("dynamic" to Color(KeyboardStyle.colorOf(LocalContext.current, "dynamic"))) else emptyList()
-            ColorSwatches(options, style.accent) { v -> edit { it.copy(accent = v) } }
-            if (KeyboardStyle.DYNAMIC_AVAILABLE) Text("The last circle follows your wallpaper.", style = MaterialTheme.typography.bodySmall)
+        Section("Photo background") {
+            val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
+                if (uri != null) PhotoBackground.import(context, uri)?.let { path -> edit { it.copy(photo = path) } }
+            }
+            androidx.compose.foundation.layout.Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                androidx.compose.material3.Button(onClick = { picker.launch("image/*") }) { Text(if (style.photo.isEmpty()) "Choose a photo" else "Change photo") }
+                if (style.photo.isNotEmpty()) androidx.compose.material3.OutlinedButton(onClick = { PhotoBackground.file(context).delete(); edit { it.copy(photo = "") } }) { Text("Remove") }
+            }
+            if (style.photo.isNotEmpty()) SliderRow("Dimming", style.photoDim, 0..80, "%") { v -> edit { it.copy(photoDim = v) } }
         }
-        Section("Keys") {
-            ChoiceRow("Shape", listOf("square" to "Square", "round" to "Rounded", "pill" to "Pill"), style.shape) { v -> edit { it.copy(shape = v) } }
+        Section("Fine-tune") {
+            SwitchRow("Key borders", checked = style.keyBorders) { v -> edit { it.copy(keyBorders = v) } }
+            SwitchRow("Key hints", "The small symbol on each key, typed with a long press", style.keyHints) { v -> edit { it.copy(keyHints = v) } }
         }
         Section("Swipe trail") {
             SwitchRow("Show the trail while swiping", checked = style.trailOn) { v -> edit { it.copy(trailOn = v) } }
             if (style.trailOn) {
-                val options = listOf("accent" to Color(style.accentColor(LocalContext.current))) + KeyboardStyle.ACCENTS.map { (n, c) -> n to Color(c) }
+                val options = listOf("accent" to Color(style.trailColorInt(context).let { if (style.trailColor == "accent") it else style.themeFor(context).accent.base() })) + KeyboardStyle.ACCENTS.map { (n, c) -> n to Color(c) }
                 ColorSwatches(options, style.trailColor) { v -> edit { it.copy(trailColor = v) } }
                 SliderRow("Thickness", style.trailWidthDp, 2..12, " dp") { v -> edit { it.copy(trailWidthDp = v) } }
             }
@@ -54,21 +76,38 @@ fun LookScreen(modifier: Modifier = Modifier) {
     }
 }
 
+/** A small preview of a theme: its board, three keys and its accent. */
+@Composable
+private fun ThemeCard(t: Theme, selected: Boolean, onClick: () -> Unit) {
+    val c = { v: Int -> Color(v) }
+    Column(
+        Modifier.width(96.dp).clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Canvas(
+            Modifier.fillMaxWidth().height(60.dp).clip(RoundedCornerShape(10.dp))
+                .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp)),
+        ) {
+            drawRect(c(t.board.first().base() or (0xFF shl 24)))
+            val key = c(t.key.base()); val mod = c(t.mod.base()); val acc = c(t.accent.base())
+            val kw = size.width / 6f; val kh = size.height / 4f
+            val r = androidx.compose.ui.geometry.CornerRadius(minOf(t.radius[0], 6f) * density, minOf(t.radius[0], 6f) * density)
+            for (row in 0..2) for (col in 0..4) drawRoundRect(if (row == 2 && col == 0) mod else if (row == 2 && col == 4) acc else key, androidx.compose.ui.geometry.Offset(kw * (col + 0.5f), kh * (row + 0.5f)), androidx.compose.ui.geometry.Size(kw * 0.85f, kh * 0.8f), r)
+        }
+        Text(t.name, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
+    }
+}
+
 @Composable
 fun SizeScreen(modifier: Modifier = Modifier) {
     val (style, edit) = rememberEditableStyle()
     PreviewAnd(modifier, style) {
-        Section("Size") {
-            SliderRow("Height, portrait", style.heightPortrait, 70..130) { v -> edit { it.copy(heightPortrait = v) } }
-            SliderRow("Height, landscape", style.heightLandscape, 60..130) { v -> edit { it.copy(heightLandscape = v) } }
-            SliderRow("Gap below the keyboard", style.bottomGap, 0..80, " dp") { v -> edit { it.copy(bottomGap = v) } }
-            SliderRow("Space between keys", style.gap, 40..200) { v -> edit { it.copy(gap = v) } }
+        Section("Size and position") {
+            Text("Resize, raise, one-handed, floating and split are set on the keyboard itself: open the keyboard and tap the resize button on its toolbar.", style = MaterialTheme.typography.bodyMedium)
         }
-        Section("Layout") {
+        Section("Keys") {
+            SliderRow("Space between keys", style.gap, 40..200) { v -> edit { it.copy(gap = v) } }
             SwitchRow("Number row", "Digits above the letters", style.numberRow) { v -> edit { it.copy(numberRow = v) } }
-            SwitchRow("Floating keyboard", "A smaller keyboard you can drag by its handle; the app behind it is not pushed up", style.floating) { v -> edit { it.copy(floating = v) } }
-            SwitchRow("Split keyboard", "A gap down the middle, for typing with two thumbs", style.split) { v -> edit { it.copy(split = v) } }
-            ChoiceRow("One-handed mode", listOf("off" to "Off", "left" to "Left hand", "right" to "Right hand"), style.oneHanded) { v -> edit { it.copy(oneHanded = v) } }
         }
     }
 }
@@ -82,5 +121,31 @@ fun FeedbackScreen(modifier: Modifier = Modifier) {
             SwitchRow("Key click sound", "Uses the phone's own click sound and volume", style.sound) { v -> edit { it.copy(sound = v) } }
         }
         Text("Try it: open any text field and type.", style = MaterialTheme.typography.bodySmall)
+    }
+}
+
+@Composable
+fun TypingScreen(modifier: Modifier = Modifier) {
+    val (style, edit) = rememberEditableStyle()
+    PreviewAnd(modifier, style) {
+        Section("Swiping and gestures") {
+            SwitchRow("Glide typing", "Draw a path across the letters to type a word", style.glide) { v -> edit { it.copy(glide = v) } }
+            SwitchRow("Swipe to delete words", "Swipe left from the backspace key", style.wordSwipe) { v -> edit { it.copy(wordSwipe = v) } }
+            SwitchRow("Slide on space to move the cursor", checked = style.cursorSlide) { v -> edit { it.copy(cursorSlide = v) } }
+            SliderRow("Long-press delay", style.longPressMs, 150..700, " ms") { v -> edit { it.copy(longPressMs = v) } }
+        }
+        Section("Writing") {
+            SwitchRow("Autocorrect", "Fixes likely typos when you type a space; backspace undoes it", style.autoCorrect) { v -> edit { it.copy(autoCorrect = v) } }
+            SwitchRow("Auto-capitalise", "A capital letter at the start of a sentence", style.autoCaps) { v -> edit { it.copy(autoCaps = v) } }
+            SwitchRow("Double space makes a full stop", "Two spaces after a word type \". \"", style.doubleSpacePeriod) { v -> edit { it.copy(doubleSpacePeriod = v) } }
+        }
+        Section("Feedback") {
+            ChoiceRow("Vibration", listOf("off" to "Off", "light" to "Light", "strong" to "Strong"), style.haptic) { v -> edit { it.copy(haptic = v) } }
+            SwitchRow("Key sound", checked = style.sound) { v -> edit { it.copy(sound = v) } }
+        }
+        Section("Text shortcuts") {
+            Text("One per line, as word=expansion. Typing the word and a space types the expansion.", style = MaterialTheme.typography.bodySmall)
+            androidx.compose.material3.OutlinedTextField(style.shortcuts, { v -> edit { it.copy(shortcuts = v) } }, Modifier.fillMaxWidth(), placeholder = { Text("omw=On my way") }, minLines = 3)
+        }
     }
 }

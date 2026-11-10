@@ -59,6 +59,7 @@ private fun ModelsTab() {
                 }
             }
         }
+        item { StorageMeter(dl) }
         item {
             Card { Column(Modifier.padding(16.dp)) {
                 Text("Free the model when idle", style = MaterialTheme.typography.titleMedium)
@@ -67,21 +68,61 @@ private fun ModelsTab() {
                 Text("The model is only loaded while you use voice; this is how long it stays in memory afterwards.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             } }
         }
-        items(ModelCatalog.all, key = { it.id }) { spec ->
+        items(ModelCatalog.speech, key = { it.id }) { spec ->
             ModelCard(spec, dl, device, recommended.model.id == spec.id, bench, running == spec.id, benchRevision,
                 onBench = { running = spec.id; bench.run(spec) { running = null; benchRevision++ } },
                 onImport = { pendingImport = spec; picker.launch(arrayOf("*/*")) })
+        }
+        item { RewriteHeader(dl) }
+        items(ModelCatalog.rewrite, key = { it.id }) { spec ->
+            ModelCard(spec, dl, device, false, bench, false, benchRevision, onBench = {}, onImport = {})
         }
     }
 }
 
 private var pendingImport: ModelSpec? = null
 
+/** The writing assistant: nothing is installed by default, and it can be turned off. */
+@Composable
+private fun RewriteHeader(dl: ModelDownloads) {
+    @Suppress("UNUSED_EXPRESSION") dl.revision
+    val off = dl.store.rewriteId == "off"
+    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Writing assistant", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+                    Text("Rewrites your text (polish, friendlier, formal, shorter, bullets, Hindi) with a small AI model that runs on this phone. Nothing is installed by default.", style = MaterialTheme.typography.bodySmall)
+                }
+                Switch(checked = !off, onCheckedChange = { dl.setRewriteOff(!it) })
+            }
+            if (off) Text("Off: the rewrite button explains how to turn it on.", style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+/** How much space the installed models take, against what is left on the phone. */
+@Composable
+private fun StorageMeter(dl: ModelDownloads) {
+    val context = LocalContext.current
+    @Suppress("UNUSED_EXPRESSION") dl.revision
+    val used = dl.store.installed().sumOf { it.installedBytes }
+    val free = context.noBackupFilesDir.usableSpace
+    fun mb(b: Long) = if (b >= 1_000_000_000L) "%.1f GB".format(b / 1e9) else "${b / 1_000_000L} MB"
+    Card {
+        Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text("Storage", style = MaterialTheme.typography.titleMedium)
+            Text("${mb(used)} used by speech models \u00B7 ${mb(free)} free on this phone", style = MaterialTheme.typography.bodyMedium)
+            LinearProgressIndicator(progress = { if (used + free == 0L) 0f else used.toFloat() / (used + free) }, modifier = Modifier.fillMaxWidth())
+        }
+    }
+}
+
 @Composable
 private fun ModelCard(spec: ModelSpec, dl: ModelDownloads, device: DeviceFacts, recommended: Boolean, bench: ModelBench, benchRunning: Boolean, benchRevision: Int, onBench: () -> Unit, onImport: () -> Unit) {
     @Suppress("UNUSED_EXPRESSION") dl.revision
     val installed = dl.store.isInstalled(spec)
-    val active = dl.store.active()?.id == spec.id
+    val active = if (spec.kind == ModelKind.REWRITE) dl.store.activeRewrite()?.id == spec.id else dl.store.active()?.id == spec.id
     val assessment = ModelAdvisor.assess(spec, device)
     val notes = ModelInfo.notesFor(spec.id)
     val transfer = dl.transfers[spec.id] ?: Transfer.Idle
@@ -113,7 +154,7 @@ private fun ModelCard(spec: ModelSpec, dl: ModelDownloads, device: DeviceFacts, 
                 Transfer.Idle -> Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     if (installed) {
                         if (!active) FilledTonalButton({ dl.select(spec) }) { Text("Use") }
-                        OutlinedButton(onBench, enabled = !benchRunning) { Text(if (benchRunning) "Measuring…" else "Test speed") }
+                        if (spec.kind == ModelKind.SPEECH) OutlinedButton(onBench, enabled = !benchRunning) { Text(if (benchRunning) "Measuring…" else "Test speed") }
                         TextButton({ confirmRemove = true }) { Text("Remove") }
                     } else {
                         Button({ dl.download(spec) }) { Text("Download") }

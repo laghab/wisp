@@ -6,10 +6,13 @@ import android.graphics.Paint
 import android.graphics.Typeface
 import android.view.MotionEvent
 import android.view.View
+import app.wisp.keyboard.style.Theme
+import app.wisp.keyboard.style.ThemeFonts
 
 /**
- * The strip above the keys. While a word is being typed it shows up to three suggestions; otherwise it shows the
- * editing tools (select all, cut, copy, paste).
+ * The strip above the keys (48 dp). While a word is being typed it shows three suggestions with the best one bold in
+ * the middle; otherwise it shows the tool icons. A grid button on the left swaps between the quick tools and the editing
+ * tools, and the voice button is always on the right.
  */
 class SuggestionBarView(context: Context, private val palette: Palette = Palette()) : View(context) {
 
@@ -24,7 +27,13 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         fun onSettings() {}
     }
 
-    enum class Tool(val label: String) { SELECT_ALL("Select all"), CUT("Cut"), COPY("Copy"), PASTE("Paste"), INCOGNITO("Private") }
+    /** A tool on the strip: [icon] for the quick tools, a text [label] for the editing tools. */
+    enum class Tool(val label: String, val icon: Icons.Icon?) {
+        CLIPBOARD("Clipboard", Icons.Icon.CLIPBOARD), EMOJI("Emoji", Icons.Icon.EMOJI), REWRITE("Rewrite", Icons.Icon.SPARKLE), RESIZE("Resize", Icons.Icon.CROP), THEMES("Themes", Icons.Icon.THEME), SETTINGS("Settings", Icons.Icon.SLIDERS),
+        SELECT_ALL("Select all", null), CUT("Cut", null), COPY("Copy", null), PASTE("Paste", null), INCOGNITO("Private", null);
+
+        val isEdit get() = icon == null
+    }
 
     var listener: Listener? = null
 
@@ -38,13 +47,23 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
     var incognito = false
         set(v) { if (field != v) { field = v; invalidate() } }
     private var composing = false
+    private var showEdit = false
+    private var theme: Theme? = null
     private val density = resources.displayMetrics.density
-    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; textSize = 17f * density }
-    private val divider = Paint().apply { color = palette.key; strokeWidth = 1f * density }
+    private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; textSize = 16f * density }
+    private val line = Paint().apply { strokeWidth = 1f * density }
+    private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private var tools: List<Tool> = Tool.values().toList()
 
     /** Which tools the strip shows, in order (the user can reorder and remove them). */
     fun setTools(list: List<Tool>) { if (list != tools) { tools = list; invalidate() } }
+
+    /** Takes the font, colours and mic glow of the current theme. */
+    fun setTheme(t: Theme) {
+        theme = t
+        text.typeface = ThemeFonts.typeface(context, t.font, if (t.weight > 500) 500 else t.weight)
+        invalidate()
+    }
 
     fun setState(s: BarState) {
         if (items === s.items && composing == s.composing) return
@@ -54,50 +73,68 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
 
     override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(MeasureSpec.getSize(w), (HEIGHT_DP * density).toInt())
 
-    private val micWidth get() = 52f * density
-    private val gearWidth get() = 44f * density
-    private val rightEdge get() = micWidth + gearWidth
-    private val micPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.STROKE; strokeCap = Paint.Cap.ROUND; strokeWidth = 2f * density }
-    private val micBox = android.graphics.RectF()
+    private val cell get() = 44f * density
+    private val micSize get() = 40f * density
+    private val micArea get() = 48f * density
+    private val ink get() = theme?.stripFg ?: palette.textMuted
+    private val quick get() = tools.filter { !it.isEdit }
+    private val edit get() = tools.filter { it.isEdit }
+    private fun row(): List<Tool> = if (showEdit) edit else quick
 
     override fun onDraw(c: Canvas) {
-        c.drawColor(palette.background); divider.color = palette.key
-        drawMic(c); drawGear(c)
-        val cells = if (composing) 3 else tools.size.coerceAtLeast(1)
-        val cw = (width - rightEdge) / cells
+        val t = theme
+        c.drawColor(palette.background)
+        line.color = t?.sep ?: palette.key
+        drawMic(c)
+        val d = density
+        val left = if (composing) 4f * d else 4f * d + cell
+        if (!composing) Icons.draw(c, Icons.Icon.GRID, 4f * d + cell / 2f, height / 2f, 20f * d, if (showEdit) palette.accent else ink)
+        val x0 = left; val x1 = width - micArea
         val fm = text.fontMetrics
         val y = height / 2f - (fm.ascent + fm.descent) / 2f
-        for (i in 0 until if (!composing && tools.isEmpty()) 0 else cells) {
-            val label: String; val strong: Boolean
-            if (composing) {
-                val it = items.getOrNull(i) ?: continue
-                label = it.text; strong = it.highlight
-            } else { label = tools[i].label; strong = tools[i] == Tool.INCOGNITO && incognito }
-            text.typeface = if (strong) Typeface.DEFAULT_BOLD else Typeface.DEFAULT
-            text.color = if (strong) palette.accent else if (composing) palette.text else palette.textMuted
-            c.drawText(ellipsize(label, cw - 12 * density), i * cw + cw / 2f, y, text)
-            if (i > 0) c.drawLine(i * cw, height * 0.28f, i * cw, height * 0.72f, divider)
+        if (composing) {
+            val cw = (x1 - x0) / 3f
+            for (i in 0 until 3) {
+                val it = items.getOrNull(i)?.takeIf { s -> s.text.isNotEmpty() } ?: continue
+                text.typeface = Typeface.create(text.typeface, if (i == 1) Typeface.BOLD else Typeface.NORMAL)
+                text.color = if (it.highlight) palette.accent else ink
+                text.alpha = if (i == 1) 255 else 204
+                val label = if (it.quoted) "“${it.text}”" else if (t?.upper == true) it.text.uppercase() else it.text
+                c.drawText(ellipsize(label, cw - 12f * d), x0 + i * cw + cw / 2f, y, text)
+                if (i > 0) c.drawLine(x0 + i * cw, height / 2f - 10f * d, x0 + i * cw, height / 2f + 10f * d, line)
+            }
+            text.alpha = 255
+            return
+        }
+        val r = row()
+        if (r.isEmpty()) return
+        val cw = (x1 - x0) / r.size
+        for ((i, tool) in r.withIndex()) {
+            val cx = x0 + i * cw + cw / 2f
+            val active = tool == Tool.INCOGNITO && incognito
+            val col = if (active) palette.accent else if (tool == Tool.REWRITE) 0xFFFFB86B.toInt() else ink
+            if (tool.icon != null) Icons.draw(c, tool.icon, cx, height / 2f, 21f * d, col)
+            else {
+                text.typeface = Typeface.create(text.typeface, if (active) Typeface.BOLD else Typeface.NORMAL)
+                text.color = col; text.textSize = 15f * d
+                c.drawText(ellipsize(tool.label, cw - 8f * d), cx, y, text)
+                text.textSize = 16f * d
+                if (i > 0) c.drawLine(x0 + i * cw, height / 2f - 10f * d, x0 + i * cw, height / 2f + 10f * d, line)
+            }
         }
     }
 
-    /** A small microphone at the right end of the strip, always there so voice is one tap away. */
+    /** The voice button, always there so voice is one tap away: an accent disc with the mic on it. */
     private fun drawMic(c: Canvas) {
-        micPaint.color = if (micEnabled) palette.accent else palette.key
-        val cx = width - micWidth / 2f; val cy = height / 2f; val d = density
-        micBox.set(cx - 4.5f * d, cy - 11f * d, cx + 4.5f * d, cy + 3f * d); c.drawRoundRect(micBox, 4.5f * d, 4.5f * d, micPaint)
-        micBox.set(cx - 9f * d, cy - 6f * d, cx + 9f * d, cy + 10f * d); c.drawArc(micBox, 20f, 140f, false, micPaint)
-        c.drawLine(cx, cy + 10f * d, cx, cy + 14f * d, micPaint)
-    }
-
-    /** A small cog just left of the mic: settings, one tap away from anywhere. */
-    private fun drawGear(c: Canvas) {
-        micPaint.color = palette.textMuted
-        val cx = width - micWidth - gearWidth / 2f; val cy = height / 2f; val d = density
-        c.drawCircle(cx, cy, 4f * d, micPaint)
-        for (i in 0 until 8) {
-            val a = Math.toRadians(i * 45.0); val cs = Math.cos(a).toFloat(); val sn = Math.sin(a).toFloat()
-            c.drawLine(cx + cs * 7f * d, cy + sn * 7f * d, cx + cs * 10f * d, cy + sn * 10f * d, micPaint)
-        }
+        val t = theme
+        val cx = width - micArea / 2f; val cy = height / 2f
+        val acc = if (micEnabled) palette.accent else palette.key
+        fill.color = acc
+        fill.setShadowLayer(0f, 0f, 0f, 0)
+        if (micEnabled && t?.micGlow != null) { fill.setShadowLayer(t.micGlow.blur * density, 0f, 0f, t.micGlow.color); setLayerType(LAYER_TYPE_SOFTWARE, null) }
+        c.drawCircle(cx, cy, micSize / 2f, fill)
+        fill.clearShadowLayer()
+        Icons.draw(c, Icons.Icon.MIC, cx, cy, 19f * density, if (micEnabled) palette.onAccent else palette.textMuted, strokeWidth = 1.9f)
     }
 
     private fun ellipsize(s: String, maxWidth: Float): String {
@@ -111,19 +148,25 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
     private var micPressed = false
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        if (e.actionMasked == MotionEvent.ACTION_DOWN && e.x >= width - micWidth && micEnabled) { micPressed = true; micDownAt = e.eventTime; listener?.onMicDown(); return true }
+        if (e.actionMasked == MotionEvent.ACTION_DOWN && e.x >= width - micArea && micEnabled) { micPressed = true; micDownAt = e.eventTime; listener?.onMicDown(); return true }
         if (micPressed && (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL)) { micPressed = false; listener?.onMicUp(e.eventTime - micDownAt); return true }
         if (micPressed) return true
         if (e.actionMasked == MotionEvent.ACTION_UP) {
-            if (e.x >= width - micWidth) return true
-            if (e.x >= width - rightEdge) { listener?.onSettings(); return true }
-            val cells = if (composing) 3 else tools.size.coerceAtLeast(1)
-            if (!composing && tools.isEmpty()) return true
-            val i = (e.x / ((width - rightEdge) / cells)).toInt().coerceIn(0, cells - 1)
-            if (composing) { if (i < items.size) listener?.onSuggestion(i) } else listener?.onTool(tools[i])
+            if (e.x >= width - micArea) return true
+            val x0 = if (composing) 4f * density else 4f * density + cell
+            if (composing) {
+                val i = ((e.x - x0) / ((width - micArea - x0) / 3f)).toInt().coerceIn(0, 2)
+                if (items.getOrNull(i)?.text?.isNotEmpty() == true) listener?.onSuggestion(i)
+                return true
+            }
+            if (e.x < x0) { showEdit = !showEdit; invalidate(); return true }
+            val r = row()
+            if (r.isEmpty()) return true
+            val i = ((e.x - x0) / ((width - micArea - x0) / r.size)).toInt().coerceIn(0, r.size - 1)
+            if (r[i] == Tool.SETTINGS) listener?.onSettings() else listener?.onTool(r[i])
         }
         return true
     }
 
-    companion object { const val HEIGHT_DP = 44f }
+    companion object { const val HEIGHT_DP = 48f }
 }

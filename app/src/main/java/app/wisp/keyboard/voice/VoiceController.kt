@@ -45,6 +45,9 @@ class VoiceController(
         private set
     var startedAt = 0L
         private set
+    /** Hands-free listening can be paused: the microphone stays open but nothing is sent until [resume]. */
+    var paused = false
+        private set
 
     private val main = Handler(Looper.getMainLooper())
     private val models = ModelStore(context)
@@ -63,7 +66,7 @@ class VoiceController(
     /** Starts listening. [handsFree]: keeps going until [stop] (tap to finish); otherwise the caller stops it when the user lets go. */
     fun start(handsFree: Boolean): Boolean {
         if (isActive) return true
-        failure = null; partial = ""
+        failure = null; partial = ""; paused = false
         if (!hasMicPermission()) return fail(Problem.NO_PERMISSION, "Wisp needs microphone access to hear you. Tap the mic to allow it.")
         val model = models.active() ?: return fail(Problem.NO_MODEL, "No speech model yet. Tap the mic to choose one.")
         this.handsFree = handsFree
@@ -84,6 +87,9 @@ class VoiceController(
     /** The press that started this was a quick tap, so it keeps listening until told to stop. */
     fun makeHandsFree() { handsFree = true; onChange() }
 
+    fun pause() { if (phase == Phase.LISTENING && !paused) { paused = true; level = 0f; onChange() } }
+    fun resume() { if (paused) { paused = false; onChange() } }
+
     /** Ends the dictation; the transcript arrives through [onResult]. */
     fun stop() {
         when (phase) {
@@ -100,7 +106,7 @@ class VoiceController(
         if (!isActive && phase != Phase.FAILED) return
         mic?.stop(); mic = null; preRoll.clear(); ready = false; stopWhenReady = false
         if (isActive) client.cancel()
-        phase = Phase.IDLE; partial = ""; failure = null; level = 0f
+        phase = Phase.IDLE; partial = ""; failure = null; level = 0f; paused = false
         onChange()
     }
 
@@ -111,6 +117,7 @@ class VoiceController(
 
     private fun frame(f: ShortArray) {
         if (phase != Phase.WARMING && phase != Phase.LISTENING) return
+        if (paused) return
         if (ready) client.pcm(f) else if (preRoll.size < MAX_PREROLL_FRAMES) preRoll.add(f)
     }
 
@@ -135,7 +142,7 @@ class VoiceController(
 
     override fun onFinal(text: String, finishMs: Long) {
         if (app.wisp.keyboard.BuildConfig.DEBUG) android.util.Log.i("WISP_PROBE", "voice_finish_ms=$finishMs words=${text.split(' ').size}")
-        phase = Phase.IDLE; partial = ""; ready = false; level = 0f
+        phase = Phase.IDLE; partial = ""; ready = false; level = 0f; paused = false
         onChange()
         if (text.isNotBlank()) onResult(text)
     }

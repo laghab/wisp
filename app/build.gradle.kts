@@ -49,7 +49,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    externalNativeBuild { cmake { path = file("src/main/cpp/CMakeLists.txt"); version = "3.31.6" } }
+
+    sourceSets["main"].jniLibs.srcDir(layout.buildDirectory.dir("rustJniLibs"))
 
     buildFeatures { buildConfig = true; compose = true }
     testOptions {
@@ -58,6 +59,21 @@ android {
         unitTests.all { it.testLogging { showStandardStreams = true } }
     }
 }
+
+// Rust core (core/): built with cargo-ndk into build/rustJniLibs, which is packaged as jniLibs.
+val buildRust by tasks.registering(Exec::class) {
+    val release = gradle.startParameter.taskNames.any { it.contains("Release", ignoreCase = true) }
+    workingDir = rootProject.file("core")
+    environment("ANDROID_NDK_HOME", android.sdkDirectory.resolve("ndk/${android.ndkVersion}").path)
+    commandLine(
+        listOf("cargo", "ndk", "-t", "arm64-v8a", "-t", "armeabi-v7a", "-t", "x86_64",
+            "-o", layout.buildDirectory.dir("rustJniLibs").get().asFile.path, "build", "-p", "wisp-jni")
+            + if (release) listOf("--release") else emptyList()
+    )
+    inputs.files(fileTree(rootProject.file("core")) { exclude("target") }).withPropertyName("rustSources")
+    outputs.dir(layout.buildDirectory.dir("rustJniLibs"))
+}
+tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(buildRust) }
 
 kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) } }
 
