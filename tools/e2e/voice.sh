@@ -9,7 +9,7 @@ voice_pids() { a "ps -A | grep ':voice'" | wc -l; }
 pss_kb() { a dumpsys meminfo "$1" 2>/dev/null | grep -E "TOTAL PSS:" | head -1 | awk '{print $3}'; }
 check() { if [ "$1" = ok ]; then echo "PASS $2"; else echo "FAIL $2"; FAILED=1; fi; }
 reset_all() { a am force-stop "$P"; as_app "rm -rf files/personal" >/dev/null 2>&1; }
-dictate_hands_free() { tap $MIC; sleep "${1:-9}"; tap $PANEL_MIC; sleep 3; }
+dictate_hands_free() { tap $MIC; sleep "${1:-9}"; tap $PANEL_DONE; sleep 3; }
 
 "$HERE/../install-test-model.sh" "$DEV" >/dev/null || { echo "FAIL could not install the test model"; exit 1; }
 a pm grant "$P" android.permission.RECORD_AUDIO
@@ -21,11 +21,11 @@ type_word te
 check "$([ "$(voice_pids)" = 0 ] && echo ok)" "typing alone starts no voice process (no model in memory)"
 main_before=$(pss_kb "$P")
 
-# 2. tap the mic: hands-free, tap again to insert
+# 2. tap the mic: hands-free, then the arrow inserts what was said
 reset_all; launch_field
 dictate_hands_free 9
 got="$(field_text)"; echo "field: '$got'"
-check "$(case "$got" in *"$SENTENCE"*) echo ok;; esac)" "tap the mic, talk, tap to finish: the transcript is inserted"
+check "$(case "$got" in *"$SENTENCE"*) echo ok;; esac)" "tap the mic, talk, press the arrow: the transcript is inserted"
 adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/voice_after.png"
 tap $UNDO_CELL; sleep 0.6
 check "$([ -z "$(field_text)" ] && echo ok)" "Undo dictation removes exactly what was inserted"
@@ -38,7 +38,7 @@ check "$(awk -v a="${main_after:-0}" -v b="${main_before:-0}" 'BEGIN { exit !(a 
 
 # 3. hold the mic to talk, let go to insert
 reset_all; launch_field
-a input swipe 916 752 916 752 8500; sleep 3.5
+a input swipe $MIC $MIC 8500; sleep 3.5
 got="$(field_text)"; echo "field: '$got'"
 check "$(case "$got" in *"$SENTENCE"*) echo ok;; esac)" "hold the mic to talk and let go: the transcript is inserted"
 

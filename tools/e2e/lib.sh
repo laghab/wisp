@@ -13,7 +13,8 @@ read -r R1 R2 R3 <<< "$(python3 "$E2E/swipe.py" --rows)"; R4=1047; STRIP=737
 K() { python3 "$E2E/swipe.py" --key "$1"; }
 SHIFT="70 $R3"; BKSP="878 $R3"; SYM="70 $R4"; SWITCH="190 $R4"; EMOJI="286 $R4"; COMMA="383 $R4"; LANG_KEY="480 $R4"; SPACE="620 $R4"; PERIOD="760 $R4"; ENTER="878 $R4"
 MIC="917 $STRIP"; SLOT_L="150 $STRIP"; SLOT_M="445 $STRIP"; SLOT_R="730 $STRIP"
-PANEL_MIC="475 812"; PANEL_CANCEL="370 812"; UNDO_CELL="163 920"   # voice panel: pause/finish, cancel, "Undo phrase"
+PANEL_MIC="475 812"; PANEL_CANCEL="370 812"; PANEL_DONE="908 599"   # voice panel: pause/resume, cancel, the arrow that inserts and goes back
+UNDO_CELL="$SLOT_L"                                                  # "Undo dictation" takes the first strip slot after an insert
 # type <word>: taps each letter in turn, then gives the dictionary thread a moment to answer
 type_word() { local c; for c in $(echo "$1" | sed 's/./& /g'); do tap $(K "$c"); done; sleep 0.9; }
 
