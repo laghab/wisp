@@ -4,14 +4,12 @@
 # Usage: tools/e2e/voice.sh <adb-serial>
 DEV="${1:?adb serial}"; KEEP_STATE=1; source "$(dirname "$0")/lib.sh"; FAILED=0
 HERE="$(dirname "$0")"
-MIC_KEY="916 752"          # the microphone at the right end of the strip
-PANEL_MIC="475 948"; PANEL_CANCEL="47 948"; UNDO_CELL="150 752"
 SENTENCE="Ask not what your country can do for you"
 voice_pids() { a "ps -A | grep ':voice'" | wc -l; }
 pss_kb() { a dumpsys meminfo "$1" 2>/dev/null | grep -E "TOTAL PSS:" | head -1 | awk '{print $3}'; }
 check() { if [ "$1" = ok ]; then echo "PASS $2"; else echo "FAIL $2"; FAILED=1; fi; }
 reset_all() { a am force-stop "$P"; as_app "rm -rf files/personal" >/dev/null 2>&1; }
-dictate_hands_free() { tap $MIC_KEY; sleep "${1:-9}"; tap $PANEL_MIC; sleep 3; }
+dictate_hands_free() { tap $MIC; sleep "${1:-9}"; tap $PANEL_MIC; sleep 3; }
 
 "$HERE/../install-test-model.sh" "$DEV" >/dev/null || { echo "FAIL could not install the test model"; exit 1; }
 a pm grant "$P" android.permission.RECORD_AUDIO
@@ -19,7 +17,7 @@ set_prefs voice_idle_minutes=0
 
 # 1. nothing is loaded by typing
 reset_all; launch_field
-tap 427 829; tap 239 829; sleep 0.8
+type_word te
 check "$([ "$(voice_pids)" = 0 ] && echo ok)" "typing alone starts no voice process (no model in memory)"
 main_before=$(pss_kb "$P")
 
@@ -54,13 +52,13 @@ set_prefs voice_idle_minutes=0
 
 # 5. cancel throws the dictation away
 reset_all; launch_field
-tap $MIC_KEY; sleep 3; tap $PANEL_CANCEL; sleep 2.5
+tap $MIC; sleep 3; tap $PANEL_CANCEL; sleep 2.5
 check "$([ -z "$(field_text)" ] && echo ok)" "cancel inserts nothing"
 check "$([ "$(voice_pids)" = 0 ] && echo ok)" "cancel lets the voice process exit"
 
 # 6. password fields never record
 reset_all; launch_field --ei inputType 129
-tap $MIC_KEY; sleep 2
+tap $MIC; sleep 2
 check "$([ "$(voice_pids)" = 0 ] && echo ok)" "the mic does nothing in a password field"
 
 # 7. latency and no audio kept

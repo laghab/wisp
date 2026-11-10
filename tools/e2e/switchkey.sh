@@ -2,7 +2,7 @@
 # On-device checks for the switch-keyboard key (task 2.4). Usage: tools/e2e/switchkey.sh <adb-serial>
 DEV="${1:?adb serial}"; source "$(dirname "$0")/lib.sh"; FAILED=0
 LATIN=com.android.inputmethod.latin/.LatinIME; WISP="$P/app.wisp.keyboard.WispIme"
-SW="191 1045"
+SW="$SWITCH"
 cur() { a settings get secure default_input_method | tr -d '\r'; }
 
 # tap: back to the keyboard used before Wisp
