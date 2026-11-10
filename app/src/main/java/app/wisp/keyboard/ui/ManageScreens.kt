@@ -1,5 +1,6 @@
 package app.wisp.keyboard.ui
 
+import app.wisp.keyboard.kbd.Icons
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,7 +61,7 @@ fun LayoutsScreen(modifier: Modifier = Modifier) {
         Text("Key layouts are plain text files. Edit one here, or export it, change it on a computer and import it again. A file with a mistake is refused with the line and the reason, and your current layout stays. The switch-keyboard key is always kept.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         LetterLayoutPicker()
         LayoutSlot.values().forEach { slot ->
-            Section(slot.title) {
+            Section(slot.title, Icons.Icon.KEYBOARD) {
                 Text(if (LayoutStore.isCustom(context, slot)) "Using your own layout" else "Using the built-in layout", style = MaterialTheme.typography.bodyMedium)
                 @OptIn(ExperimentalLayoutApi::class)
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -101,7 +102,7 @@ private fun ToolbarEditor() {
     val settings = remember { WispSettings.get(context) }
     var tools by remember { mutableStateOf(Toolbar.load(settings)) }
     fun commit(list: List<SuggestionBarView.Tool>) { tools = list; Toolbar.save(settings, list) }
-    Section("Toolbar") {
+    Section("Toolbar", Icons.Icon.GRID) {
         Text("The strip above the keys when you are not typing a word. Move things around or switch them off.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         val all = tools + SuggestionBarView.Tool.values().filter { it !in tools }
         all.forEach { tool ->
@@ -160,7 +161,7 @@ fun BackupScreen(modifier: Modifier = Modifier) {
     Column(modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         message?.let { Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer)) { Text(it, Modifier.padding(12.dp), style = MaterialTheme.typography.bodyMedium) } }
         Text("Backups are ordinary files in a folder you choose. Wisp never uploads them. They hold your learned words, swipe style, layouts and settings. No audio and no speech models.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        Section("Backup folder") {
+        Section("Backup folder", Icons.Icon.FOLDER) {
             Text(manager.folderLabel() ?: "No folder chosen yet", style = MaterialTheme.typography.bodyLarge)
             @OptIn(ExperimentalLayoutApi::class)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -169,14 +170,14 @@ fun BackupScreen(modifier: Modifier = Modifier) {
             }
             manager.lastMessage?.let { Text("Last: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
         }
-        Section("Automatic backups") {
+        Section("Automatic backups", Icons.Icon.CLOCK) {
             ChoiceRow("How often", listOf("off" to "Never", "daily" to "Every day", "weekly" to "Every week"), schedule) { v -> schedule = v; manager.schedule = v }
             if (schedule != "off") {
                 SliderRow("Automatic backups to keep", keep, 1..30, "") { v -> keep = v; manager.keep = v }
                 Text("Checked when the keyboard or this app opens, so nothing runs in the background. Backups you make by hand are never deleted.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Section("Restore") {
+        Section("Restore", Icons.Icon.REFRESH) {
             if (found.isEmpty()) Text(if (manager.folder == null) "Choose a folder to see its backups here." else "No backups in that folder yet.", style = MaterialTheme.typography.bodyMedium)
             found.take(8).forEach { f ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -186,7 +187,7 @@ fun BackupScreen(modifier: Modifier = Modifier) {
             }
             OutlinedButton({ pickFile.launch(arrayOf("application/zip", "*/*")) }) { Text("Restore from a file…") }
         }
-        Section("Move settings to another phone") {
+        Section("Move settings to another phone", Icons.Icon.PHONE) {
             SwitchRow("Include learned words and swipe style", "Off: only settings, themes and layouts", includeLearned) { includeLearned = it }
             OutlinedButton({ exportFile.launch("wisp-settings.zip") }) { Text("Export to a file…") }
         }
@@ -207,7 +208,7 @@ fun BackupScreen(modifier: Modifier = Modifier) {
 private fun LetterLayoutPicker() {
     val context = LocalContext.current
     var style by remember { mutableStateOf(app.wisp.keyboard.style.KeyboardStyle.load(context)) }
-    Section("Letter layout") {
+    Section("Letter layout", Icons.Icon.KEYBOARD) {
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             for (o in app.wisp.keyboard.kbd.LetterLayouts.all) {
                 val on = style.layout == o.id

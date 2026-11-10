@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
+import app.wisp.keyboard.kbd.Icons
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -77,7 +78,7 @@ private fun Logo(size: androidx.compose.ui.unit.Dp) {
     }
 }
 
-private class Tile(val title: String, val sub: String, val target: Target, val chip: Color, val ink: Color)
+private class Tile(val title: String, val sub: String, val target: Target, val chip: Color, val ink: Color, val icon: Icons.Icon)
 
 @Composable
 fun HomeScreen(onOpen: (Target) -> Unit, modifier: Modifier = Modifier) {
@@ -89,16 +90,16 @@ fun HomeScreen(onOpen: (Target) -> Unit, modifier: Modifier = Modifier) {
     val voice = remember { ModelStore(context).active() }
     val primary = MaterialTheme.colorScheme.primary; val amber = MaterialTheme.colorScheme.secondary; val green = MaterialTheme.colorScheme.tertiary
     val tiles = listOf(
-        Tile("Typing", "Glide, gestures, autocorrect, shortcuts", Target.Screen(SettingsIndex.TYPING), Color(0xFF1A2033), Color(0xFFB5C5FF)),
-        Tile("Themes", "Eleven skins, a photo, your own", Target.Screen(SettingsIndex.LOOK), Color(0xFF2A1F33), Color(0xFFD9B5FF)),
-        Tile("Layouts", "Keys, long-press characters, toolbar", Target.Screen(SettingsIndex.LAYOUTS), Color(0xFF13201B), Color(0xFF6FD3A6)),
-        Tile("Models", "Speech and writing assistant, on this phone", Target.Screen(SettingsIndex.VOICE), Color(0xFF2A2418), Color(0xFFFFB86B)),
-        Tile("Learned data", "See, remove, export or erase", Target.Open(app.wisp.keyboard.personal.LearnedDataActivity::class.java), Color(0xFF1B2A2E), Color(0xFF8FD6E8)),
-        Tile("Backup", "To a folder you choose", Target.Screen(SettingsIndex.BACKUP), Color(0xFF2E2A1B), Color(0xFFE8D68F)),
-        Tile("Practice swiping", "A few minutes teaches Wisp your style", Target.Open(app.wisp.keyboard.training.GestureTrainingActivity::class.java), Color(0xFF2E1B22), Color(0xFFF28DB0)),
-        Tile("Feedback", "Vibration and key sounds", Target.Screen(SettingsIndex.FEEDBACK), Color(0xFF1B2433), Color(0xFF8FB0E8)),
-        Tile("Position and size", "Set on the keyboard itself", Target.Screen(SettingsIndex.SIZE), Color(0xFF241B33), Color(0xFFB59BE8)),
-        Tile("Privacy", "What Wisp stores, and what it never does", Target.Screen(SettingsIndex.ABOUT), Color(0xFF13201B), Color(0xFF6FD3A6)),
+        Tile("Typing", "Glide, gestures, autocorrect, shortcuts", Target.Screen(SettingsIndex.TYPING), Color(0xFF1A2033), Color(0xFFB5C5FF), Icons.Icon.KEYBOARD),
+        Tile("Themes", "Eleven skins, a photo, your own", Target.Screen(SettingsIndex.LOOK), Color(0xFF2A1F33), Color(0xFFD9B5FF), Icons.Icon.THEME),
+        Tile("Layouts", "Keys, long-press characters, toolbar", Target.Screen(SettingsIndex.LAYOUTS), Color(0xFF13201B), Color(0xFF6FD3A6), Icons.Icon.GRID),
+        Tile("Models", "Speech and writing assistant, on this phone", Target.Screen(SettingsIndex.VOICE), Color(0xFF2A2418), Color(0xFFFFB86B), Icons.Icon.SPARKLE),
+        Tile("Learned data", "See, remove, export or erase", Target.Open(app.wisp.keyboard.personal.LearnedDataActivity::class.java), Color(0xFF1B2A2E), Color(0xFF8FD6E8), Icons.Icon.DATABASE),
+        Tile("Backup", "To a folder you choose", Target.Screen(SettingsIndex.BACKUP), Color(0xFF2E2A1B), Color(0xFFE8D68F), Icons.Icon.ARCHIVE),
+        Tile("Practice swiping", "A few minutes teaches Wisp your style", Target.Open(app.wisp.keyboard.training.GestureTrainingActivity::class.java), Color(0xFF2E1B22), Color(0xFFF28DB0), Icons.Icon.SWIPE),
+        Tile("Feedback", "Vibration and key sounds", Target.Screen(SettingsIndex.FEEDBACK), Color(0xFF1B2433), Color(0xFF8FB0E8), Icons.Icon.VIBRATE),
+        Tile("Position and size", "Set on the keyboard itself", Target.Screen(SettingsIndex.SIZE), Color(0xFF241B33), Color(0xFFB59BE8), Icons.Icon.CROP),
+        Tile("Privacy", "What Wisp stores, and what it never does", Target.Screen(SettingsIndex.ABOUT), Color(0xFF13201B), Color(0xFF6FD3A6), Icons.Icon.SHIELD),
     )
     LazyColumn(modifier, contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 12.dp, bottom = 32.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
         item {
@@ -178,7 +179,7 @@ private fun Quick(label: String, on: Boolean, onChange: (Boolean) -> Unit) {
 private fun TileCard(t: Tile, modifier: Modifier, onClick: () -> Unit) {
     Card(onClick, modifier.heightIn(min = 124.dp), shape = RoundedCornerShape(18.dp), border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(t.chip), contentAlignment = Alignment.Center) { Box(Modifier.size(14.dp).clip(CircleShape).background(t.ink)) }
+            Box(Modifier.size(40.dp).clip(RoundedCornerShape(12.dp)).background(t.chip), contentAlignment = Alignment.Center) { WispIcon(t.icon, t.ink, 22.dp) }
             Text(t.title, style = MaterialTheme.typography.titleMedium)
             Text(t.sub, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -248,16 +249,16 @@ private fun StepRow(n: Int, label: String, sub: String, done: Boolean, current: 
 @Composable
 fun AboutScreen(modifier: Modifier = Modifier) {
     Column(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Section("What stays on your phone") {
+        Section("What stays on your phone", Icons.Icon.SHIELD) {
             Text("Everything. The words Wisp learns, how you swipe, your settings, and any speech models. Nothing is sent anywhere, and Wisp has no analytics, ads or crash reporting.", style = MaterialTheme.typography.bodyMedium)
         }
-        Section("What Wisp can do on the network") {
+        Section("What Wisp can do on the network", Icons.Icon.GLOBE) {
             Text("Only one thing: download speech models and updates, from the Downloads tab. It is off until you turn it on, it never runs while you type or dictate, and it only contacts the servers listed there.", style = MaterialTheme.typography.bodyMedium)
         }
-        Section("Permissions") {
+        Section("Permissions", Icons.Icon.LOCK) {
             Text("Microphone (only when you use voice typing), notifications (only to show a download), and installing updates (only when you ask). No contacts, location or storage.", style = MaterialTheme.typography.bodyMedium)
         }
-        Section("Your control") {
+        Section("Your control", Icons.Icon.SLIDERS) {
             Text("See and erase what Wisp learned under “What Wisp learned”. Password fields, private mode and apps you exclude are never learned from. Audio is never kept.", style = MaterialTheme.typography.bodyMedium)
         }
         Text("Wisp ${BuildConfig.VERSION_NAME}. Free software under the GPL-3.0. Speech by sherpa-onnx; the word list comes from the AOSP keyboard dictionaries. See THIRD_PARTY.md.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)

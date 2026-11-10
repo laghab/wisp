@@ -1,5 +1,6 @@
 package app.wisp.keyboard.ui
 
+import app.wisp.keyboard.kbd.Icons
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -44,14 +45,18 @@ fun LookScreen(modifier: Modifier = Modifier) {
     val (style, edit) = rememberEditableStyle()
     val context = LocalContext.current
     PreviewAnd(modifier, style) {
-        Section("Theme") {
+        Section("App appearance", Icons.Icon.MOON) {
+            var mode by remember { mutableStateOf(AppAppearance.current(context)) }
+            ChoiceRow("The settings app", AppAppearance.options, mode) { mode = it; AppAppearance.set(context, it) }
+        }
+        Section("Theme", Icons.Icon.THEME) {
             FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 for (t in Themes.all(context)) ThemeCard(t, selected = t.id == style.theme) { edit { it.copy(theme = t.id) } }
             }
             val current = Themes.get(context, style.theme)
             if (current.dynamic && KeyboardStyle.DYNAMIC_AVAILABLE) SwitchRow("Colour from wallpaper", "Material You colours from your wallpaper", style.wallpaperColours) { v -> edit { it.copy(wallpaperColours = v) } }
         }
-        Section("Photo background") {
+        Section("Photo background", Icons.Icon.IMAGE) {
             val picker = androidx.activity.compose.rememberLauncherForActivityResult(androidx.activity.result.contract.ActivityResultContracts.GetContent()) { uri ->
                 if (uri != null) PhotoBackground.import(context, uri)?.let { path -> edit { it.copy(photo = path) } }
             }
@@ -61,11 +66,11 @@ fun LookScreen(modifier: Modifier = Modifier) {
             }
             if (style.photo.isNotEmpty()) SliderRow("Dimming", style.photoDim, 0..80, "%") { v -> edit { it.copy(photoDim = v) } }
         }
-        Section("Fine-tune") {
+        Section("Fine-tune", Icons.Icon.SLIDERS) {
             SwitchRow("Key borders", checked = style.keyBorders) { v -> edit { it.copy(keyBorders = v) } }
             SwitchRow("Key hints", "The small symbol on each key, typed with a long press", style.keyHints) { v -> edit { it.copy(keyHints = v) } }
         }
-        Section("Swipe trail") {
+        Section("Swipe trail", Icons.Icon.SWIPE) {
             SwitchRow("Show the trail while swiping", checked = style.trailOn) { v -> edit { it.copy(trailOn = v) } }
             if (style.trailOn) {
                 val options = listOf("accent" to Color(style.trailColorInt(context).let { if (style.trailColor == "accent") it else style.themeFor(context).accent.base() })) + KeyboardStyle.ACCENTS.map { (n, c) -> n to Color(c) }
@@ -102,10 +107,10 @@ private fun ThemeCard(t: Theme, selected: Boolean, onClick: () -> Unit) {
 fun SizeScreen(modifier: Modifier = Modifier) {
     val (style, edit) = rememberEditableStyle()
     PreviewAnd(modifier, style) {
-        Section("Size and position") {
+        Section("Size and position", Icons.Icon.CROP) {
             Text("Resize, raise, one-handed, floating and split are set on the keyboard itself: open the keyboard and tap the resize button on its toolbar.", style = MaterialTheme.typography.bodyMedium)
         }
-        Section("Keys") {
+        Section("Keys", Icons.Icon.KEYBOARD) {
             SliderRow("Space between keys", style.gap, 40..200) { v -> edit { it.copy(gap = v) } }
             SwitchRow("Number row", "Digits above the letters", style.numberRow) { v -> edit { it.copy(numberRow = v) } }
         }
@@ -116,7 +121,7 @@ fun SizeScreen(modifier: Modifier = Modifier) {
 fun FeedbackScreen(modifier: Modifier = Modifier) {
     val (style, edit) = rememberEditableStyle()
     Column(modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Section("Feedback") {
+        Section("Feedback", Icons.Icon.VIBRATE) {
             ChoiceRow("Vibration on key press", listOf("off" to "Off", "light" to "Light", "strong" to "Strong"), style.haptic) { v -> edit { it.copy(haptic = v) } }
             SwitchRow("Key click sound", "Uses the phone's own click sound and volume", style.sound) { v -> edit { it.copy(sound = v) } }
         }
@@ -128,22 +133,22 @@ fun FeedbackScreen(modifier: Modifier = Modifier) {
 fun TypingScreen(modifier: Modifier = Modifier) {
     val (style, edit) = rememberEditableStyle()
     PreviewAnd(modifier, style) {
-        Section("Swiping and gestures") {
+        Section("Swiping and gestures", Icons.Icon.SWIPE) {
             SwitchRow("Glide typing", "Draw a path across the letters to type a word", style.glide) { v -> edit { it.copy(glide = v) } }
             SwitchRow("Swipe to delete words", "Swipe left from the backspace key", style.wordSwipe) { v -> edit { it.copy(wordSwipe = v) } }
             SwitchRow("Slide on space to move the cursor", checked = style.cursorSlide) { v -> edit { it.copy(cursorSlide = v) } }
             SliderRow("Long-press delay", style.longPressMs, 150..700, " ms") { v -> edit { it.copy(longPressMs = v) } }
         }
-        Section("Writing") {
+        Section("Writing", Icons.Icon.PEN) {
             SwitchRow("Autocorrect", "Fixes likely typos when you type a space; backspace undoes it", style.autoCorrect) { v -> edit { it.copy(autoCorrect = v) } }
             SwitchRow("Auto-capitalise", "A capital letter at the start of a sentence", style.autoCaps) { v -> edit { it.copy(autoCaps = v) } }
             SwitchRow("Double space makes a full stop", "Two spaces after a word type \". \"", style.doubleSpacePeriod) { v -> edit { it.copy(doubleSpacePeriod = v) } }
         }
-        Section("Feedback") {
+        Section("Feedback", Icons.Icon.VIBRATE) {
             ChoiceRow("Vibration", listOf("off" to "Off", "light" to "Light", "strong" to "Strong"), style.haptic) { v -> edit { it.copy(haptic = v) } }
             SwitchRow("Key sound", checked = style.sound) { v -> edit { it.copy(sound = v) } }
         }
-        Section("Text shortcuts") {
+        Section("Text shortcuts", Icons.Icon.BOLT) {
             Text("One per line, as word=expansion. Typing the word and a space types the expansion.", style = MaterialTheme.typography.bodySmall)
             androidx.compose.material3.OutlinedTextField(style.shortcuts, { v -> edit { it.copy(shortcuts = v) } }, Modifier.fillMaxWidth(), placeholder = { Text("omw=On my way") }, minLines = 3)
         }

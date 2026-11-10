@@ -1,6 +1,12 @@
 package app.wisp.keyboard.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.unit.Dp
+import app.wisp.keyboard.kbd.Icons
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,11 +26,20 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 
+/** One of the keyboard's line icons (the same drawings the toolbar uses), tinted and sized for settings. */
 @Composable
-fun Section(title: String, content: @Composable ColumnScope.() -> Unit) {
+fun WispIcon(icon: Icons.Icon, tint: Color, size: Dp = 22.dp, modifier: Modifier = Modifier) {
+    Canvas(modifier.size(size)) { drawIntoCanvas { Icons.draw(it.nativeCanvas, icon, this.size.width / 2f, this.size.height / 2f, this.size.width, tint.toArgb()) } }
+}
+
+@Composable
+fun Section(title: String, icon: Icons.Icon? = null, content: @Composable ColumnScope.() -> Unit) {
     Card(Modifier.fillMaxWidth()) {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (icon != null) WispIcon(icon, MaterialTheme.colorScheme.primary, 20.dp)
+                Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+            }
             content()
         }
     }

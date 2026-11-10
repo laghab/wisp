@@ -5,7 +5,16 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
+import android.app.Activity
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
+import app.wisp.keyboard.settings.WispSettings
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
@@ -51,6 +60,29 @@ private val Type = Typography(
     bodySmall = TextStyle(fontFamily = Body, fontSize = 12.sp),
 )
 
+/** True black surfaces for OLED screens. */
+private val Black = Dark.copy(
+    background = Color.Black, surface = Color.Black, surfaceVariant = Color(0xFF14161B),
+    surfaceContainerLowest = Color.Black, surfaceContainerLow = Color(0xFF07080A), surfaceContainer = Color(0xFF0B0D10), surfaceContainerHigh = Color(0xFF14161B), surfaceContainerHighest = Color(0xFF14161B),
+)
+
+/** How the settings app looks: follow the phone, or always light, dark or black. Kept in the settings file and read once. */
+object AppAppearance {
+    val options = listOf("system" to "System", "light" to "Light", "dark" to "Dark", "black" to "Black")
+    private var mode by mutableStateOf<String?>(null)
+    fun current(context: android.content.Context): String =
+        mode ?: (WispSettings.get(context).getString("app_theme", "system") ?: "system").also { mode = it }
+    fun set(context: android.content.Context, value: String) { mode = value; WispSettings.get(context).putString("app_theme", value) }
+}
+
 @Composable
-fun WispTheme(content: @Composable () -> Unit) =
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) Dark else Light, typography = Type, content = content)
+fun WispTheme(content: @Composable () -> Unit) {
+    val context = LocalContext.current
+    val mode = AppAppearance.current(context)
+    val dark = when (mode) { "light" -> false; "dark", "black" -> true; else -> isSystemInDarkTheme() }
+    val view = LocalView.current
+    SideEffect {   // status and navigation bar icons stay readable on the chosen background
+        (view.context as? Activity)?.window?.let { w -> WindowCompat.getInsetsController(w, view).apply { isAppearanceLightStatusBars = !dark; isAppearanceLightNavigationBars = !dark } }
+    }
+    MaterialTheme(colorScheme = if (!dark) Light else if (mode == "black") Black else Dark, typography = Type, content = content)
+}
