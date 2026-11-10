@@ -1,15 +1,19 @@
 #!/usr/bin/env bash
-# Shared helpers for on-device checks. Key coordinates are for a 950x1158 Waydroid display with the
-# 4-row QWERTY layout (see docs/perf.md). Source this file; set DEV first.
+# Shared helpers for on-device checks. Source this file; set DEV first.
 P=app.wisp.keyboard.debug
 a() { adb -s "$DEV" shell "$@"; }
 tap() { a input tap "$1" "$2"; sleep 0.2; }
 hold() { a input swipe "$1" "$2" "$1" "$2" "$3"; sleep 0.3; }   # press and hold for $3 ms
 drag() { a input swipe "$1" "$2" "$3" "$4" "${5:-400}"; sleep 0.3; }
 
-# key centres: q w e r t y u i o p = x 51 + 94.2*i on y 829; a..l on y 900; z..m on y 973
-KX() { echo $(( 51 + 94 * $1 )); }
-SHIFT="75 975"; BKSP="875 975"; SPACE="610 1045"; ENTER="875 1045"
+# The one place key positions live: a 950x1158 Waydroid display (density 216), default layout, no number row.
+# Rows (y): letters 812 / 890 / 969, bottom row 1047, suggestion strip 737. K <letter> gives "x y" for a letter key.
+R1=812; R2=890; R3=969; R4=1047; STRIP=737
+K() { awk -v c="$1" 'BEGIN{ if(i=index("qwertyuiop",c)) print int(48+94.7*(i-1)), '$R1'; else if(i=index("asdfghjkl",c)) print int(76+99.7*(i-1)), '$R2'; else if(i=index("zxcvbnm",c)) print int(188+95.5*(i-1)), '$R3'; else exit 1 }'; }
+SHIFT="70 $R3"; BKSP="878 $R3"; SYM="70 $R4"; SWITCH="190 $R4"; EMOJI="286 $R4"; COMMA="383 $R4"; LANG="480 $R4"; SPACE="620 $R4"; PERIOD="760 $R4"; ENTER="878 $R4"
+MIC="917 $STRIP"; SLOT_L="150 $STRIP"; SLOT_M="440 $STRIP"; SLOT_R="730 $STRIP"
+# type <word>: taps each letter in turn, then gives the dictionary thread a moment to answer
+type_word() { local c; for c in $(echo "$1" | sed 's/./& /g'); do tap $(K "$c"); done; sleep 0.9; }
 
 # Launch the test field (extra args go to `am start`) and wait until the keyboard has been created and drawn.
 launch_field() {
