@@ -16,6 +16,7 @@ import app.wisp.keyboard.emoji.EmojiPanelView
 import app.wisp.keyboard.emoji.RecentEmoji
 import app.wisp.keyboard.kbd.FieldInfo
 import app.wisp.keyboard.kbd.FieldKind
+import app.wisp.keyboard.kbd.InlineAutofill
 import app.wisp.keyboard.kbd.InputController
 import app.wisp.keyboard.kbd.KeyCodes
 import app.wisp.keyboard.kbd.KeyboardView
@@ -181,7 +182,7 @@ class WispIme : InputMethodService() {
         val grip = FloatHandle(this, palette).also { it.visibility = View.GONE; it.onMoved = ::onFloatMoved; it.onGrab = { grabbed = frame } }
         root.addView(grip, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         // The toolbar strip, with room over it for the password manager's login chips (inline autofill).
-        val inline = android.widget.HorizontalScrollView(this).apply { visibility = View.GONE; isHorizontalScrollBarEnabled = false }
+        val inline = FrameLayout(this).apply { visibility = View.GONE }
         inlineScroll = inline
         val stripBox = FrameLayout(this)
         stripBox.addView(b, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -452,36 +453,18 @@ class WispIme : InputMethodService() {
     // ---- password managers: the autofill service offers logins as chips, which replace the toolbar while they are available ---------------
 
     @androidx.annotation.RequiresApi(android.os.Build.VERSION_CODES.R)
-    override fun onCreateInlineSuggestionsRequest(uiExtras: android.os.Bundle): android.view.inputmethod.InlineSuggestionsRequest? {
-        val d = resources.displayMetrics.density
-        val style = androidx.autofill.inline.UiVersions.newStylesBuilder()
-            .addStyle(androidx.autofill.inline.v1.InlineSuggestionUi.newStyleBuilder().build()).build()
-        val spec = android.widget.inline.InlinePresentationSpec.Builder(android.util.Size((60 * d).toInt(), (36 * d).toInt()), android.util.Size((resources.displayMetrics.widthPixels * 0.7f).toInt(), (40 * d).toInt()))
-            .setStyle(style).build()
-        return android.view.inputmethod.InlineSuggestionsRequest.Builder(listOf(spec)).setMaxSuggestionCount(5).build()
-    }
+    override fun onCreateInlineSuggestionsRequest(uiExtras: android.os.Bundle): android.view.inputmethod.InlineSuggestionsRequest? =
+        InlineAutofill.request(this, palette, (resources.displayMetrics.density * 40).toInt())
 
     @androidx.annotation.RequiresApi(android.os.Build.VERSION_CODES.R)
     override fun onInlineSuggestionsResponse(response: android.view.inputmethod.InlineSuggestionsResponse): Boolean {
-        val scroll = inlineScroll ?: return false
+        val host = inlineScroll ?: return false
         val suggestions = response.inlineSuggestions
-        if (suggestions.isEmpty()) { scroll.removeAllViews(); scroll.visibility = View.GONE; return false }
-        val d = resources.displayMetrics.density
-        val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = android.view.Gravity.CENTER_VERTICAL; setPadding((8 * d).toInt(), 0, (8 * d).toInt(), 0) }
-        val views = arrayOfNulls<View>(suggestions.size)
-        var pending = suggestions.size
-        for ((i, s) in suggestions.withIndex()) {
-            s.inflate(this, android.util.Size(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT), mainExecutor) { v ->
-                views[i] = v
-                if (--pending == 0) {
-                    row.removeAllViews()
-                    for (x in views) if (x != null) row.addView(x, LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT).apply { marginEnd = (8 * d).toInt() })
-                    scroll.removeAllViews(); scroll.addView(row, FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.MATCH_PARENT))
-                    scroll.setBackgroundColor(palette.background)
-                    scroll.visibility = if (row.childCount > 0) View.VISIBLE else View.GONE
-                }
-            }
-        }
+        host.removeAllViews()
+        if (suggestions.isEmpty()) { host.visibility = View.GONE; return false }
+        host.addView(InlineAutofill.view(suggestions, this), FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
+        host.setBackgroundColor(palette.background)
+        host.visibility = View.VISIBLE
         return true
     }
 
@@ -656,7 +639,7 @@ class WispIme : InputMethodService() {
     // ---- clipboard history: recent copies kept for an hour, never from password fields or flagged-sensitive copies --------------------
 
     private var panelStack: FrameLayout? = null
-    private var inlineScroll: android.widget.HorizontalScrollView? = null
+    private var inlineScroll: FrameLayout? = null
     private var clipPanel: ClipboardPanelView? = null
     private val clipFile get() = java.io.File(filesDir, "clipboard.tsv")
     private val clipHistory by lazy { ClipboardHistory().also { it.load(clipFile); it.enabled = WispSettings.get(this).getBoolean("clipboard_history", true) } }
