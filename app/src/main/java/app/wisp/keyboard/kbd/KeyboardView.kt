@@ -102,6 +102,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private var sound = false
     private var trailOn = true
     private var vibrator: android.os.Vibrator? = null
+    private val keySound = KeySound()
 
     private var layout: CompiledLayout? = null
 
@@ -188,7 +189,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
             // strength sets the motor's amplitude where the phone allows it, and always the tick's length
             v?.vibrate(android.os.VibrationEffect.createOneShot(6L + hapticLevel / 6, if (v.hasAmplitudeControl()) (hapticLevel * 255 / 100).coerceAtLeast(1) else android.os.VibrationEffect.DEFAULT_AMPLITUDE))
         }
-        if (sound) (context.getSystemService(android.media.AudioManager::class.java)).playSoundEffect(android.media.AudioManager.FX_KEYPRESS_STANDARD, if (soundVolume >= 100) -1f else soundVolume / 100f)
+        if (sound) keySound.play(soundVolume)
     }
 
     private val labelOverrides = HashMap<Int, String>()
@@ -599,7 +600,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         }
     }
 
-    override fun onDetachedFromWindow() { removeCallbacks(artTick); removeCallbacks(fxTick); release(); renderer.release(); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() { removeCallbacks(artTick); removeCallbacks(fxTick); release(); renderer.release(); keySound.release(); super.onDetachedFromWindow() }
 
     private fun blend(a: Int, b: Int, t: Float): Int {
         val u = 1f - t

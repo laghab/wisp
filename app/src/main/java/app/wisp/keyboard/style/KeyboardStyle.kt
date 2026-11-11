@@ -100,7 +100,7 @@ data class KeyboardStyle(
                 trailOn = s.getBoolean("style_trail_on", true), trailColor = s.getString("style_trail_color", "accent")!!, trailWidthDp = s.getInt("style_trail_width", 5).coerceIn(2, 12),
                 gap = s.getInt("style_gap", 100).coerceIn(40, 200), numberRow = s.getBoolean("style_number_row", false),
                 haptic = when (val h = s.getString("style_haptic", "system")) { "off", "custom" -> h; "strong" -> "custom"; else -> "system" }, hapticLevel = s.getInt("style_haptic_level", 60).coerceIn(1, 100),
-                sound = s.getBoolean("style_sound", false), soundVolume = s.getInt("style_sound_volume", 100).coerceIn(5, 100),
+                sound = s.getBoolean("style_sound", false), soundVolume = s.getInt("style_sound_volume", 100).coerceIn(5, 300),
                 wordSwipe = s.getBoolean("gesture_word_swipe", true), cursorSlide = s.getBoolean("gesture_cursor_slide", true),
                 layout = s.getString("letter_layout", "qwerty")!!, glide = s.getBoolean("typing_glide", true), autoCorrect = s.getBoolean("typing_autocorrect", true), autoCaps = s.getBoolean("typing_autocaps", true), doubleSpacePeriod = s.getBoolean("double_space_period", true),
                 longPressMs = s.getInt("long_press_ms", 350).coerceIn(150, 700), shortcuts = s.getString("text_shortcuts", "").orEmpty(),

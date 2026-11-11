@@ -123,8 +123,8 @@ fun FeedbackScreen(modifier: Modifier = Modifier) {
         Section("Feedback", Icons.Icon.VIBRATE) {
             ChoiceRow("Vibration on key press", listOf("off" to "Off", "system" to "System", "custom" to "Custom"), style.haptic) { v -> edit { it.copy(haptic = v) } }
             if (style.haptic == "custom") SliderRow("Vibration strength", style.hapticLevel, 1..100) { v -> edit { it.copy(hapticLevel = v) } }
-            SwitchRow("Key click sound", "Uses the phone's own click sound", style.sound) { v -> edit { it.copy(sound = v) } }
-            if (style.sound) SliderRow("Click volume", style.soundVolume, 5..100) { v -> edit { it.copy(soundVolume = v) } }
+            SwitchRow("Key click sound", "A short click; louder than 100% boosts it past the system's own", style.sound) { v -> edit { it.copy(sound = v) } }
+            if (style.sound) SliderRow("Click volume", style.soundVolume, 5..300) { v -> edit { it.copy(soundVolume = v) } }
         }
         Text("Try it: open any text field and type.", style = MaterialTheme.typography.bodySmall)
     }
