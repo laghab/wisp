@@ -35,7 +35,6 @@ class TrainingStats {
         return out
     }
 
-    fun clear() = rows.clear()
 
     fun save(file: File) {
         file.parentFile?.mkdirs()

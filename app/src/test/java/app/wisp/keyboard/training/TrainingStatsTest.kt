@@ -23,8 +23,6 @@ class TrainingStatsTest {
 
     @Test fun fewCandidatesAreAllUsed() = assertEquals(3, TrainingStats().pick(listOf("a", "b", "c"), 20, Random(1)).size)
 
-    @Test fun clearForgetsEverything() { val s = TrainingStats(); s.record("a", false); s.clear(); assertEquals(0, s.totalAttempts) }
-
     @Test fun survivesTheFile() {
         val s = TrainingStats(); s.record("hello", true); s.record("hello", false)
         val f = File.createTempFile("wisp-train", ".tsv").also { it.deleteOnExit() }; s.save(f)

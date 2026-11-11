@@ -47,8 +47,6 @@ class Glide private constructor(private var handle: Long, val alphabet: IntArray
         get() = parse(Native.glideStyle(handle, null))
         set(v) { Native.glideStyle(handle, "${v.biasX} ${v.biasY} ${v.lengthRatio} ${v.spread} ${v.evidence}") }
 
-    fun resetStyle() { Native.glideStyle(handle, "") }
-
     fun loadStyle(file: File) { Native.glideStyle(handle, if (file.isFile) file.readText() else "") }
 
     fun saveStyle(file: File) {

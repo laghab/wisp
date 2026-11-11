@@ -28,9 +28,6 @@ class LearnedData(private val dir: File) {
         if (f.isFile) f.inputStream().use { it.copyTo(out) }
     }
 
-    /** Forgets how the user swipes and which practice words gave trouble (not the learned words). */
-    fun resetSwipeStyle() { File(dir, "gesture_style.txt").delete(); dir.listFiles()?.filter { it.name.startsWith("training_") }?.forEach { it.delete() } }
-
     /** Forgets everything learned: words, pairs, swipe style and practice counts. Imported word lists are separate. */
     fun wipeEverything() {
         dir.listFiles()?.forEach { it.delete() }

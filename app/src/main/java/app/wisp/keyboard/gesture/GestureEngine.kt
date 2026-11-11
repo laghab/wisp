@@ -122,9 +122,6 @@ class GestureEngine(
 
     fun saveStyle() { worker.post { if (styleDirty > 0) saveStyleNow() } }
 
-    /** Forgets how the user swipes (the practice screen's reset). */
-    fun resetStyle() { worker.post { glide?.resetStyle(); saveStyleNow() } }
-
     fun decode(xs: FloatArray, ys: FloatArray, n: Int, previousWord: String?) {
         val gen = ++generation
         val x = xs.copyOf(n); val y = ys.copyOf(n)

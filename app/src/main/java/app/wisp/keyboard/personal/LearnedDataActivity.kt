@@ -19,7 +19,7 @@ import app.wisp.keyboard.Languages
 import java.io.File
 
 /**
- * What Wisp has learned from you, with the controls: see the words, forget one, export them, reset how you swipe, or erase it all.
+ * What Wisp has learned from you, with the controls: see the words, forget one, export them, or erase it all.
  * It never leaves the phone. (A plain screen for now; the real settings app, task group 8, will host it.)
  */
 class LearnedDataActivity : Activity() {
@@ -52,7 +52,6 @@ class LearnedDataActivity : Activity() {
             addView(langs); addView(summary)
             addView(list, ViewGroup.LayoutParams.MATCH_PARENT, 0); (list.layoutParams as LinearLayout.LayoutParams).weight = 1f
             addView(button("Export these words") { export() })
-            addView(button("Reset how I swipe") { confirm("Reset how you swipe?", "Wisp forgets your swipe style and which practice words gave you trouble. Your learned words stay.") { data.resetSwipeStyle(); toast("Swipe style reset") } })
             addView(button("Erase everything learned") { confirm("Erase everything?", "All learned words, word pairs and your swipe style are deleted. Imported word lists stay.") { data.wipeEverything(); refresh(); toast("Erased") } })
         })
         refresh()

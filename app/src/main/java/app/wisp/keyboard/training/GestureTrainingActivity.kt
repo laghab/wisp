@@ -5,7 +5,6 @@ import app.wisp.keyboard.kbd.Palette
 import app.wisp.keyboard.kbd.LayoutGuard
 import app.wisp.keyboard.kbd.LetterLayouts
 import android.app.Activity
-import android.app.AlertDialog
 import android.graphics.Color
 import android.graphics.Typeface
 import android.os.Bundle
@@ -40,7 +39,6 @@ class GestureTrainingActivity : Activity() {
     private lateinit var feedback: TextView
     private lateinit var keys: KeyboardView
     private lateinit var again: Button
-    private lateinit var reset: Button
 
     private val stats = TrainingStats()
     private var glide: Glide? = null
@@ -66,7 +64,6 @@ class GestureTrainingActivity : Activity() {
         progress = text(15f, muted)
         feedback = text(15f, cream)
         again = Button(this).apply { text = "Practice again"; setOnClickListener { startSession() }; visibility = android.view.View.GONE }
-        reset = Button(this).apply { text = "Reset what Wisp learned about my swiping"; setOnClickListener { confirmReset() } }
         // The keyboard to practise on is the one you type with: your letter layout, number row and theme.
         val style = app.wisp.keyboard.style.KeyboardStyle.load(this)
         val letterRes = if (language.layoutRes == R.raw.layout_qwerty) LetterLayouts.res(style.layout) else language.layoutRes
@@ -94,7 +91,6 @@ class GestureTrainingActivity : Activity() {
             addView(progress, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(feedback, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(again, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            addView(reset, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(keysFrame, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         })
         prompt.text = "..."; progress.text = "Getting the word list ready"
@@ -143,12 +139,6 @@ class GestureTrainingActivity : Activity() {
         val style = glide?.style
         feedback.text = if (style == null || style.isNeutral) "" else "Wisp now knows your style: swipes land %+.2f across and %+.2f down from the ideal line (in key widths), at %d%% of the ideal length.".format(style.biasX, style.biasY, Math.round(style.lengthRatio * 100))
         again.visibility = android.view.View.VISIBLE
-    }
-
-    private fun confirmReset() {
-        AlertDialog.Builder(this).setTitle("Reset swiping style?").setMessage("This forgets how you swipe and which words gave you trouble. Your learned words stay.")
-            .setPositiveButton("Reset") { _, _ -> glide?.resetStyle(); stats.clear(); styleFile().delete(); statsFile().delete(); startSession() }
-            .setNegativeButton("Cancel", null).show()
     }
 
     private companion object { const val SESSION = 20 }

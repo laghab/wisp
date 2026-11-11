@@ -43,13 +43,6 @@ class LearnedDataTest {
         assertTrue(text.contains("raghav")); assertFalse(text.contains("0.1 0.1"))
     }
 
-    @Test fun resettingTheSwipeStyleKeepsTheWords() {
-        teach("en_US", "raghav"); File(dir, "gesture_style.txt").writeText("x"); File(dir, "training_en_US.tsv").writeText("x")
-        data.resetSwipeStyle()
-        assertFalse(File(dir, "gesture_style.txt").exists()); assertFalse(File(dir, "training_en_US.tsv").exists())
-        assertEquals(1, data.words("en_US").size)
-    }
-
     @Test fun wipingEverythingLeavesNothing() {
         teach("en_US", "raghav"); teach("hi_Latn", "yaar"); File(dir, "gesture_style.txt").writeText("x")
         data.wipeEverything()

@@ -26,12 +26,10 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         fun onSettings() {}
     }
 
-    /** A tool on the strip: [icon] for the quick tools, a text [label] for the editing tools. */
-    enum class Tool(val label: String, val icon: Icons.Icon?) {
+    /** A tool on the strip. The quick tools are the first row; the [isEdit] ones are on the second row, behind the grid button. [label] names it in the settings list. */
+    enum class Tool(val label: String, val icon: Icons.Icon, val isEdit: Boolean = false) {
         CLIPBOARD("Clipboard", Icons.Icon.CLIPBOARD), EMOJI("Emoji", Icons.Icon.EMOJI), REWRITE("Rewrite", Icons.Icon.SPARKLE), RESIZE("Resize", Icons.Icon.CROP), THEMES("Themes", Icons.Icon.THEME), SETTINGS("Settings", Icons.Icon.SLIDERS),
-        SELECT_ALL("Select all", null), CUT("Cut", null), COPY("Copy", null), PASTE("Paste", null), INCOGNITO("Private", null);
-
-        val isEdit get() = icon == null
+        SELECT_ALL("Select all", Icons.Icon.SELECT_ALL, true), CUT("Cut", Icons.Icon.CUT, true), COPY("Copy", Icons.Icon.COPY, true), PASTE("Paste", Icons.Icon.PASTE, true), INCOGNITO("Private", Icons.Icon.INCOGNITO, true),
     }
 
     var listener: Listener? = null
@@ -124,15 +122,9 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         for ((i, tool) in r.withIndex()) {
             val cx = x0 + i * cw + cw / 2f
             val active = tool == Tool.INCOGNITO && incognito
+            if (active) { fill.color = palette.accent; fill.alpha = 46; c.drawCircle(cx, height / 2f, 19f * d, fill); fill.alpha = 255 }      // the toggle is on: a soft disc under the mask
             val col = if (active) palette.accent else if (tool == Tool.REWRITE) 0xFFFFB86B.toInt() else ink
-            if (tool.icon != null) Icons.draw(c, tool.icon, cx, height / 2f, 21f * d, col)
-            else {
-                text.typeface = Typeface.create(text.typeface, if (active) Typeface.BOLD else Typeface.NORMAL)
-                text.color = col; text.textSize = 15f * d
-                c.drawText(ellipsize(tool.label, cw - 8f * d), cx, y, text)
-                text.textSize = 16f * d
-                if (i > 0) c.drawLine(x0 + i * cw, height / 2f - 10f * d, x0 + i * cw, height / 2f + 10f * d, line)
-            }
+            Icons.draw(c, tool.icon, cx, height / 2f, 21f * d, col)
         }
     }
 
