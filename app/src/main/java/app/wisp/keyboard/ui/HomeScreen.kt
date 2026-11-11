@@ -137,7 +137,7 @@ fun HomeScreen(onOpen: (Target) -> Unit, modifier: Modifier = Modifier) {
                 Quick("Space cursor", style.cursorSlide) { v -> edit { it.copy(cursorSlide = v) } }
                 Quick("Autocorrect", style.autoCorrect) { v -> edit { it.copy(autoCorrect = v) } }
                 Quick("Haptics", style.haptic != "off") { v -> edit { it.copy(haptic = if (v) "system" else "off") } }
-                Quick("Key sound", style.sound) { v -> edit { it.copy(sound = v) } }
+                Quick("Key sound", style.sound != "off") { v -> edit { it.copy(sound = if (v) "system" else "off") } }
             }
         }
         item {

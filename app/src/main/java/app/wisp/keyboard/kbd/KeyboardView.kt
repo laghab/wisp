@@ -99,10 +99,12 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private var wordSwipe = true
     private var longPressMs = android.view.ViewConfiguration.getLongPressTimeout()
     private var cursorSlide = true
-    private var sound = false
+    private var sound = "off"
+    /** True where nothing should be heard (password fields). */
+    var soundOff = false
     private var trailOn = true
     private var vibrator: android.os.Vibrator? = null
-    private val keySound = KeySound()
+    private val keySound = KeySound(context)
 
     private var layout: CompiledLayout? = null
 
@@ -182,6 +184,8 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         invalidate()
     }
 
+    private var pressedCode = 0
+
     private fun feedback() {
         if (haptic == "system") performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
         else if (haptic == "custom") {
@@ -189,7 +193,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
             // strength sets the motor's amplitude where the phone allows it, and always the tick's length
             v?.vibrate(android.os.VibrationEffect.createOneShot(6L + hapticLevel / 6, if (v.hasAmplitudeControl()) (hapticLevel * 255 / 100).coerceAtLeast(1) else android.os.VibrationEffect.DEFAULT_AMPLITUDE))
         }
-        if (sound) keySound.play(soundVolume)
+        if (!soundOff) keySound.play(sound, soundVolume, pressedCode)
     }
 
     private val labelOverrides = HashMap<Int, String>()
@@ -565,7 +569,8 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         when (code) {
             Act.PRESS -> {
                 setPressed(a, true)
-                if (layout?.codes?.get(a) != KeyCodes.SHIFT) feedback()
+                pressedCode = layout?.codes?.get(a) ?: 0
+                if (pressedCode != KeyCodes.SHIFT) feedback()
             }
             Act.RELEASE -> setPressed(a, false)
             Act.TAP -> layout?.codes?.get(a)?.let { listener?.onKey(it, x.toInt(), y.toInt()) }

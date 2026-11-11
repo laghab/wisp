@@ -123,8 +123,9 @@ fun FeedbackScreen(modifier: Modifier = Modifier) {
         Section("Feedback", Icons.Icon.VIBRATE) {
             ChoiceRow("Vibration on key press", listOf("off" to "Off", "system" to "System", "custom" to "Custom"), style.haptic) { v -> edit { it.copy(haptic = v) } }
             if (style.haptic == "custom") SliderRow("Vibration strength", style.hapticLevel, 1..100) { v -> edit { it.copy(hapticLevel = v) } }
-            SwitchRow("Key click sound", "A short click; louder than 100% boosts it past the system's own", style.sound) { v -> edit { it.copy(sound = v) } }
-            if (style.sound) SliderRow("Click volume", style.soundVolume, 5..300) { v -> edit { it.copy(soundVolume = v) } }
+            ChoiceRow("Key sound", listOf("off" to "Off", "system" to "System click", "tick" to "Loud click", "piano" to "Piano", "xylophone" to "Xylophone", "marimba" to "Marimba", "musicbox" to "Music box", "harp" to "Harp"), style.sound) { v -> edit { it.copy(sound = v) } }
+            if (style.sound != "off") SliderRow("Volume", style.soundVolume.coerceAtMost(if (style.sound == "system") 100 else 300), 5..(if (style.sound == "system") 100 else 300)) { v -> edit { it.copy(soundVolume = v) } }
+            if (style.sound !in listOf("off", "system", "tick")) Text("Each key plays the next note of a gentle melody. Above 100% is a boost. Silent in password fields and when the phone is on silent.", style = MaterialTheme.typography.bodySmall)
         }
         Text("Try it: open any text field and type.", style = MaterialTheme.typography.bodySmall)
     }
@@ -147,10 +148,6 @@ fun TypingScreen(modifier: Modifier = Modifier) {
             val context = LocalContext.current
             var punct by remember { mutableStateOf(app.wisp.keyboard.settings.WispSettings.get(context).getBoolean("voice_auto_punct", true)) }
             SwitchRow("Punctuate dictation", "Voice typing adds capitals and punctuation; off types the words as spoken", punct) { v -> punct = v; app.wisp.keyboard.settings.WispSettings.get(context).putBoolean("voice_auto_punct", v) }
-        }
-        Section("Feedback", Icons.Icon.VIBRATE) {
-            ChoiceRow("Vibration", listOf("off" to "Off", "light" to "Light", "strong" to "Strong"), style.haptic) { v -> edit { it.copy(haptic = v) } }
-            SwitchRow("Key sound", checked = style.sound) { v -> edit { it.copy(sound = v) } }
         }
         Section("Text shortcuts", Icons.Icon.BOLT) {
             Text("One per line, as word=expansion. Typing the word and a space types the expansion.", style = MaterialTheme.typography.bodySmall)

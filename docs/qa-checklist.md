@@ -25,7 +25,8 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 2.7 Long-pressed hint characters (the small glyph on each key) match what the popup gives first.
 - [ ] 2.8 Enter key: new line in a notes app; the right action (Send, Search, Go, Done) shows on the key in apps that set one, and does that action.
 - [ ] 2.9 **(!)** The key under your finger lights up on touch with the same rounded shape as the key (no square box around it), and the highlight goes away when you slide off it. Check a few themes (Wisp, Factory, Retro, Comic, Cyberpunk).
-- [ ] 2.10 Haptic feedback is felt on key press (Settings, Feedback: off / system / custom; custom has a strength slider you can feel change). Key sound toggles on and off and has a volume slider that goes past 100% as a boost (check it is clearly louder at 300%, and clean at 100%).
+- [ ] 2.10 Haptic feedback is felt on key press (Settings, Feedback: off / system / custom; custom has a strength slider you can feel change).
+- [ ] 2.11 Key sound: System click is the phone's normal click; Loud click is a boosted tick (clean at 100%, clearly louder at 300%); Piano, Xylophone, Marimba, Music box and Harp each play the next note of a pleasant melody per key (space a soft chord, backspace a step down). Silent in password fields and on a silent phone.
 
 ## 3. Space bar and bottom row
 - [ ] 3.1 **(!)** The space bar is wide (roughly 40% of the row) and easy to hit with either thumb.

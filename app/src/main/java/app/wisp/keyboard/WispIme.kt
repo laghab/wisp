@@ -718,6 +718,7 @@ class WispIme : InputMethodService() {
         controller.shortcuts = parseShortcuts(style.shortcuts)
         packageName = info.packageName
         bar?.micEnabled = f.kind != FieldKind.PASSWORD && f.suggest
+        keys?.soundOff = f.kind == FieldKind.PASSWORD
         engine?.refreshSources(); gestureEngine?.refreshSources()
         updateLearning()
         keys?.gesturesEnabled = controller.suggestionsEnabled && style.glide
