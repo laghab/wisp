@@ -76,6 +76,7 @@ fun LookScreen(modifier: Modifier = Modifier) {
             if (style.photo.isNotEmpty()) SliderRow("Dimming", style.photoDim, 0..80, "%") { v -> edit { it.copy(photoDim = v) } }
         }
         Section("Fine-tune", Icons.Icon.SLIDERS) {
+            if (Themes.get(context, style.theme, style.wantsDark(context)).art != null) SwitchRow("Space-bar art", "The animated picture on the space bar", style.spaceArt) { v -> edit { it.copy(spaceArt = v) } }
             SwitchRow("Key borders", checked = style.keyBorders) { v -> edit { it.copy(keyBorders = v) } }
             SwitchRow("Key hints", "The small symbol on each key, typed with a long press", style.keyHints) { v -> edit { it.copy(keyHints = v) } }
         }

@@ -1,0 +1,7 @@
+<svg aria-hidden="true" viewBox="0 0 154 48" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" width="308" height="96"><rect width="154" height="48" fill="#2C3170"/>
+<path d="M10 13l20 7M7 25h22M10 37l20-7M144 13l-20 7M147 25h-22M144 37l-20-7" stroke="#05061A" stroke-width="2.2" stroke-linecap="round"></path>
+<g transform="translate(77 24)"><g><animateTransform attributeName="transform" type="scale" values="1;1.1;1" dur="1.2s" repeatCount="indefinite"></animateTransform>
+<path d="M0-21L6-11L19-15L13-5L30-2L14 4L21 15L6 10L0 21L-6 10L-21 15L-14 4L-30-2L-13-5L-19-15L-6-11Z" fill="#FFD93B" stroke="#05061A" stroke-width="2" stroke-linejoin="round"></path>
+<text y="3.5" text-anchor="middle" font-family="Bangers, cursive" font-size="10.5" letter-spacing="0.5" fill="#FF3D3D" stroke="#05061A" stroke-width="0.5">KA-CHUNK!</text>
+</g></g>
+</svg>

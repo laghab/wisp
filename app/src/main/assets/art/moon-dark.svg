@@ -1,0 +1,16 @@
+<svg aria-hidden="true" viewBox="0 0 154 48" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg" width="308" height="96"><rect width="154" height="48" fill="#160F1E"/>
+<g fill="#ECE3EC" opacity="0.13"><circle cx="13" cy="24" r="6"></circle><circle cx="29" cy="24" r="6"></circle><circle cx="45" cy="24" r="6"></circle><circle cx="61" cy="24" r="6"></circle><circle cx="93" cy="24" r="6"></circle><circle cx="109" cy="24" r="6"></circle><circle cx="125" cy="24" r="6"></circle><circle cx="141" cy="24" r="6"></circle></g>
+<circle cx="77" cy="24" r="10" fill="#E6B8C6"><animate attributeName="opacity" values="0.1;0.4;0.1" dur="3s" repeatCount="indefinite"></animate></circle>
+<g fill="#ECE3EC">
+<path d="M13 18A6 6 0 0 1 13 30A4.6 6 0 0 0 13 18Z"></path>
+<path d="M29 18A6 6 0 0 1 29 30A2.6 6 0 0 0 29 18Z"></path>
+<path d="M45 18A6 6 0 0 1 45 30Z"></path>
+<path d="M61 18A6 6 0 0 1 61 30A3 6 0 0 1 61 18Z"></path>
+<circle cx="77" cy="24" r="6"></circle>
+<path d="M93 18A6 6 0 0 0 93 30A3 6 0 0 0 93 18Z"></path>
+<path d="M109 18A6 6 0 0 0 109 30Z"></path>
+<path d="M125 18A6 6 0 0 0 125 30A2.6 6 0 0 1 125 18Z"></path>
+<path d="M141 18A6 6 0 0 0 141 30A4.6 6 0 0 1 141 18Z"></path>
+</g>
+<g fill="#000000" opacity="0.1"><circle cx="75" cy="22" r="1.4"></circle><circle cx="79.5" cy="26" r="1"></circle><circle cx="76" cy="27" r="0.7"></circle></g>
+</svg>

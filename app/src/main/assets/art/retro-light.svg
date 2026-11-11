@@ -1,0 +1,5 @@
+<svg aria-hidden="true" viewBox="0 0 154 48" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" width="308" height="96">
+<g transform="translate(118 0) skewX(-30)"><rect x="0" y="0" width="7" height="48" fill="#D9542B"></rect><rect x="7" y="0" width="7" height="48" fill="#E9A23B"></rect><rect x="14" y="0" width="7" height="48" fill="#5C9E6E"></rect><rect x="21" y="0" width="7" height="48" fill="#3C7FB0"></rect></g>
+<text x="10" y="31" font-family="VT323, monospace" font-size="19" fill="#3A3226">READY.</text>
+<rect x="57" y="18" width="8" height="15" fill="#3A3226"><animate attributeName="opacity" values="1;1;0;0" dur="1.1s" repeatCount="indefinite"></animate></rect>
+</svg>

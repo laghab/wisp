@@ -24,7 +24,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 2.6 Long-press a letter (e, a, o, u, c, n): the popup lists accents; sliding to one and releasing types it; releasing without sliding types the first extra.
 - [ ] 2.7 Long-pressed hint characters (the small glyph on each key) match what the popup gives first.
 - [ ] 2.8 Enter key: new line in a notes app; the right action (Send, Search, Go, Done) shows on the key in apps that set one, and does that action.
-- [ ] 2.9 **(!)** The key under your finger lights up on touch with the same rounded shape as the key (no square box around it), and the highlight goes away when you slide off it. Check a few themes (Midnight, Factory, Retro, Comic, Cyberpunk).
+- [ ] 2.9 **(!)** The key under your finger lights up on touch with the same rounded shape as the key (no square box around it), and the highlight goes away when you slide off it. Check a few themes (Wisp, Factory, Retro, Comic, Cyberpunk).
 - [ ] 2.10 Haptic feedback is felt on key press (Feedback settings: off / light / strong all change it). Key sound toggles on and off.
 
 ## 3. Space bar and bottom row
@@ -134,7 +134,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 11.10 The app behind the keyboard scrolls so the field you are typing in stays visible when the keyboard is raised or resized.
 
 ## 12. Themes and the settings app
-- [ ] 12.1 Settings > Themes: the theme cards fill the card edge to edge with no gap on the right; all eleven themes apply live to the preview and the keyboard (Midnight, Factory, Cyberpunk, Material You, Liquid Glass, Modern, Y2K Desktop, Retro, Brutalist, Comic, Manga).
+- [ ] 12.1 Settings > Themes: the theme cards fill the card edge to edge with no gap on the right; all fifteen themes apply live to the preview and the keyboard (Wisp, Moon Phase, Dandelion, Sakura, Factory, Cyberpunk, Terminal, Y2K Desktop, Material You, Liquid Glass, Modern, Retro, Brutalist, Comic, Manga).
 - [ ] 12.2 Every theme is legible: key letters, hints, suggestions, toolbar icons, the mic button, the enter key.
 - [ ] 12.3 Material You picks up wallpaper colours when "Colour from wallpaper" is on (Android 12+).
 - [ ] 12.4 Liquid Glass shows a blurred, translucent keyboard (Android 12+) and falls back to plain translucent keys on older phones.
@@ -145,6 +145,11 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 12.9 Every Home tile and every settings section has a proper icon (no plain dots): Typing, Themes, Layouts, Models, Learned data, Backup, Practice swiping, Feedback, Position and size, Privacy.
 - [ ] 12.10 Text sizes follow the phone's font-size setting; nothing is cut off at the largest size.
 - [ ] 12.11 Home quick chips (Glide typing, Number row, Swipe to delete, Space cursor, Autocorrect, Haptics, Key sound) each flip their setting, and the keyboard follows the next time it is shown.
+
+- [ ] 12.13 **(!)** Keyboard colours (Themes screen): System, Light and Dark each switch every theme that has both looks (Wisp, Moon Phase, Dandelion, Sakura, Material You, Liquid Glass, Modern, Retro, Brutalist, Comic, Manga) between its light and dark look, keeping the same theme selected. Factory, Cyberpunk, Terminal (dark only) and Y2K Desktop (light only) do not change.
+- [ ] 12.14 **(!)** Space-bar art: Moon Phase, Dandelion, Sakura, Factory, Cyberpunk, Terminal, Y2K Desktop, Retro, Brutalist, Comic and Manga show their animated picture on the space bar; the "Space-bar art" switch (Themes > Fine-tune) turns it off for the plain language name. Pressing the space bar still types a space and feels like a normal key.
+- [ ] 12.15 Animations stop when the keyboard is hidden and when the phone's "remove animations" is on (the picture is then still).
+- [ ] 12.16 Comic tilts its keys a little; Factory keys have corner rivets; Terminal, Cyberpunk and Factory labels glow or shadow as designed.
 
 ## 13. Learned data and privacy
 - [ ] 13.1 Learned data lists what Wisp learned (words, swipe style); individual words can be removed; "Erase everything" erases it all after a confirmation.

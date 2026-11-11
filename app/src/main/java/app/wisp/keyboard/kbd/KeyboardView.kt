@@ -50,6 +50,8 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     var languageName = ""
         set(v) { if (field != v) { field = v; invalidate() } }
     var languageCode = ""
+    /** The code of the language in use ("EN"), shown small on the space bar when its picture covers the name. */
+    var languageNow = ""
 
     /** Caps lock (shift held on), as opposed to shift for one letter: the shift key shows a bar under its arrow. */
     var capsLock = false
@@ -118,6 +120,22 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private val hintText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.RIGHT; typeface = Typeface.MONOSPACE; textSize = 9f * density }
     private val bitmapPaint = Paint()
     private val glideLit = java.util.BitSet()
+    // The space bar's picture, where the theme has one and the user has not turned it off. It moves, so the space key redraws on a timer
+    // while the keyboard is showing (and stays still when the phone's animations are off).
+    private var spaceArtOn = true
+    private var art: app.wisp.keyboard.style.SvgArt? = null
+    private var artFor: Theme? = null
+    private var artSince = 0L
+    private val artRect = RectF()
+    private val artClip = android.graphics.Path()
+    private val artTick = Runnable { artRect.let { invalidate(it.left.toInt() - 1, it.top.toInt() - 1, it.right.toInt() + 1, it.bottom.toInt() + 1) } }
+    private val artFonts: (String, Int) -> android.graphics.Typeface = { family, weight -> ThemeFonts.byFamily(context, family, weight) }
+
+    private fun currentArt(): app.wisp.keyboard.style.SvgArt? {
+        if (artFor !== theme) { artFor = theme; art = if (theme.art != null) app.wisp.keyboard.style.SvgArt.load(context, theme.id, theme.dark) else null; artSince = SystemClock.uptimeMillis() }
+        return if (spaceArtOn) art else null
+    }
+
     private var tintedTheme: Theme? = null
     private var tintedBigSize = 0f
     private val box = RectF()
@@ -146,6 +164,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         setTheme(style.themeFor(context))
         keyHints = style.keyHints
         setPhoto(style.photo, style.photoDim)
+        spaceArtOn = style.spaceArt
         haptic = style.haptic; sound = style.sound; trailOn = style.trailOn
         wordSwipe = style.wordSwipe; cursorSlide = style.cursorSlide; longPressMs = style.longPressMs
         if (handle != 0L) Native.touchConfig(handle, touchConfig())
@@ -311,12 +330,28 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
                 }
             }
             val ink = if (lit || role == ThemeRenderer.Role.ACCENT) theme.accentFg else if (role == ThemeRenderer.Role.MOD) theme.modFg else theme.fg
-            drawKeyFace(canvas, l, i, ink)
+            val picture = if (l.codes[i] == KeyCodes.SPACE) currentArt() else null
+            if (picture != null) drawArt(canvas, picture, l, i, lit, now) else drawKeyFace(canvas, l, i, ink)
             if (tilted) canvas.restore()
         }
         if (fading) postInvalidateOnAnimation()
         drawTrail(canvas)
         if (BuildConfig.DEBUG) drawTime.record(System.nanoTime() - d0)
+    }
+
+    private fun drawArt(c: Canvas, picture: app.wisp.keyboard.style.SvgArt, l: CompiledLayout, i: Int, lit: Boolean, now: Long) {
+        val o = i * 4
+        artRect.set(l.rects[o], l.rects[o + 1], l.rects[o + 2], l.rects[o + 3])
+        val rad = theme.radius[0] * density
+        artClip.rewind(); artClip.addRoundRect(artRect, rad, rad, android.graphics.Path.Direction.CW)
+        c.save(); c.clipPath(artClip)
+        theme.art?.bg?.let { bg -> bitmapPaint.color = bg.base(); c.drawRect(artRect, bitmapPaint); bitmapPaint.color = 0xFFFFFFFF.toInt() }      // behind a picture that does not reach the edges
+        picture.draw(c, artRect, (now - artSince) / 1000f, slice = theme.art?.id != "moon", fonts = artFonts)
+        if (lit) { bitmapPaint.alpha = 70; bitmapPaint.color = theme.accent.base(); c.drawRect(artRect, bitmapPaint); bitmapPaint.alpha = 255 }
+        c.restore()
+        // The language is still named, small, in the corner.
+        if (languageName.isNotEmpty()) { smallText.color = theme.fg; smallText.alpha = 130; smallText.textSize = 10f * density; c.drawText(languageNow.ifEmpty { languageName }, artRect.left + 6f * density, artRect.bottom - 5f * density, smallText); smallText.alpha = 255; smallText.textSize = minOf(theme.size, 15f) * density }
+        if (picture.animated && android.animation.ValueAnimator.areAnimatorsEnabled() && isShown) postDelayed(artTick, 33)
     }
 
     private fun setThemePaints() {
@@ -532,7 +567,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         }
     }
 
-    override fun onDetachedFromWindow() { release(); renderer.release(); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() { removeCallbacks(artTick); release(); renderer.release(); super.onDetachedFromWindow() }
 
     private fun blend(a: Int, b: Int, t: Float): Int {
         val u = 1f - t

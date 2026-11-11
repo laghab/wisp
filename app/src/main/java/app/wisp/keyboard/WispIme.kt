@@ -302,7 +302,7 @@ class WispIme : InputMethodService() {
         fadeTo(emojiPanel, m == Mode.EMOJI)
         if (m != Mode.EMOJI && m != Mode.CLIPBOARD && m != Mode.REWRITE) {
             k.setLabel(KeyCodes.ENTER, field.enter.label)
-            k.languageName = language.name; k.languageCode = enabledLanguages[(enabledLanguages.indexOf(language) + 1) % enabledLanguages.size].code   // the space bar names this language; its menu offers the next
+            k.languageName = language.name; k.languageNow = language.code; k.languageCode = enabledLanguages[(enabledLanguages.indexOf(language) + 1) % enabledLanguages.size].code   // the space bar names this language; its menu offers the next
             k.shifted = m == Mode.LETTERS && controller.shift != Shift.OFF; k.capsLock = m == Mode.LETTERS && controller.shift == Shift.CAPS
         }
         emojiBar?.setLabel(KeyCodes.ENTER, field.enter.label)

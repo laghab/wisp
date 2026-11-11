@@ -23,7 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import app.wisp.keyboard.R
 
-// The settings app wears the Claude Design palette: the Midnight keyboard theme in the dark, the Modern one in the light. Voice and rewrite use amber.
+// The settings app wears the Claude Design palette: the Wisp keyboard theme in the dark, the Modern one in the light. Voice and rewrite use amber.
 private val Dark = darkColorScheme(
     primary = Color(0xFF8FA8FF), onPrimary = Color(0xFF0E1116), primaryContainer = Color(0xFF1A2033), onPrimaryContainer = Color(0xFFB5C5FF),
     secondary = Color(0xFFFFB86B), onSecondary = Color(0xFF1A1206), secondaryContainer = Color(0xFF2A2418), onSecondaryContainer = Color(0xFFFFCF99),

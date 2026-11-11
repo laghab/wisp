@@ -91,7 +91,7 @@ fun HomeScreen(onOpen: (Target) -> Unit, modifier: Modifier = Modifier) {
     val primary = MaterialTheme.colorScheme.primary; val amber = MaterialTheme.colorScheme.secondary; val green = MaterialTheme.colorScheme.tertiary
     val tiles = listOf(
         Tile("Typing", "Glide, gestures, autocorrect, shortcuts", Target.Screen(SettingsIndex.TYPING), Color(0xFF1A2033), Color(0xFFB5C5FF), Icons.Icon.KEYBOARD),
-        Tile("Themes", "Eleven skins, a photo, your own", Target.Screen(SettingsIndex.LOOK), Color(0xFF2A1F33), Color(0xFFD9B5FF), Icons.Icon.THEME),
+        Tile("Themes", "Fifteen themes, light and dark", Target.Screen(SettingsIndex.LOOK), Color(0xFF2A1F33), Color(0xFFD9B5FF), Icons.Icon.THEME),
         Tile("Layouts", "Keys, long-press characters, toolbar", Target.Screen(SettingsIndex.LAYOUTS), Color(0xFF13201B), Color(0xFF6FD3A6), Icons.Icon.GRID),
         Tile("Models", "Speech and writing assistant, on this phone", Target.Screen(SettingsIndex.VOICE), Color(0xFF2A2418), Color(0xFFFFB86B), Icons.Icon.SPARKLE),
         Tile("Learned data", "See, remove, export or erase", Target.Open(app.wisp.keyboard.personal.LearnedDataActivity::class.java), Color(0xFF1B2A2E), Color(0xFF8FD6E8), Icons.Icon.DATABASE),

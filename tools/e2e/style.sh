@@ -10,16 +10,16 @@ d=sys.stdin.buffer.read(); w,h,f=struct.unpack('<III',d[:12]); x,y=$1,$2; o=12+(
 reset() { as_app "rm -f files/wisp-settings.properties" >/dev/null 2>&1; set_prefs "$@"; launch_field; }
 dark() { read -r r g b <<<"$1"; [ $((r+g+b)) -lt 300 ]; }
 
-reset style_theme=midnight
-dark "$(pixel 690 1065)" && check ok "Midnight: the key surface is dark" || check no "Midnight: the key surface is dark"
-reset style_theme=modern
-dark "$(pixel 690 1065)" && check no "Modern: the key surface is light" || check ok "Modern: the key surface is light"
+reset style_theme=wisp style_colors=dark
+dark "$(pixel 690 1065)" && check ok "Wisp, dark look: the key surface is dark" || check no "Wisp, dark look: the key surface is dark"
+reset style_theme=wisp style_colors=light
+dark "$(pixel 690 1065)" && check no "Wisp, light look: the key surface is light" || check ok "Wisp, light look: the key surface is light"
 
 reset style_number_row=true
 tap 48 727; sleep 0.4      # the digit row sits above the letters; its first key is 1
 check "$([ "$(field_text)" = "1" ] && echo ok)" "number row: the top-left key types 1"
 
-reset style_theme=midnight
+reset style_theme=wisp style_colors=dark
 hold $(K e) 1100          # hold e: the popup opens and a release picks the first extra, 3
 check "$([ "$(field_text)" = "3" ] && echo ok)" "long-press popup: holding e and letting go types its first extra (3)"
 read -r ex ey <<< "$(K e)"
