@@ -10,7 +10,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 1.3 "Open keyboard list" takes you to Android's keyboard settings; after you switch Wisp on, step 1 ticks itself when you come back.
 - [ ] 1.4 Step 2 (choose Wisp as your keyboard) opens the picker; after choosing, it ticks itself.
 - [ ] 1.5 "Skip for now" works and lands on Home. The Welcome screen does not come back on the next launch.
-- [ ] 1.6 **(!)** Settings > Apps > Wisp > Permissions shows **no** Internet permission, and Microphone only appears when you use voice.
+- [ ] 1.6 **(!)** Settings > Apps > Wisp > Permissions lists only what is documented: Microphone (asked for when you first use voice), plus Internet, notifications and installing updates for the optional model downloader. Settings > Data usage shows no network use while you only type and dictate.
 - [ ] 1.7 Home shows "Wisp is your keyboard" (green dot), the version, "0 KB sent off this phone", and a Test area.
 - [ ] 1.8 The home-screen icon is the Wisp ribbon icon (and a single-colour version appears with themed icons on Android 13+).
 
