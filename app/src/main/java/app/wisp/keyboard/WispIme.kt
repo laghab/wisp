@@ -751,6 +751,7 @@ class WispIme : InputMethodService() {
         controller.onExternalCursorMove()
         engine?.flush()
         gestureEngine?.saveStyle()
+        field = FieldInfo.from(0, 0)                  // nothing is focused now, so a copy made elsewhere is not "from a password field"
         super.onFinishInput()
     }
 
