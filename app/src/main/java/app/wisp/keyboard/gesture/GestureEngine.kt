@@ -48,6 +48,8 @@ class GestureEngine(
      * nothing fits: an absurd path still has a nearest word.
      */
     @Volatile var confidentFit = 0.32f
+    /** A swipe whose best word fits the path this well is typed even when another word is nearly as good (measured: real swipes 0.03 to 0.1, nonsense 0.2 to 0.4); worse than this, nothing is typed and the strip offers choices. */
+    @Volatile var plausibleFit = 0.25f
 
     private var importedStamp = 0L
 
@@ -147,7 +149,7 @@ class GestureEngine(
         val literal = g.literal(xs, ys, n).ifEmpty { null }
         if (hits.isEmpty()) return if (literal != null) GestureOutcome(emptyList(), false, literal) else null
         val margin = if (hits.size > 1) hits[1].cost - hits[0].cost else Float.MAX_VALUE
-        return GestureOutcome(hits.map { it.word }, margin >= confidentMargin && hits[0].fit <= confidentFit, literal)
+        return GestureOutcome(hits.map { it.word }, margin >= confidentMargin && hits[0].fit <= confidentFit, literal, plausible = hits[0].fit <= plausibleFit)
     }
 
     fun close() {

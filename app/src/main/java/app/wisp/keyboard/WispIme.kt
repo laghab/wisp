@@ -287,6 +287,7 @@ class WispIme : InputMethodService() {
         mode = m
         val k = keys ?: return
         k.heightRows = lettersSpec().rows.size       // every page and panel is as tall as the letters
+        syncGap()
         when (m) {
             Mode.LETTERS -> k.setSpec(lettersSpec())
             Mode.SYMBOLS -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols))
@@ -357,10 +358,10 @@ class WispIme : InputMethodService() {
         val lp = r.layoutParams as FrameLayout.LayoutParams
         val gapPx = (f.gap * d).toInt(); val floating = p.mode == Placement.Mode.FLOATING
         lp.width = (f.width * d).toInt(); lp.leftMargin = (f.left * d).toInt()
-        // A raised keyboard is filled down to the bottom of the screen with its own background; only a floating one leaves the app showing below it.
+        // A floating keyboard leaves the app showing below it; a raised one is filled down to the screen's bottom (see syncGap).
         lp.bottomMargin = if (floating) gapPx else 0
-        r.setPadding(r.paddingLeft, r.paddingTop, r.paddingRight, if (floating) 0 else gapPx)
         r.layoutParams = lp
+        syncGap()
         keys?.rowScale = f.rowScale
         keys?.splitGapPx = f.splitGap * d
         floatGrip?.visibility = if (p.mode == Placement.Mode.FLOATING && placementEditor == null) View.VISIBLE else View.GONE
@@ -375,6 +376,19 @@ class WispIme : InputMethodService() {
         updateRail(p, f)
         h.requestLayout()
         if (save) Placement.save(this, landscape(), p)
+    }
+
+    /**
+     * The gap below a raised keyboard is filled with the keyboard's own background. While typing it stays empty, because the keys are held
+     * higher for the thumbs' sake; while a panel (emoji, clipboard, rewrite) is open the panel grows into it, since browsing wants room.
+     */
+    private fun syncGap() {
+        val r = floatRoot ?: return
+        val gapPx = ((frame?.gap ?: 0f) * resources.displayMetrics.density).toInt()
+        val floating = placement.mode == Placement.Mode.FLOATING
+        val panel = mode == Mode.EMOJI || mode == Mode.CLIPBOARD || mode == Mode.REWRITE
+        r.setPadding(r.paddingLeft, r.paddingTop, r.paddingRight, if (floating || panel) 0 else gapPx)
+        (panelStack as? app.wisp.keyboard.kbd.PanelStack)?.extraBottom = if (!floating && panel) gapPx else 0
     }
 
     private fun updateRail(p: Placement, f: Placement.Frame) {

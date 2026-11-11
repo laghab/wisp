@@ -50,4 +50,5 @@ object AutoCorrectPolicy {
  * What the gesture decoder concluded. [words] are best first. When [confident] is false the best word is not
  * inserted on its own; the strip offers [literal] (the letters the swipe actually passed over) and the best words.
  */
-class GestureOutcome(val words: List<String>, val confident: Boolean, val literal: String?)
+/** [confident]: clearly one word. [plausible]: not certain, but the best word fits the path well enough to type it anyway (the strip offers the others). */
+class GestureOutcome(val words: List<String>, val confident: Boolean, val literal: String?, val plausible: Boolean = confident)

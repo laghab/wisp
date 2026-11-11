@@ -373,12 +373,14 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         endWord(null, allowCorrection = false)
         clearGesture(); forgetRejection()
         val offered = LinkedHashSet<String>()
-        if (o.confident) { offered.addAll(o.words) } else { o.literal?.let { offered.add(it) }; offered.addAll(o.words) }
+        // The best word is typed whenever it plausibly fits (like every other swipe keyboard), with the runners-up in the strip to swap to.
+        // Only a swipe that fits nothing well leaves the field alone and offers choices, the letters it passed over first.
+        if (o.plausible) { offered.addAll(o.words); o.literal?.let { offered.add(it) } } else { o.literal?.let { offered.add(it) }; offered.addAll(o.words) }
         val items = offered.take(3)
         if (items.isEmpty()) { publishBar(); return@edit }
         gesturePrevious = previousWord
         gestureItems = items
-        if (o.confident) { insertGestureWord(items[0]); gestureInserted = true; gestureSelected = 0; onGestureInserted?.invoke() }
+        if (o.plausible) { insertGestureWord(items[0]); gestureInserted = true; gestureSelected = 0; onGestureInserted?.invoke() }
         publishBar()
     }
 

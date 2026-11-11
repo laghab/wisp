@@ -65,7 +65,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 6.3 One backspace after a swipe removes the whole swiped word.
 - [ ] 6.4 A long word (keyboard, international) swipes correctly.
 - [ ] 6.5 Sloppy swipes (not exactly over each letter) still land the right word most of the time; if not, the right word is in the strip.
-- [ ] 6.6 A swipe that is not a word inserts nothing and offers letters in the strip.
+- [ ] 6.6 **(!)** A swipe always types its best word when it fits the path reasonably, even if another word is nearly as good (the others are in the strip to swap to; tapping one replaces the typed word). A swipe that is not a word at all inserts nothing and offers letters in the strip.
 - [ ] 6.7 Swipe, delete it, then type the word by hand: the next swipes of that word improve over time (practice mode below speeds this up).
 - [ ] 6.8 Settings > Typing: glide off stops swiping; the trail colour and thickness settings change the trail.
 - [ ] 6.9 Practice swiping (Home tile): a session of words runs on the same keyboard you type with (your letter layout, number row and theme); "words glided this week" on Home goes up.
@@ -123,7 +123,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 
 ## 11. Edit mode, size and position
 - [ ] 11.1 The crop icon in the toolbar opens edit mode on the keyboard itself.
-- [ ] 11.2 Dragging the keyboard up and down moves it; **(!)** the area below a raised keyboard is filled with the keyboard background down to the bottom of the screen, never a see-through gap.
+- [ ] 11.2 Dragging the keyboard up and down moves it; **(!)** the area below a raised keyboard is filled with the keyboard background down to the bottom of the screen, never a see-through gap. While you type the gap stays (the keys stay raised for your thumbs); when you open the emoji, clipboard or rewrite panel it grows into the gap for more room, and goes back when you return to the keys.
 - [ ] 11.3 Resizing from the edges and corners changes width and height like cropping; keys rescale cleanly with no overlap.
 - [ ] 11.4 Mode chips: Full, One-handed left, One-handed right, Floating, Split each work; Reset restores the default; Done keeps your choice.
 - [ ] 11.5 One-handed: keys sit on one side; the swap button moves them to the other side; the widen button returns to full width. Taps on the empty strip type nothing.
