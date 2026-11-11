@@ -1,0 +1,203 @@
+{
+ "id": "mountains",
+ "name": "Mountains",
+ "dark": false,
+ "board": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#F3EEE7"
+    ],
+    [
+     1.0,
+     "#E4E2EA"
+    ]
+   ]
+  }
+ },
+ "key": "#FFFFFF",
+ "mod": "#DCDDE6",
+ "accent": "#5A6FA8",
+ "fg": "#2B3040",
+ "modFg": "#2B3040",
+ "accentFg": "#FFFFFF",
+ "stripFg": "#2B3040",
+ "sep": "#D6D7E0",
+ "radius": 8.0,
+ "border": {
+  "width": 1.0,
+  "color": "#D6D7E0"
+ },
+ "shadow": [
+  {
+   "color": "rgba(43,48,64,0.14)",
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(90,111,168,0.35)",
+   "spread": 3.0
+  }
+ ],
+ "font": "space_grotesk",
+ "weight": 500,
+ "size": 20,
+ "space": "English",
+ "art": {
+  "id": "mountains",
+  "bg": {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#F7E8DA"
+     ],
+     [
+      1.0,
+      "#ECE6EE"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#9AA5C4",
+   "#5A6FA8",
+   "#FFFFFF"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#141A2C"
+       ],
+       [
+        1.0,
+        "#0C1020"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.86,
+      "y": 0.4,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "#FFFFFF"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.64,
+      "y": 0.14,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(255,255,255,0.8)"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.18,
+      "y": 0.22,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "#FFFFFF"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": "#1D2438",
+   "mod": "#161C2E",
+   "accent": "#AFC0EC",
+   "fg": "#E4E8F4",
+   "modFg": "#AFC0EC",
+   "accentFg": "#0C1020",
+   "stripFg": "#E4E8F4",
+   "sep": "#262E46",
+   "border": {
+    "width": 1.0,
+    "color": "#262E46"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.35)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#AFC0EC",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(175,192,236,0.4)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "mountains",
+    "bg": {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#1A2238"
+       ],
+       [
+        1.0,
+        "#121828"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#2C3756",
+     "#3D4C74",
+     "#E4E8F4"
+    ]
+   }
+  }
+ }
+}

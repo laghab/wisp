@@ -141,7 +141,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         return if (artMode == "off") null else art
     }
 
-    private val QUIET_ART = setOf("sakura", "sakura-storm", "dandelion", "moon")
+    private val QUIET_ART = setOf("sakura", "dandelion", "moon", "angel", "swan", "cosmo-deep", "dust-glitter", "forest", "ocean", "mountains", "cat", "dog", "sun", "lanterns", "sunflowers", "lotus")
     private var fxArt: app.wisp.keyboard.style.SvgArt? = null
     private var fxFor: Theme? = null
     private val fxRect = RectF()

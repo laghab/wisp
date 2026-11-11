@@ -10,6 +10,10 @@ import app.wisp.keyboard.settings.WispSettings
 data class KeyboardStyle(
     /** Id of the skin (see [Themes]). */
     val theme: String = Themes.DEFAULT,
+    /** Themes marked as favourites (ids), the ones shuffle picks from. */
+    val favorites: List<String> = emptyList(),
+    /** "off", "daily" or "weekly": with two or more favourites, the theme changes by itself among them. */
+    val shuffle: String = "off",
     /** Which look of a theme that has both: "system" follows the phone, or "light" / "dark". */
     val colors: String = "system",
     /** The space bar's picture, on the themes that have one: "off", "still", "subtle" (busy pictures slowed right down) or "full" (as designed). */
@@ -48,11 +52,23 @@ data class KeyboardStyle(
     val shortcuts: String = "",
 ) {
     /** A short string that changes whenever any option changes; views re-style only when it does. */
-    val signature: String get() = listOf(theme, colors, spaceArt, wallpaperColours, keyBorders, keyHints, photo, photoDim, trailOn, trailColor, trailWidthDp, gap, numberRow, haptic, hapticLevel, sound, soundVolume, wordSwipe, cursorSlide, layout, glide, autoCorrect, autoCaps, doubleSpacePeriod, longPressMs, shortcuts).joinToString("|")
+    val signature: String get() = listOf(activeTheme, colors, spaceArt, wallpaperColours, keyBorders, keyHints, photo, photoDim, trailOn, trailColor, trailWidthDp, gap, numberRow, haptic, hapticLevel, sound, soundVolume, wordSwipe, cursorSlide, layout, glide, autoCorrect, autoCaps, doubleSpacePeriod, longPressMs, shortcuts).joinToString("|")
 
-    /** The skin to draw: the chosen theme, with wallpaper colours, border and photo options applied. */
+    /**
+     * The theme in use today: the chosen one, or with shuffle on, the favourite for this day or week. The favourites are taken in a fixed scrambled
+     * order, one per day (or week), so each comes round in turn and none repeats back to back; nothing is stored and no timer is needed.
+     */
+    val activeTheme: String get() {
+        val pool = favorites.sortedBy { it.hashCode() * -1640531535 }
+        if (shuffle == "off" || pool.size < 2) return theme
+        val day = java.time.LocalDate.now().toEpochDay()
+        val period = if (shuffle == "weekly") (day + 3) / 7 else day         // weeks start on Monday
+        return pool[Math.floorMod(period, pool.size.toLong()).toInt()]
+    }
+
+    /** The skin to draw: the chosen theme (or today's favourite), with wallpaper colours, border and photo options applied. */
     fun themeFor(context: Context): Theme {
-        var t = Themes.get(context, theme, wantsDark(context))
+        var t = Themes.get(context, activeTheme, wantsDark(context))
         if (t.dynamic && wallpaperColours && DYNAMIC_AVAILABLE) t = DynamicColours.apply(context, t)
         if (!keyBorders && t.border != null) t = t.copy(border = null)
         return t
@@ -74,7 +90,7 @@ data class KeyboardStyle(
     /** Writes every option to the settings file. */
     fun save(context: Context) {
         val s = WispSettings.get(context)
-        s.putString("style_theme", theme); s.putString("style_colors", colors); s.putString("style_art", spaceArt); s.putBoolean("style_wallpaper", wallpaperColours); s.putBoolean("style_borders", keyBorders); s.putBoolean("style_hints", keyHints)
+        s.putString("style_theme", theme); s.putString("style_favorites", favorites.joinToString(",")); s.putString("style_shuffle", shuffle); s.putString("style_colors", colors); s.putString("style_art", spaceArt); s.putBoolean("style_wallpaper", wallpaperColours); s.putBoolean("style_borders", keyBorders); s.putBoolean("style_hints", keyHints)
         s.putString("style_photo", photo); s.putInt("style_photo_dim", photoDim)
         s.putBoolean("style_trail_on", trailOn); s.putString("style_trail_color", trailColor); s.putInt("style_trail_width", trailWidthDp)
         s.putInt("style_gap", gap)
@@ -96,7 +112,8 @@ data class KeyboardStyle(
         fun load(context: Context): KeyboardStyle {
             val s = WispSettings.get(context)
             return KeyboardStyle(
-                theme = s.getString("style_theme", Themes.DEFAULT)!!, colors = s.getString("style_colors", "system")!!, spaceArt = s.getString("style_art", "subtle")!!, wallpaperColours = s.getBoolean("style_wallpaper", false), keyBorders = s.getBoolean("style_borders", true), keyHints = s.getBoolean("style_hints", true),
+                theme = s.getString("style_theme", Themes.DEFAULT)!!.let { if (it == "sakura-storm") "sakura" else it },
+                favorites = s.getString("style_favorites", "")!!.split(',').filter { it.isNotBlank() && it != "sakura-storm" }, shuffle = s.getString("style_shuffle", "off")!!, colors = s.getString("style_colors", "system")!!, spaceArt = s.getString("style_art", "subtle")!!, wallpaperColours = s.getBoolean("style_wallpaper", false), keyBorders = s.getBoolean("style_borders", true), keyHints = s.getBoolean("style_hints", true),
                 photo = s.getString("style_photo", "")!!, photoDim = s.getInt("style_photo_dim", 40).coerceIn(0, 80),
                 trailOn = s.getBoolean("style_trail_on", true), trailColor = s.getString("style_trail_color", "accent")!!, trailWidthDp = s.getInt("style_trail_width", 5).coerceIn(2, 12),
                 gap = s.getInt("style_gap", 100).coerceIn(40, 200), numberRow = s.getBoolean("style_number_row", false),

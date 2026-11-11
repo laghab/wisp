@@ -246,7 +246,8 @@ class WispIme : InputMethodService() {
         v?.compact = on
         v?.layoutParams = (v?.layoutParams as? LinearLayout.LayoutParams)?.also { it.height = if (on) compactH else (300 * d).toInt() }
         emojiBar?.visibility = if (on) View.GONE else View.VISIBLE
-        // The keys sit under the panel while searching.
+        // The keys sit under the panel while searching, and the area grows to hold both (the keys alone fill it otherwise, and the bottom rows were cut off).
+        (panelStack as? app.wisp.keyboard.kbd.PanelStack)?.extraTop = if (on) compactH else 0
         if (k != null) {
             (k.layoutParams as? FrameLayout.LayoutParams)?.let { it.topMargin = if (on) compactH else 0; k.layoutParams = it }
             if (on) { k.setSpec(lettersSpec()); k.visibility = View.VISIBLE; panel.layoutParams = (panel.layoutParams as FrameLayout.LayoutParams).also { it.height = compactH; it.gravity = android.view.Gravity.TOP } }
@@ -646,9 +647,18 @@ class WispIme : InputMethodService() {
     private val clipSave = Runnable { clipHistory.save(clipFile) }
     private val clipListener = android.content.ClipboardManager.OnPrimaryClipChangedListener { onClipChanged() }
 
+    private var lastClipAt = 0L
+
+    /**
+     * Records what is on the clipboard. Called when the system says it changed, and again whenever the keyboard or the clipboard panel opens,
+     * because on some phones the change notice does not reach the keyboard; a copy is only taken once (by its time stamp).
+     */
     private fun onClipChanged() {
-        val clip = getSystemService(android.content.ClipboardManager::class.java).primaryClip ?: return
+        val clip = runCatching { getSystemService(android.content.ClipboardManager::class.java).primaryClip }.getOrNull() ?: return
         if (clip.itemCount == 0) return
+        val at = clip.description.timestamp
+        if (at != 0L && at <= lastClipAt) return
+        if (at != 0L) lastClipAt = at
         val sensitive = clip.description.extras?.getBoolean("android.content.extra.IS_SENSITIVE") == true
         val noStore = field.kind == FieldKind.PASSWORD || incognito
         val item = clip.getItemAt(0)
@@ -660,6 +670,7 @@ class WispIme : InputMethodService() {
     private fun saveClipSoon() { main.removeCallbacks(clipSave); main.postDelayed(clipSave, 2_000) }
 
     private fun showClipboardPanel() {
+        onClipChanged()
         val stack = panelStack ?: return
         if (clipPanel != null) return
         val d = resources.displayMetrics.density
@@ -719,6 +730,7 @@ class WispIme : InputMethodService() {
         packageName = info.packageName
         bar?.micEnabled = f.kind != FieldKind.PASSWORD && f.suggest
         keys?.soundOff = f.kind == FieldKind.PASSWORD
+        onClipChanged()
         engine?.refreshSources(); gestureEngine?.refreshSources()
         updateLearning()
         keys?.gesturesEnabled = style.glide && f.kind in listOf(FieldKind.TEXT, FieldKind.URL, FieldKind.EMAIL)      // not only in "suggestion" fields: search boxes and address bars swipe too

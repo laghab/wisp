@@ -2,18 +2,23 @@
 """Converts the design handoff's themes.json (CSS-valued tokens, one entry per theme with its modes) into Wisp's theme files in
 app/src/main/assets/themes (one file per theme; a theme with a light and a dark look is ONE file with a "variants" block).
 
-usage: tools/themes/from-handoff.py <path to the handoff's themes.json>
-Run it again when the designs change; the files it writes are the source of truth in the app (see docs/themes.md).
+usage: tools/themes/from-handoff.py <path to a theme pack's themes.json>
+A pack adds or replaces its own themes, art and overlays; it never removes the others. Run it again when a design changes; the files it
+writes are the source of truth in the app (see docs/themes.md).
 """
 import json, os, re, sys
 
 NAMES = {
     "wisp": "Wisp", "moon": "Moon Phase", "dandelion": "Dandelion", "sakura": "Sakura", "factory": "Factory", "cyberpunk": "Cyberpunk",
     "terminal": "Terminal", "y2k": "Y2K Desktop", "material": "Material You", "glass": "Liquid Glass", "modern": "Modern",
-    "sakuraStorm": "Sakura Storm", "retro": "Retro", "brutalist": "Brutalist", "comic": "Comic", "manga": "Manga",
+    "retro": "Retro", "brutalist": "Brutalist", "comic": "Comic", "manga": "Manga",
+    "angel": "Angel", "swan": "Swan", "dragon": "Dragon", "fireDragon": "Fire Dragon", "cosmoDeep": "Cosmo Deep Field", "dustGlitter": "Stardust Glitter",
+    "forest": "Forest", "ocean": "Ocean", "mountains": "Mountains", "cat": "Cat", "dog": "Dog",
+    "sun": "Sunshine", "lanterns": "Lanterns", "sunflowers": "Sunflowers", "lotus": "Lotus Pond",
 }
 FONTS = {"inter": "inter", "space grotesk": "space_grotesk", "chakra petch": "chakra_petch", "orbitron": "orbitron", "vt323": "vt323",
-         "bangers": "bangers", "zen maru gothic": "zen_maru", "jetbrains mono": "jetbrains_mono", "roboto": "sans", "tahoma": "sans"}
+         "bangers": "bangers", "zen maru gothic": "zen_maru", "jetbrains mono": "jetbrains_mono", "roboto": "sans", "tahoma": "sans",
+         "cormorant garamond": "cormorant_garamond", "eb garamond": "eb_garamond", "fredoka": "fredoka", "quicksand": "quicksand"}
 
 def kebab(s):
     return re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", s).lower()
@@ -86,10 +91,14 @@ def radial(css):
     if first.startswith("circle") and " at " not in first and tail and "/" in tail:       # dots: "circle, c r1, transparent r2" 0 0 / 6px 6px
         c, p1 = split_colour_stop(args[1]); _, p2 = split_colour_stop(args[2])
         step = num(tail.split("/")[1].split()[0]); return {"dots": {"step": step, "radius": round((num(p1[0]) + num(p2[0])) / 2, 2), "color": colour(c)}}
+    if first.startswith("circle at") and tail and "/" in tail and len(args) == 4:           # rings: "circle at 50% 0%, transparent a, COLOUR b, transparent c" 0 0 / 14px 10px
+        _, pa = split_colour_stop(args[1]); col, pb = split_colour_stop(args[2]); _, pc = split_colour_stop(args[3])
+        w, h = tail.split("/")[1].split()
+        return {"scales": {"w": num(w), "h": num(h), "r": num(pb[0]), "width": round(num(pc[0]) - num(pa[0]), 2), "color": colour(col)}}
     shape = first
     stops = args[1:]
     rel = False; rx = ry = 0.0; x = y = 0.5
-    mm = re.match(r"^(?:ellipse|circle)?\s*([0-9.]+(?:px|%))\s*([0-9.]+(?:px|%))?\s*at\s*([0-9.]+%?)\s+([0-9.]+%?)$", shape.strip())
+    mm = re.match(r"^(?:ellipse|circle)?\s*([0-9.]+(?:px|%))\s*([0-9.]+(?:px|%))?\s*at\s*(-?[0-9.]+%?)\s+(-?[0-9.]+%?)$", shape.strip())
     if mm:
         a, b = mm.group(1), mm.group(2) or mm.group(1)
         rel = a.endswith("%"); rx, ry = (num(a) / 100, num(b) / 100) if rel else (num(a), num(b))
@@ -178,7 +187,6 @@ def main(src):
     for sub, dest in (("space-bar-art", "art"), ("full-board-fx", "fx")):
         dd = os.path.join(out, "..", dest)
         os.makedirs(dd, exist_ok=True)
-        for f in os.listdir(dd): os.remove(os.path.join(dd, f))
         for f in sorted(os.listdir(os.path.join(src_dir, sub))) if os.path.isdir(os.path.join(src_dir, sub)) else []:
             open(os.path.join(dd, kebab(f[:-4]) + ".svg"), "w").write(open(os.path.join(src_dir, sub, f)).read())
     for tid, v in d.items():

@@ -1,0 +1,109 @@
+{
+ "id": "cat",
+ "name": "Cat",
+ "dark": false,
+ "board": [
+  "#FBEFE6",
+  {
+   "dots": {
+    "step": 12.0,
+    "radius": 1.4,
+    "color": "rgba(232,160,140,0.18)"
+   }
+  }
+ ],
+ "key": "#FFFAF5",
+ "mod": "#F6D9CC",
+ "accent": "#E8907A",
+ "fg": "#5A3A33",
+ "modFg": "#5A3A33",
+ "accentFg": "#FFFAF5",
+ "stripFg": "#5A3A33",
+ "sep": "#F0D8CC",
+ "radius": 16.0,
+ "border": {
+  "width": 1.0,
+  "color": "#F0D8CC"
+ },
+ "shadow": [
+  {
+   "color": "rgba(90,58,51,0.10)",
+   "dy": 2.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(232,144,122,0.4)",
+   "spread": 3.0
+  }
+ ],
+ "font": "zen_maru",
+ "weight": 700,
+ "size": 20,
+ "space": "English",
+ "art": {
+  "id": "cat",
+  "bg": "#FFFAF5",
+  "colors": [
+   "#E9B79A",
+   "#8A5A4C",
+   "#F2C9B8"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    "#1E1A2A",
+    {
+     "dots": {
+      "step": 12.0,
+      "radius": 1.4,
+      "color": "rgba(242,163,143,0.10)"
+     }
+    }
+   ],
+   "key": "#2B253A",
+   "mod": "#241F32",
+   "accent": "#F2A38F",
+   "fg": "#F5E6E0",
+   "modFg": "#F2A38F",
+   "accentFg": "#1E1A2A",
+   "stripFg": "#F5E6E0",
+   "sep": "#352E47",
+   "border": {
+    "width": 1.0,
+    "color": "#352E47"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.3)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#F2A38F",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(242,163,143,0.35)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "cat",
+    "bg": "#2B253A",
+    "colors": [
+     "#C9A8A0",
+     "#F5E6E0",
+     "#4A3F60"
+    ]
+   }
+  }
+ }
+}

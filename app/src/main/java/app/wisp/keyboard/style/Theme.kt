@@ -11,6 +11,8 @@ sealed class Fill {
     /** An ellipse of [rx] by [ry] dp centred at ([x], [y]) as fractions of the board. */
     class Radial(val x: Float, val y: Float, val rx: Float, val ry: Float, val positions: FloatArray, val colors: IntArray, val relative: Boolean = false) : Fill()
     class Dots(val step: Float, val radius: Float, val color: Int) : Fill()
+    /** Tiles of [w] by [h] dp, each with a ring of radius [r] centred on its top edge (Dragon's scales). */
+    class Scales(val w: Float, val h: Float, val r: Float, val width: Float, val color: Int) : Fill()
     /** Four small studs [inset] dp in from the corners (Factory's rivets). */
     class Rivets(val inset: Float, val radius: Float, val color: Int) : Fill()
     /** Several fills painted one over the other, the first at the bottom. */
@@ -22,6 +24,7 @@ sealed class Fill {
         is Linear -> colors[colors.size / 2]
         is Radial -> colors[0]
         is Dots -> color
+        is Scales -> color
         is Rivets -> color
         is Layers -> layers.first().base()
     }
@@ -163,6 +166,7 @@ object ThemeParser {
             return Fill.Radial(r.getDouble("x").toFloat(), r.getDouble("y").toFloat(), rx, r.optDouble("ry", rx.toDouble()).toFloat(), pos, cols, r.optBoolean("rel", false))
         }
         o.optJSONObject("dots")?.let { d -> return Fill.Dots(d.getDouble("step").toFloat(), d.getDouble("radius").toFloat(), color(d.getString("color"), what)) }
+        o.optJSONObject("scales")?.let { d -> return Fill.Scales(d.getDouble("w").toFloat(), d.getDouble("h").toFloat(), d.getDouble("r").toFloat(), d.getDouble("width").toFloat(), color(d.getString("color"), what)) }
         throw ThemeException("\"$what\": a fill object needs \"linear\", \"radial\" or \"dots\"")
     }
 

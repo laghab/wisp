@@ -13,8 +13,12 @@ class PanelStack(context: Context, private val sizer: View) : FrameLayout(contex
     var extraBottom = 0
         set(v) { if (field != v) { field = v; requestLayout() } }
 
+    /** Room above the keys: emoji search shows its box and results there, with the keys under them. */
+    var extraTop = 0
+        set(v) { if (field != v) { field = v; requestLayout() } }
+
     override fun onMeasure(widthSpec: Int, heightSpec: Int) {
         measureChild(sizer, widthSpec, heightSpec)
-        super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(sizer.measuredHeight + extraBottom, MeasureSpec.EXACTLY))
+        super.onMeasure(widthSpec, MeasureSpec.makeMeasureSpec(sizer.measuredHeight + extraBottom + extraTop, MeasureSpec.EXACTLY))
     }
 }

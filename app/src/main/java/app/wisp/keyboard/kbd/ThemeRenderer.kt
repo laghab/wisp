@@ -257,6 +257,14 @@ class ThemeRenderer(val theme: Theme, private val density: Float) {
             }
         }
         is Fill.Rivets, is Fill.Layers -> null
+        is Fill.Scales -> {
+            val w = maxOf(2, dp(f.w).toInt()); val h = maxOf(2, dp(f.h).toInt())
+            val tile = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            paint.reset(); paint.isAntiAlias = true; paint.style = Paint.Style.STROKE; paint.strokeWidth = dp(f.width); paint.color = f.color
+            Canvas(tile).drawCircle(w / 2f, 0f, dp(f.r), paint)
+            paint.style = Paint.Style.FILL
+            BitmapShader(tile, Shader.TileMode.REPEAT, Shader.TileMode.REPEAT)
+        }
         is Fill.Dots -> {
             val step = maxOf(2, dp(f.step).toInt())
             val tile = Bitmap.createBitmap(step, step, Bitmap.Config.ARGB_8888)

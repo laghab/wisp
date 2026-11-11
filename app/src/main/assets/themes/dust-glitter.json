@@ -1,0 +1,359 @@
+{
+ "id": "dust-glitter",
+ "name": "Stardust Glitter",
+ "dark": false,
+ "board": [
+  {
+   "linear": {
+    "angle": 135.0,
+    "stops": [
+     [
+      0.0,
+      "#F7E3F2"
+     ],
+     [
+      0.45,
+      "#E6E3FB"
+     ],
+     [
+      0.75,
+      "#DDF1F7"
+     ],
+     [
+      1.0,
+      "#F7EADF"
+     ]
+    ]
+   }
+  },
+  {
+   "linear": {
+    "angle": 115.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,255,255,0)"
+     ],
+     [
+      0.3,
+      "rgba(255,255,255,0)"
+     ],
+     [
+      0.45,
+      "rgba(255,255,255,0.55)"
+     ],
+     [
+      0.6,
+      "rgba(255,255,255,0)"
+     ],
+     [
+      1.0,
+      "rgba(255,255,255,0)"
+     ]
+    ]
+   }
+  }
+ ],
+ "key": {
+  "linear": {
+   "angle": 135.0,
+   "stops": [
+    [
+     0.0,
+     "#FFFFFF"
+    ],
+    [
+     0.3,
+     "#FCEFFA"
+    ],
+    [
+     0.55,
+     "#EEF0FF"
+    ],
+    [
+     0.8,
+     "#E6F7FA"
+    ],
+    [
+     1.0,
+     "#FFFFFF"
+    ]
+   ]
+  }
+ },
+ "mod": {
+  "linear": {
+   "angle": 135.0,
+   "stops": [
+    [
+     0.0,
+     "#F2DDF3"
+    ],
+    [
+     0.5,
+     "#DED9F7"
+    ],
+    [
+     1.0,
+     "#D6EEF4"
+    ]
+   ]
+  }
+ },
+ "accent": {
+  "linear": {
+   "angle": 135.0,
+   "stops": [
+    [
+     0.0,
+     "#F2A6D8"
+    ],
+    [
+     0.5,
+     "#A9A6F5"
+    ],
+    [
+     1.0,
+     "#86DCEA"
+    ]
+   ]
+  }
+ },
+ "fg": "#4A3B66",
+ "modFg": "#6B4D8C",
+ "accentFg": "#FFFFFF",
+ "stripFg": "#4A3B66",
+ "sep": "#DCCFEA",
+ "radius": 15.0,
+ "border": {
+  "width": 1.0,
+  "color": "#FFFFFF"
+ },
+ "shadow": [
+  {
+   "color": "rgba(199,125,208,0.14)",
+   "spread": 1.0
+  },
+  {
+   "color": "rgba(143,140,240,0.18)",
+   "dy": 3.0,
+   "blur": 10.0
+  },
+  {
+   "color": "#FFFFFF",
+   "inset": true,
+   "dy": 1.0
+  },
+  {
+   "color": "rgba(169,166,245,0.08)",
+   "inset": true,
+   "dy": -6.0,
+   "blur": 10.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "#FFFFFF",
+   "spread": 2.0
+  },
+  {
+   "color": "rgba(242,166,216,0.8)",
+   "blur": 18.0
+  },
+  {
+   "color": "rgba(134,220,234,0.5)",
+   "blur": 30.0
+  }
+ ],
+ "font": "quicksand",
+ "weight": 700,
+ "size": 20,
+ "micGlow": {
+  "color": "rgba(242,166,216,0.6)",
+  "blur": 14.0
+ },
+ "space": "",
+ "fx": "sparkle",
+ "art": {
+  "id": "glitter",
+  "bg": {
+   "linear": {
+    "angle": 135.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      0.5,
+      "#F6ECFC"
+     ],
+     [
+      1.0,
+      "#ECF7FB"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#D27BCB",
+   "#8A86F0",
+   "#5DC3D8"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    {
+     "linear": {
+      "angle": 135.0,
+      "stops": [
+       [
+        0.0,
+        "#1D1233"
+       ],
+       [
+        0.45,
+        "#131536"
+       ],
+       [
+        0.8,
+        "#0F2030"
+       ],
+       [
+        1.0,
+        "#1E1426"
+       ]
+      ]
+     }
+    },
+    {
+     "linear": {
+      "angle": 115.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(255,255,255,0)"
+       ],
+       [
+        0.3,
+        "rgba(255,255,255,0)"
+       ],
+       [
+        0.45,
+        "rgba(255,255,255,0.05)"
+       ],
+       [
+        0.6,
+        "rgba(255,255,255,0)"
+       ],
+       [
+        1.0,
+        "rgba(255,255,255,0)"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": {
+    "linear": {
+     "angle": 135.0,
+     "stops": [
+      [
+       0.0,
+       "#2E2350"
+      ],
+      [
+       0.4,
+       "#292452"
+      ],
+      [
+       0.8,
+       "#22304A"
+      ],
+      [
+       1.0,
+       "#2E2350"
+      ]
+     ]
+    }
+   },
+   "mod": {
+    "linear": {
+     "angle": 135.0,
+     "stops": [
+      [
+       0.0,
+       "#20193C"
+      ],
+      [
+       1.0,
+       "#1A2038"
+      ]
+     ]
+    }
+   },
+   "fg": "#F3EAFF",
+   "modFg": "#F4C6EA",
+   "accentFg": "#140E26",
+   "stripFg": "#F3EAFF",
+   "sep": "#33295A",
+   "border": {
+    "width": 1.0,
+    "color": "rgba(244,198,234,0.28)"
+   },
+   "shadow": [
+    {
+     "color": "rgba(255,255,255,0.10)",
+     "inset": true,
+     "dy": 1.0
+    },
+    {
+     "color": "rgba(169,166,245,0.12)",
+     "blur": 10.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#F4C6EA",
+     "spread": 1.0
+    },
+    {
+     "color": "rgba(242,166,216,0.7)",
+     "blur": 18.0
+    },
+    {
+     "color": "rgba(134,220,234,0.4)",
+     "blur": 30.0
+    }
+   ],
+   "art": {
+    "id": "glitter",
+    "bg": {
+     "linear": {
+      "angle": 135.0,
+      "stops": [
+       [
+        0.0,
+        "#2E2350"
+       ],
+       [
+        1.0,
+        "#22304A"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#F7C9EC",
+     "#C2C0FF",
+     "#A8F0FA"
+    ]
+   }
+  }
+ }
+}

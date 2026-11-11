@@ -8,6 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.background
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -57,12 +58,21 @@ fun LookScreen(modifier: Modifier = Modifier) {
                 val columns = maxOf(2, (maxWidth / 150.dp).toInt())
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     for (row in Themes.all(context, style.wantsDark(context)).chunked(columns)) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        for (t in row) ThemeCard(t, selected = t.id == style.theme, Modifier.weight(1f)) { edit { it.copy(theme = t.id) } }
+                        for (t in row) ThemeCard(t, selected = t.id == style.activeTheme, favorite = t.id in style.favorites, Modifier.weight(1f),
+                            onFavorite = { edit { s -> val f = if (t.id in s.favorites) s.favorites - t.id else s.favorites + t.id; s.copy(favorites = f, shuffle = if (f.size < 2) "off" else s.shuffle) } }) { edit { it.copy(theme = t.id, shuffle = "off") } }
                         repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
                     }
                 }
             }
-            val current = Themes.get(context, style.theme, style.wantsDark(context))
+            ChoiceRow("Shuffle my favourites", listOf("off" to "Off", "daily" to "Every day", "weekly" to "Every week"), style.shuffle) { v -> edit { it.copy(shuffle = if (style.favorites.size < 2) "off" else v) } }
+            Text(
+                when {
+                    style.favorites.size < 2 -> "Tap the heart on two or more themes to make them favourites, then Wisp can change between them by itself."
+                    style.shuffle == "off" -> "${style.favorites.size} favourites. Turn shuffle on and the keyboard changes theme among them. Picking a theme yourself turns shuffle off."
+                    else -> "Today: ${Themes.get(context, style.activeTheme, style.wantsDark(context)).name}. It changes ${if (style.shuffle == "weekly") "every Monday" else "every day"}, among your ${style.favorites.size} favourites."
+                },
+                style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            val current = Themes.get(context, style.activeTheme, style.wantsDark(context))
             if (current.dynamic && KeyboardStyle.DYNAMIC_AVAILABLE) SwitchRow("Colour from wallpaper", "Material You colours from your wallpaper", style.wallpaperColours) { v -> edit { it.copy(wallpaperColours = v) } }
         }
         Section("Photo background", Icons.Icon.IMAGE) {
@@ -76,7 +86,7 @@ fun LookScreen(modifier: Modifier = Modifier) {
             if (style.photo.isNotEmpty()) SliderRow("Dimming", style.photoDim, 0..80, "%") { v -> edit { it.copy(photoDim = v) } }
         }
         Section("Fine-tune", Icons.Icon.SLIDERS) {
-            if (Themes.get(context, style.theme, style.wantsDark(context)).art != null) ChoiceRow("Space-bar art", listOf("off" to "Off", "still" to "Still", "subtle" to "Subtle", "full" to "Full"), style.spaceArt) { v -> edit { it.copy(spaceArt = v) } }
+            if (Themes.get(context, style.activeTheme, style.wantsDark(context)).art != null) ChoiceRow("Space-bar art", listOf("off" to "Off", "still" to "Still", "subtle" to "Subtle", "full" to "Full"), style.spaceArt) { v -> edit { it.copy(spaceArt = v) } }
             SwitchRow("Key borders", checked = style.keyBorders) { v -> edit { it.copy(keyBorders = v) } }
             SwitchRow("Key hints", "The small symbol on each key, typed with a long press", style.keyHints) { v -> edit { it.copy(keyHints = v) } }
         }
@@ -93,10 +103,13 @@ fun LookScreen(modifier: Modifier = Modifier) {
 
 /** A theme's real look (see [ThemeThumbnail]), with the name under it and a ring when it is the one in use. */
 @Composable
-private fun ThemeCard(t: Theme, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
+private fun ThemeCard(t: Theme, selected: Boolean, favorite: Boolean, modifier: Modifier = Modifier, onFavorite: () -> Unit, onClick: () -> Unit) {
     Column(modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))) {
             ThemeThumbnail(t.id, t.dark)
+            // The heart marks a favourite (the themes shuffle picks from).
+            Text(if (favorite) "♥" else "♡", color = if (favorite) Color(0xFFFF5C7A) else Color.White, style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).background(Color(0x66000000), RoundedCornerShape(50)).clickable(onClickLabel = if (favorite) "Remove from favourites" else "Add to favourites", onClick = onFavorite).padding(horizontal = 8.dp, vertical = 2.dp))
         }
         Text(t.name, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
     }

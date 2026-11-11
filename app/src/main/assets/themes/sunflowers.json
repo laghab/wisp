@@ -1,0 +1,192 @@
+{
+ "id": "sunflowers",
+ "name": "Sunflowers",
+ "dark": false,
+ "board": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#DFF0FA"
+    ],
+    [
+     0.7,
+     "#FFF6DA"
+    ],
+    [
+     1.0,
+     "#F6EBC2"
+    ]
+   ]
+  }
+ },
+ "key": "#FFFDF4",
+ "mod": "#D9E8B8",
+ "accent": "#F5B800",
+ "fg": "#3E3110",
+ "modFg": "#2F4A16",
+ "accentFg": "#3E2A06",
+ "stripFg": "#3E3110",
+ "sep": "#EADFB4",
+ "radius": 14.0,
+ "border": {
+  "width": 1.0,
+  "color": "#EADFB4"
+ },
+ "shadow": [
+  {
+   "color": "rgba(62,49,16,0.12)",
+   "dy": 2.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(245,184,0,0.45)",
+   "spread": 3.0
+  }
+ ],
+ "font": "fredoka",
+ "weight": 600,
+ "size": 21,
+ "space": "",
+ "art": {
+  "id": "sunflowers",
+  "bg": {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#E6F4FB"
+     ],
+     [
+      1.0,
+      "#FFF7DD"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#F7BD12",
+   "#6B3E12",
+   "#4E8A2E"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#17223A"
+       ],
+       [
+        0.7,
+        "#1F2C2A"
+       ],
+       [
+        1.0,
+        "#1E2A1A"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.7,
+      "y": 0.14,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(255,255,255,0.8)"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.2,
+      "y": 0.24,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "#FFFFFF"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": "#26302C",
+   "mod": "#2C3B24",
+   "fg": "#FFF1C2",
+   "modFg": "#F7BD12",
+   "accentFg": "#1E2A1A",
+   "stripFg": "#FFF1C2",
+   "sep": "#34412F",
+   "border": {
+    "width": 1.0,
+    "color": "#34412F"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.3)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#F5B800",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(245,184,0,0.45)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "sunflowers",
+    "bg": {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#1C2840"
+       ],
+       [
+        1.0,
+        "#24312A"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#F2B30E",
+     "#4A2A0C",
+     "#3C6E24"
+    ]
+   }
+  }
+ }
+}

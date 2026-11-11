@@ -1,0 +1,176 @@
+{
+ "id": "forest",
+ "name": "Forest",
+ "dark": false,
+ "board": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#E6EEDC"
+    ],
+    [
+     1.0,
+     "#D7E4CB"
+    ]
+   ]
+  }
+ },
+ "key": "#F7FAF2",
+ "mod": "#CFDDBF",
+ "accent": "#4F7A3A",
+ "fg": "#22331F",
+ "modFg": "#2E4A26",
+ "accentFg": "#F7FAF2",
+ "stripFg": "#22331F",
+ "sep": "#C5D6B3",
+ "radius": [
+  12.0,
+  12.0,
+  12.0,
+  4.0
+ ],
+ "border": {
+  "width": 1.0,
+  "color": "#C5D6B3"
+ },
+ "shadow": [
+  {
+   "color": "rgba(34,51,31,0.15)",
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(79,122,58,0.35)",
+   "spread": 3.0
+  }
+ ],
+ "font": "zen_maru",
+ "weight": 700,
+ "size": 20,
+ "space": "English",
+ "art": {
+  "id": "forest",
+  "bg": {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#EEF4E6"
+     ],
+     [
+      1.0,
+      "#DCE8D0"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#9DB98A",
+   "#4F7A3A",
+   "#3A5A2C"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#0F1A12"
+       ],
+       [
+        1.0,
+        "#0A120C"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.5,
+      "y": 1.1,
+      "rx": 240.0,
+      "ry": 100.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(140,220,120,0.12)"
+       ],
+       [
+        0.7,
+        "transparent"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": "#18261A",
+   "mod": "#132015",
+   "accent": "#9FD08A",
+   "fg": "#DDEBD2",
+   "modFg": "#9FD08A",
+   "accentFg": "#0F1A12",
+   "stripFg": "#DDEBD2",
+   "sep": "#223524",
+   "border": {
+    "width": 1.0,
+    "color": "#223524"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.35)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#9FD08A",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(214,240,120,0.35)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "forest",
+    "bg": {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#142118"
+       ],
+       [
+        1.0,
+        "#0E1810"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#21362A",
+     "#2D4A32",
+     "#0B140D"
+    ]
+   }
+  }
+ }
+}

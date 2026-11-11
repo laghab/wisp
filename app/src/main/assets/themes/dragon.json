@@ -1,0 +1,176 @@
+{
+ "id": "dragon",
+ "name": "Dragon",
+ "dark": false,
+ "board": [
+  {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#EEF8F0"
+     ],
+     [
+      1.0,
+      "#DDF0E3"
+     ]
+    ]
+   }
+  },
+  {
+   "scales": {
+    "w": 14.0,
+    "h": 10.0,
+    "r": 6.5,
+    "width": 1.5,
+    "color": "rgba(92,194,138,0.10)"
+   }
+  }
+ ],
+ "key": "#FFFFFF",
+ "mod": "#CFEBD9",
+ "accent": "#F28B5B",
+ "fg": "#24463A",
+ "modFg": "#24463A",
+ "accentFg": "#FFFFFF",
+ "stripFg": "#24463A",
+ "sep": "#C6E4D1",
+ "radius": 14.0,
+ "border": {
+  "width": 1.0,
+  "color": "#C6E4D1"
+ },
+ "shadow": [
+  {
+   "color": "rgba(36,70,58,0.12)",
+   "dy": 2.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(242,139,91,0.4)",
+   "spread": 3.0
+  }
+ ],
+ "font": "fredoka",
+ "weight": 600,
+ "size": 21,
+ "space": "",
+ "art": {
+  "id": "dragon",
+  "bg": {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#F6FCF7"
+     ],
+     [
+      1.0,
+      "#E6F5EA"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#9FE0B8",
+   "#4FB57E",
+   "#FFE6B0"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#1D1430"
+       ],
+       [
+        1.0,
+        "#140E22"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.7,
+      "y": 1.1,
+      "rx": 240.0,
+      "ry": 90.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(242,139,91,0.14)"
+       ],
+       [
+        0.7,
+        "transparent"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "scales": {
+      "w": 14.0,
+      "h": 10.0,
+      "r": 6.5,
+      "width": 1.5,
+      "color": "rgba(159,224,184,0.06)"
+     }
+    }
+   ],
+   "key": "#2A1F42",
+   "mod": "#221936",
+   "fg": "#F2ECFF",
+   "modFg": "#9FE0B8",
+   "accentFg": "#1D1430",
+   "stripFg": "#F2ECFF",
+   "sep": "#372A55",
+   "border": {
+    "width": 1.0,
+    "color": "#372A55"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.3)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#F28B5B",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(242,139,91,0.45)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "dragon",
+    "bg": "#2A1F42",
+    "colors": [
+     "#9FE0B8",
+     "#5CC28A",
+     "#FFE6B0"
+    ]
+   }
+  }
+ }
+}

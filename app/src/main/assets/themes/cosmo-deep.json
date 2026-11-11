@@ -1,0 +1,300 @@
+{
+ "id": "cosmo-deep",
+ "name": "Cosmo Deep Field",
+ "dark": true,
+ "board": [
+  "#05060D",
+  {
+   "radial": {
+    "x": 0.1,
+    "y": 1.0,
+    "rx": 220.0,
+    "ry": 120.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(0,160,200,0.20)"
+     ],
+     [
+      0.7,
+      "transparent"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.8,
+    "y": 0.1,
+    "rx": 240.0,
+    "ry": 120.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(90,70,200,0.30)"
+     ],
+     [
+      0.7,
+      "transparent"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.05,
+    "y": 0.52,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.66,
+    "y": 0.44,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,255,255,0.7)"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.22,
+    "y": 0.86,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,255,255,0.6)"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.44,
+    "y": 0.9,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.9,
+    "y": 0.34,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,255,255,0.7)"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.76,
+    "y": 0.72,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.58,
+    "y": 0.18,
+    "rx": 1.5,
+    "ry": 1.5,
+    "stops": [
+     [
+      0.0,
+      "#CFE0FF"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.33,
+    "y": 0.64,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,255,255,0.8)"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.12,
+    "y": 0.2,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  }
+ ],
+ "key": "rgba(22,26,48,0.72)",
+ "mod": "rgba(12,14,28,0.82)",
+ "accent": {
+  "linear": {
+   "angle": 135.0,
+   "stops": [
+    [
+     0.0,
+     "#7C8CFF"
+    ],
+    [
+     1.0,
+     "#4FD1E8"
+    ]
+   ]
+  }
+ },
+ "fg": "#E6ECFF",
+ "modFg": "#9FB4FF",
+ "accentFg": "#05060D",
+ "stripFg": "#C9D3FF",
+ "sep": "rgba(140,160,255,0.2)",
+ "radius": 10.0,
+ "border": {
+  "width": 1.0,
+  "color": "rgba(140,160,255,0.22)"
+ },
+ "shadow": [
+  {
+   "color": "rgba(255,255,255,0.08)",
+   "inset": true,
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "#9FB4FF",
+   "spread": 1.0
+  },
+  {
+   "color": "rgba(124,140,255,0.6)",
+   "blur": 16.0
+  }
+ ],
+ "font": "space_grotesk",
+ "weight": 500,
+ "size": 20,
+ "blur": 6.0,
+ "micGlow": {
+  "color": "rgba(79,209,232,0.5)",
+  "blur": 14.0
+ },
+ "space": "English",
+ "art": {
+  "id": "deepfield",
+  "bg": [
+   "#080A18",
+   {
+    "radial": {
+     "x": 0.7,
+     "y": 0.5,
+     "rx": 120.0,
+     "ry": 40.0,
+     "stops": [
+      [
+       0.0,
+       "rgba(124,140,255,0.22)"
+      ],
+      [
+       0.7,
+       "transparent"
+      ],
+      [
+       1.0,
+       "transparent"
+      ]
+     ]
+    }
+   }
+  ],
+  "colors": [
+   "#E6ECFF",
+   "#7C8CFF",
+   "#4FD1E8"
+  ]
+ }
+}

@@ -30,7 +30,7 @@ class SvgArt private constructor(private val root: Node, private val vw: Float, 
     private val rect = RectF()
     private val matrix = Matrix()
 
-    private class Style(var fill: Int?, var stroke: Int?, var strokeWidth: Float, var cap: Paint.Cap, var join: Paint.Join, var opacity: Float, var dash: FloatArray?)
+    private class Style(var fill: Int?, var stroke: Int?, var strokeWidth: Float, var cap: Paint.Cap, var join: Paint.Join, var opacity: Float, var dash: FloatArray?, var gradient: String? = null, var blur: Float = 0f)
 
     /**
      * Draws the picture into [into] (a rectangle on [canvas]) at time [seconds]. [slice] fills the rectangle and crops what overhangs;
@@ -54,13 +54,23 @@ class SvgArt private constructor(private val root: Node, private val vw: Float, 
 
     private var skipBackground = false
     /** The full-size backdrop rectangle of the file, which an overlay leaves out so only the branch and petals are painted. */
+    /** Gradients and filters the file defines (`defs`), by id. Gradients are in fractions of the shape they fill. */
+    private val defs: Map<String, Node> = HashMap<String, Node>().also { m -> fun walk(n: Node) { n.attrs["id"]?.let { m[it] = n }; n.children.forEach(::walk) }; walk(root) }
+    private val gradients: Map<String, Gradient> = defs.filterValues { it.tag == "linearGradient" }.mapValues { (_, g) ->
+        val stops = g.children.filter { it.tag == "stop" }
+        fun f(n: String, d: Float) = g.attrs[n]?.toFloatOrNull() ?: d
+        Gradient(f("x1", 0f), f("y1", 0f), f("x2", 1f), f("y2", 0f), IntArray(stops.size) { colour(stops[it].attrs["stop-color"] ?: "#000")?.let { c -> withAlpha(c, stops[it].attrs["stop-opacity"]?.toFloatOrNull() ?: 1f) } ?: 0 },
+            FloatArray(stops.size) { stops[it].attrs["offset"]?.removeSuffix("%")?.toFloatOrNull()?.let { o -> if (stops[it].attrs["offset"]!!.endsWith("%")) o / 100f else o } ?: 0f })
+    }.filterValues { it.colors.size >= 2 }
+
     private val backdrop: Node? = root.children.firstOrNull { it.tag == "rect" && it.attrs["width"]?.toFloatOrNull() == vw && it.attrs["height"]?.toFloatOrNull() == vh }
 
     private fun drawNode(c: Canvas, n: Node, parent: Style, t: Float, fonts: (String, Int) -> android.graphics.Typeface) {
         if (skipBackground && n === backdrop) return
         fun attr(name: String): String? = animated(n, name, t) ?: n.attrs[name]
-        val st = Style(parent.fill, parent.stroke, parent.strokeWidth, parent.cap, parent.join, parent.opacity, parent.dash)
-        attr("fill")?.let { st.fill = colour(it) }
+        val st = Style(parent.fill, parent.stroke, parent.strokeWidth, parent.cap, parent.join, parent.opacity, parent.dash, parent.gradient, parent.blur)
+        attr("fill")?.let { if (it.startsWith("url(#")) st.gradient = it.substring(5, it.indexOf(')')) else { st.gradient = null; st.fill = colour(it) } }
+        attr("filter")?.let { f -> st.blur = if (f.startsWith("url(#")) defs[f.substring(5, f.indexOf(')'))]?.children?.firstOrNull { it.tag == "feGaussianBlur" }?.attrs?.get("stdDeviation")?.toFloatOrNull() ?: 0f else 0f }
         attr("stroke")?.let { st.stroke = colour(it) }
         attr("stroke-width")?.toFloatOrNull()?.let { st.strokeWidth = it }
         attr("stroke-linecap")?.let { st.cap = when (it) { "round" -> Paint.Cap.ROUND; "square" -> Paint.Cap.SQUARE; else -> Paint.Cap.BUTT } }
@@ -82,16 +92,25 @@ class SvgArt private constructor(private val root: Node, private val vw: Float, 
             "rect" -> { rect.set(num(n, "x", t), num(n, "y", t), num(n, "x", t) + num(n, "width", t), num(n, "y", t) + num(n, "height", t)); val r = num(n, "rx", t); shape(c, st, r, r, rect) { p -> if (r > 0f) c.drawRoundRect(rect, r, r, p) else c.drawRect(rect, p) } }
             "circle" -> { val r = num(n, "r", t); rect.set(num(n, "cx", t) - r, num(n, "cy", t) - r, num(n, "cx", t) + r, num(n, "cy", t) + r); shape(c, st, r, r, rect) { p -> c.drawCircle(num(n, "cx", t), num(n, "cy", t), r, p) } }
             "ellipse" -> { rect.set(num(n, "cx", t) - num(n, "rx", t), num(n, "cy", t) - num(n, "ry", t), num(n, "cx", t) + num(n, "rx", t), num(n, "cy", t) + num(n, "ry", t)); shape(c, st, 0f, 0f, rect) { p -> c.drawOval(rect, p) } }
-            "path" -> { path.reset(); path.set(parsePath(n.attrs["d"] ?: "")); val fo = attr("fill-opacity")?.toFloatOrNull() ?: 1f; shape(c, st, 0f, 0f, rect, fo) { p -> c.drawPath(path, p) } }
+            "path" -> { path.reset(); path.set(parsePath(n.attrs["d"] ?: "")); val fo = attr("fill-opacity")?.toFloatOrNull() ?: 1f; path.computeBounds(rect, true); shape(c, st, 0f, 0f, rect, fo) { p -> c.drawPath(path, p) } }
             "text" -> drawText(c, n, st, t, fonts)
         }
         c.restore()
     }
 
+    private class Gradient(val x1: Float, val y1: Float, val x2: Float, val y2: Float, val colors: IntArray, val positions: FloatArray)
+
     private fun shape(c: Canvas, st: Style, rx: Float, ry: Float, box: RectF, fillOpacity: Float = 1f, draw: (Paint) -> Unit) {
-        st.fill?.let { paint.reset(); paint.isAntiAlias = true; paint.style = Paint.Style.FILL; paint.color = withAlpha(it, st.opacity * fillOpacity); draw(paint) }
+        // a soft edge (the designs' blur filters): a mask blur, about 1.7 radius per unit of standard deviation
+        fun soften() { if (st.blur > 0f) paint.maskFilter = android.graphics.BlurMaskFilter(st.blur * 1.7f, android.graphics.BlurMaskFilter.Blur.NORMAL) }
+        val grad = st.gradient?.let { gradients[it] }
+        if (grad != null) {
+            paint.reset(); paint.isAntiAlias = true; paint.style = Paint.Style.FILL; paint.color = withAlpha(0xFFFFFFFF.toInt(), st.opacity * fillOpacity)
+            paint.shader = android.graphics.LinearGradient(box.left + grad.x1 * box.width(), box.top + grad.y1 * box.height(), box.left + grad.x2 * box.width(), box.top + grad.y2 * box.height(), grad.colors, grad.positions, android.graphics.Shader.TileMode.CLAMP)
+            soften(); draw(paint)
+        } else st.fill?.let { paint.reset(); paint.isAntiAlias = true; paint.style = Paint.Style.FILL; paint.color = withAlpha(it, st.opacity * fillOpacity); soften(); draw(paint) }
         st.stroke?.let { paint.reset(); paint.isAntiAlias = true; paint.style = Paint.Style.STROKE; paint.color = withAlpha(it, st.opacity); paint.strokeWidth = st.strokeWidth; paint.strokeCap = st.cap; paint.strokeJoin = st.join
-            st.dash?.let { d -> paint.pathEffect = android.graphics.DashPathEffect(d, 0f) }; draw(paint) }
+            st.dash?.let { d -> paint.pathEffect = android.graphics.DashPathEffect(d, 0f) }; soften(); draw(paint) }
     }
 
     private fun drawText(c: Canvas, n: Node, st: Style, t: Float, fonts: (String, Int) -> android.graphics.Typeface) {

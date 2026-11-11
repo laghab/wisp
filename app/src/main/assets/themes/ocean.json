@@ -1,0 +1,171 @@
+{
+ "id": "ocean",
+ "name": "Ocean",
+ "dark": false,
+ "board": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#E3F4F6"
+    ],
+    [
+     1.0,
+     "#CDE9EE"
+    ]
+   ]
+  }
+ },
+ "key": "#F6FCFD",
+ "mod": "#BFE1E7",
+ "accent": "#1F8A9E",
+ "fg": "#0F3442",
+ "modFg": "#0F3442",
+ "accentFg": "#F6FCFD",
+ "stripFg": "#0F3442",
+ "sep": "#BDDDE3",
+ "radius": 16.0,
+ "border": {
+  "width": 1.0,
+  "color": "#BDDDE3"
+ },
+ "shadow": [
+  {
+   "color": "rgba(15,52,66,0.14)",
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(31,138,158,0.35)",
+   "spread": 3.0
+  }
+ ],
+ "font": "inter",
+ "weight": 500,
+ "size": 21,
+ "space": "English",
+ "art": {
+  "id": "ocean",
+  "bg": {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#F4FBFC"
+     ],
+     [
+      1.0,
+      "#E2F3F6"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#7FC6D2",
+   "#2E9AAE",
+   "#FFFFFF"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#06202C"
+       ],
+       [
+        1.0,
+        "#03121A"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.5,
+      "y": -0.1,
+      "rx": 200.0,
+      "ry": 90.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(80,200,230,0.18)"
+       ],
+       [
+        0.7,
+        "transparent"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": "#0B2B3A",
+   "mod": "#082230",
+   "accent": "#4FD1E0",
+   "fg": "#D6F3F8",
+   "modFg": "#4FD1E0",
+   "accentFg": "#03121A",
+   "stripFg": "#D6F3F8",
+   "sep": "#11384A",
+   "border": {
+    "width": 1.0,
+    "color": "#11384A"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.35)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#4FD1E0",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(79,209,224,0.45)",
+     "blur": 16.0
+    }
+   ],
+   "art": {
+    "id": "ocean",
+    "bg": {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#0B2B3A"
+       ],
+       [
+        1.0,
+        "#072030"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#124C60",
+     "#0E6F82",
+     "#8FF0FF"
+    ]
+   }
+  }
+ }
+}

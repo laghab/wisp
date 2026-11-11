@@ -7,6 +7,7 @@ enum class Tone(val label: String, val instruction: String) {
     FORMAL("Formal", "Rewrite it in a polite, formal, professional tone, keeping the meaning and the language."),
     SHORTER("Shorter", "Rewrite it as short as possible while keeping the meaning and the language."),
     BULLETS("Bullets", "Rewrite it as a short bulleted list, one point per line starting with \"- \", keeping the meaning and the language."),
+    GENZ("Gen Z", "Rewrite it the way a Gen Z person would text it: casual, lowercase, current slang used lightly (like fr, ngl, lowkey, no cap, bet, vibes), a few emoji at most, keeping the meaning and the language. Do not add new facts."),
     HINDI("Hindi", "Translate it into natural Hindi written in Devanagari script.");
 
     /** The full instruction for the model. */

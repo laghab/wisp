@@ -1,0 +1,260 @@
+{
+ "id": "lanterns",
+ "name": "Lanterns",
+ "dark": true,
+ "board": [
+  {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#18193A"
+     ],
+     [
+      1.0,
+      "#0E0F24"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.84,
+    "y": 0.3,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,255,255,0.6)"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.16,
+    "y": 0.4,
+    "rx": 1.0,
+    "ry": 1.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,255,255,0.7)"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.5,
+    "y": -0.1,
+    "rx": 300.0,
+    "ry": 90.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,170,80,0.22)"
+     ],
+     [
+      0.7,
+      "transparent"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  }
+ ],
+ "key": "rgba(255,255,255,0.07)",
+ "mod": "rgba(255,255,255,0.04)",
+ "accent": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#FFB55A"
+    ],
+    [
+     1.0,
+     "#E8642C"
+    ]
+   ]
+  }
+ },
+ "fg": "#FFE8C7",
+ "modFg": "#FFB55A",
+ "accentFg": "#18193A",
+ "stripFg": "#FFE8C7",
+ "sep": "rgba(255,190,120,0.2)",
+ "radius": 14.0,
+ "border": {
+  "width": 1.0,
+  "color": "rgba(255,190,120,0.22)"
+ },
+ "shadow": [
+  {
+   "color": "rgba(255,255,255,0.08)",
+   "inset": true,
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "#FFB55A",
+   "spread": 2.0
+  },
+  {
+   "color": "rgba(255,160,70,0.6)",
+   "blur": 16.0
+  }
+ ],
+ "font": "zen_maru",
+ "weight": 700,
+ "size": 20,
+ "blur": 6.0,
+ "micGlow": {
+  "color": "rgba(255,160,70,0.55)",
+  "blur": 14.0
+ },
+ "space": "",
+ "fx": "sparkle",
+ "art": {
+  "id": "lanterns",
+  "bg": [
+   "#1C1D40",
+   {
+    "radial": {
+     "x": 0.5,
+     "y": 0.6,
+     "rx": 90.0,
+     "ry": 34.0,
+     "stops": [
+      [
+       0.0,
+       "rgba(255,160,70,0.18)"
+      ],
+      [
+       0.75,
+       "transparent"
+      ],
+      [
+       1.0,
+       "transparent"
+      ]
+     ]
+    }
+   }
+  ],
+  "colors": [
+   "#E8463A",
+   "#F59A2B",
+   "#F2667E"
+  ]
+ },
+ "variants": {
+  "dark": {
+   "dark": true
+  },
+  "light": {
+   "dark": false,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#FFF1E4"
+       ],
+       [
+        1.0,
+        "#FCE0CC"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.5,
+      "y": -0.1,
+      "rx": 300.0,
+      "ry": 90.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(255,190,120,0.35)"
+       ],
+       [
+        0.7,
+        "transparent"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": "#FFFBF6",
+   "mod": "#FAD9C2",
+   "fg": "#6A2A18",
+   "modFg": "#6A2A18",
+   "accentFg": "#FFFFFF",
+   "stripFg": "#6A2A18",
+   "sep": "#F4D2BC",
+   "border": {
+    "width": 1.0,
+    "color": "#F4D2BC"
+   },
+   "shadow": [
+    {
+     "color": "rgba(106,42,24,0.10)",
+     "dy": 2.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(232,100,44,0.4)",
+     "spread": 3.0
+    }
+   ],
+   "art": {
+    "id": "lanterns",
+    "bg": {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#FFF6EE"
+       ],
+       [
+        1.0,
+        "#FDE6D4"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#E8463A",
+     "#F59A2B",
+     "#F2667E"
+    ]
+   }
+  }
+ }
+}

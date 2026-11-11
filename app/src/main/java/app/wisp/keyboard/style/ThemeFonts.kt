@@ -8,7 +8,8 @@ object ThemeFonts {
     private val cache = HashMap<String, Typeface>()
 
     private val families = mapOf("inter" to "inter", "space grotesk" to "space_grotesk", "chakra petch" to "chakra_petch", "orbitron" to "orbitron", "vt323" to "vt323",
-        "bangers" to "bangers", "zen maru gothic" to "zen_maru", "jetbrains mono" to "jetbrains_mono")
+        "bangers" to "bangers", "zen maru gothic" to "zen_maru", "jetbrains mono" to "jetbrains_mono",
+        "cormorant garamond" to "cormorant_garamond", "eb garamond" to "eb_garamond", "fredoka" to "fredoka", "quicksand" to "quicksand")
 
     /** A font from a CSS family list ("'Zen Maru Gothic', sans-serif"): the first family we bundle, else the system font. */
     fun byFamily(context: Context, css: String, weight: Int): Typeface =

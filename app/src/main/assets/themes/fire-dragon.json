@@ -1,0 +1,237 @@
+{
+ "id": "fire-dragon",
+ "name": "Fire Dragon",
+ "dark": true,
+ "board": [
+  {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#1F0C0B"
+     ],
+     [
+      1.0,
+      "#120606"
+     ]
+    ]
+   }
+  },
+  {
+   "radial": {
+    "x": 0.3,
+    "y": 1.1,
+    "rx": 260.0,
+    "ry": 100.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(255,110,30,0.22)"
+     ],
+     [
+      0.7,
+      "transparent"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "scales": {
+    "w": 14.0,
+    "h": 10.0,
+    "r": 6.5,
+    "width": 1.5,
+    "color": "rgba(255,90,40,0.08)"
+   }
+  }
+ ],
+ "key": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#2E1412"
+    ],
+    [
+     1.0,
+     "#220E0D"
+    ]
+   ]
+  }
+ },
+ "mod": "#1A0909",
+ "accent": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#FF9A3D"
+    ],
+    [
+     1.0,
+     "#E0311F"
+    ]
+   ]
+  }
+ },
+ "fg": "#FFE3D6",
+ "modFg": "#FF8A4C",
+ "accentFg": "#1A0606",
+ "stripFg": "#FFE3D6",
+ "sep": "#3E1A16",
+ "radius": 14.0,
+ "border": {
+  "width": 1.0,
+  "color": "#3E1A16"
+ },
+ "shadow": [
+  {
+   "color": "rgba(255,140,90,0.10)",
+   "inset": true,
+   "dy": 1.0
+  },
+  {
+   "color": "rgba(0,0,0,0.45)",
+   "inset": true,
+   "dy": -2.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "#FF7A1A",
+   "spread": 2.0
+  },
+  {
+   "color": "rgba(255,122,26,0.6)",
+   "blur": 16.0
+  }
+ ],
+ "font": "fredoka",
+ "weight": 600,
+ "size": 21,
+ "micGlow": {
+  "color": "rgba(255,122,26,0.55)",
+  "blur": 14.0
+ },
+ "space": "",
+ "art": {
+  "id": "fireDragon",
+  "bg": [
+   "#2A1211",
+   {
+    "radial": {
+     "x": 0.3,
+     "y": 0.5,
+     "rx": 70.0,
+     "ry": 30.0,
+     "stops": [
+      [
+       0.0,
+       "rgba(255,122,26,0.18)"
+      ],
+      [
+       0.75,
+       "transparent"
+      ],
+      [
+       1.0,
+       "transparent"
+      ]
+     ]
+    }
+   }
+  ],
+  "colors": [
+   "#FF8A6B",
+   "#D7342A",
+   "#FFD9A0"
+  ]
+ },
+ "variants": {
+  "dark": {
+   "dark": true
+  },
+  "light": {
+   "dark": false,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#FFF3EA"
+       ],
+       [
+        1.0,
+        "#FFE2D0"
+       ]
+      ]
+     }
+    },
+    {
+     "scales": {
+      "w": 14.0,
+      "h": 10.0,
+      "r": 6.5,
+      "width": 1.5,
+      "color": "rgba(215,52,42,0.08)"
+     }
+    }
+   ],
+   "key": "#FFFFFF",
+   "mod": "#FFD9C2",
+   "fg": "#5A1E14",
+   "modFg": "#5A1E14",
+   "accentFg": "#FFFFFF",
+   "stripFg": "#5A1E14",
+   "sep": "#F6CDB6",
+   "border": {
+    "width": 1.0,
+    "color": "#F6CDB6"
+   },
+   "shadow": [
+    {
+     "color": "rgba(90,30,20,0.12)",
+     "dy": 2.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(255,122,26,0.45)",
+     "spread": 3.0
+    }
+   ],
+   "art": {
+    "id": "fireDragon",
+    "bg": {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#FFF8F2"
+       ],
+       [
+        1.0,
+        "#FFEBDD"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#FF8A6B",
+     "#D7342A",
+     "#FFD9A0"
+    ]
+   }
+  }
+ }
+}

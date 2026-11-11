@@ -1,0 +1,119 @@
+{
+ "id": "dog",
+ "name": "Dog",
+ "dark": false,
+ "board": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#FFF6DF"
+    ],
+    [
+     1.0,
+     "#FBEAC0"
+    ]
+   ]
+  }
+ },
+ "key": "#FFFDF6",
+ "mod": "#F4DFA8",
+ "accent": "#E39B2D",
+ "fg": "#3D2E1A",
+ "modFg": "#3D2E1A",
+ "accentFg": "#FFFDF6",
+ "stripFg": "#3D2E1A",
+ "sep": "#EED9A4",
+ "radius": 12.0,
+ "border": {
+  "width": 1.0,
+  "color": "#EED9A4"
+ },
+ "shadow": [
+  {
+   "color": "rgba(61,46,26,0.12)",
+   "dy": 2.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(227,155,45,0.4)",
+   "spread": 3.0
+  }
+ ],
+ "font": "zen_maru",
+ "weight": 700,
+ "size": 20,
+ "space": "English",
+ "art": {
+  "id": "dog",
+  "bg": "#FFFDF6",
+  "colors": [
+   "#E3B47A",
+   "#9C6A3A",
+   "#F7E6CC"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": {
+    "linear": {
+     "angle": 180.0,
+     "stops": [
+      [
+       0.0,
+       "#1C1A16"
+      ],
+      [
+       1.0,
+       "#141210"
+      ]
+     ]
+    }
+   },
+   "key": "#2A2620",
+   "mod": "#221F1A",
+   "accent": "#F2B24C",
+   "fg": "#F3E6CF",
+   "modFg": "#F2B24C",
+   "accentFg": "#1C1A16",
+   "stripFg": "#F3E6CF",
+   "sep": "#36312A",
+   "border": {
+    "width": 1.0,
+    "color": "#36312A"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.3)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#F2B24C",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(242,178,76,0.35)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "dog",
+    "bg": "#2A2620",
+    "colors": [
+     "#D9A66A",
+     "#7A5230",
+     "#F1DFC3"
+    ]
+   }
+  }
+ }
+}

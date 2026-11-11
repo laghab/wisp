@@ -14,12 +14,13 @@ class ThemeTest {
         if (ThemeParser.hasVariants(text)) listOf(ThemeParser.parse(text, dark = false), ThemeParser.parse(text, dark = true)) else listOf(ThemeParser.parse(text))
     }
 
-    @Test fun allSixteenBuiltInThemesParse() {
+    @Test fun allBuiltInThemesParse() {
         assertEquals(
-            setOf("wisp", "moon", "dandelion", "sakura", "sakura-storm", "factory", "cyberpunk", "terminal", "y2k", "material", "glass", "modern", "retro", "brutalist", "comic", "manga"),
+            setOf("wisp", "moon", "dandelion", "sakura", "factory", "cyberpunk", "terminal", "y2k", "material", "glass", "modern", "retro", "brutalist", "comic", "manga",
+                "angel", "swan", "dragon", "fire-dragon", "cosmo-deep", "dust-glitter", "forest", "ocean", "mountains", "cat", "dog", "sun", "lanterns", "sunflowers", "lotus"),
             themes.map { it.id }.toSet(),
         )
-        assertEquals(16, themes.map { it.id }.toSet().size)
+        assertEquals(30, themes.map { it.id }.toSet().size)
     }
 
     @Test fun oneThemeCanHaveALightAndADarkLook() {
@@ -77,11 +78,14 @@ class ThemeTest {
             fun over(fill: Fill): Int = fill.base().let { c -> blend(c, board) }
             assertTrue("${t.id}: letters ${Brand.contrast(t.fg, over(t.key))}", Brand.contrast(t.fg, over(t.key)) >= 3.0)
             assertTrue("${t.id}: modifiers ${Brand.contrast(t.modFg, over(t.mod))}", Brand.contrast(t.modFg, over(t.mod)) >= 3.0)
-            // Two light looks in the design have soft enter keys under 3:1 (Dandelion 2.8, Sakura 2.4: pastel with white or cream); kept as designed.
-            val accentMin = if (!t.dark && t.id == "dandelion") 2.7 else if (!t.dark && (t.id == "sakura" || t.id == "sakura-storm")) 2.3 else 3.0
+            // Some light looks in the design have soft enter keys under 3:1 (Dandelion 2.8; Sakura, Cat, Dog, Dragon and Stardust, Sunshine and Lotus Pond about 2.1 to 2.7: pastel with white or cream); kept as designed.
+            val accentMin = if (!t.dark && t.id == "dandelion") 2.7 else if (!t.dark && t.id in softLight) 2.1 else 3.0
             assertTrue("${t.id}: accent ${Brand.contrast(t.accentFg, over(t.accent))}", Brand.contrast(t.accentFg, over(t.accent)) >= accentMin)
         }
     }
+
+    /** Light looks whose enter key is a soft pastel by design. */
+    private val softLight = setOf("sakura", "cat", "dog", "dragon", "dust-glitter", "lotus", "sun")
 
     private fun blend(top: Int, bottom: Int): Int {
         val a = (top ushr 24) / 255f

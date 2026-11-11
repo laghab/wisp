@@ -1,0 +1,192 @@
+{
+ "id": "swan",
+ "name": "Swan",
+ "dark": false,
+ "board": [
+  "#F8F6F0",
+  {
+   "radial": {
+    "x": 0.5,
+    "y": 0.5,
+    "rx": 240.0,
+    "ry": 110.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      0.75,
+      "transparent"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ]
+   }
+  },
+  {
+   "dots": {
+    "step": 4.0,
+    "radius": 0.75,
+    "color": "rgba(60,60,60,0.035)"
+   }
+  }
+ ],
+ "key": "#FFFFFF",
+ "mod": "#F1EEE7",
+ "accent": "#3A3A3A",
+ "fg": "#4A4A4A",
+ "modFg": "#4A4A4A",
+ "accentFg": "#FBF9F4",
+ "stripFg": "#4A4A4A",
+ "sep": "rgba(74,74,74,0.16)",
+ "radius": 10.0,
+ "border": {
+  "width": 1.0,
+  "color": "rgba(74,74,74,0.16)"
+ },
+ "shadow": [
+  {
+   "color": "rgba(0,0,0,0.06)",
+   "dy": 1.0,
+   "blur": 2.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(74,74,74,0.45)",
+   "spread": 2.0
+  },
+  {
+   "color": "rgba(255,255,255,0.9)",
+   "blur": 12.0
+  }
+ ],
+ "font": "eb_garamond",
+ "weight": 500,
+ "size": 23,
+ "space": "",
+ "art": {
+  "id": "swan",
+  "bg": {
+   "radial": {
+    "x": 0.5,
+    "y": 0.6,
+    "rx": 90.0,
+    "ry": 30.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      1.0,
+      "#FBF9F4"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#8C8781",
+   "#B8B4AD",
+   "#FFFFFF"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    "#1A1C22",
+    {
+     "radial": {
+      "x": 0.5,
+      "y": 0.5,
+      "rx": 240.0,
+      "ry": 110.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(232,230,225,0.06)"
+       ],
+       [
+        0.75,
+        "transparent"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "dots": {
+      "step": 4.0,
+      "radius": 0.75,
+      "color": "rgba(232,230,225,0.035)"
+     }
+    }
+   ],
+   "key": "#23262E",
+   "mod": "#1E2027",
+   "accent": "#E8E6E1",
+   "fg": "#E8E6E1",
+   "modFg": "#E8E6E1",
+   "accentFg": "#1A1C22",
+   "stripFg": "#E8E6E1",
+   "sep": "rgba(232,230,225,0.14)",
+   "border": {
+    "width": 1.0,
+    "color": "rgba(232,230,225,0.14)"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.3)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(232,230,225,0.6)",
+     "spread": 2.0
+    },
+    {
+     "color": "rgba(232,230,225,0.3)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "swan",
+    "bg": {
+     "radial": {
+      "x": 0.5,
+      "y": 0.6,
+      "rx": 90.0,
+      "ry": 30.0,
+      "stops": [
+       [
+        0.0,
+        "#2C2F38"
+       ],
+       [
+        1.0,
+        "#23262E"
+       ]
+      ]
+     }
+    },
+    "colors": [
+     "#6B6D75",
+     "#A9A7A2",
+     "#F6F4EF"
+    ]
+   }
+  }
+ }
+}
