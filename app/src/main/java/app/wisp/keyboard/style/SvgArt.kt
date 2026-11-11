@@ -64,7 +64,11 @@ class SvgArt private constructor(private val root: Node, private val vw: Float, 
         transformOf(n, t)?.let { c.concat(it) }
         when (n.tag) {
             "svg", "g" -> {
-                if (n.tag == "svg" && n !== root) c.translate(num(n, "x", t), num(n, "y", t))
+                if (n.tag == "svg" && n !== root) {      // a nested svg is a window: it moves its content to x, y and clips what overhangs its width and height
+                    c.translate(num(n, "x", t), num(n, "y", t))
+                    val w = n.attrs["width"]?.toFloatOrNull(); val h = n.attrs["height"]?.toFloatOrNull()
+                    if (w != null && h != null) c.clipRect(0f, 0f, w, h)
+                }
                 for (ch in n.children) drawNode(c, ch, st, t, fonts)
             }
             "rect" -> { rect.set(num(n, "x", t), num(n, "y", t), num(n, "x", t) + num(n, "width", t), num(n, "y", t) + num(n, "height", t)); val r = num(n, "rx", t); shape(c, st, r, r, rect) { p -> if (r > 0f) c.drawRoundRect(rect, r, r, p) else c.drawRect(rect, p) } }

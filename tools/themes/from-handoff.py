@@ -134,7 +134,7 @@ def radius(css):
     v = [num(t) for t in str(css).split()]
     return v[0] if len(v) == 1 else v
 
-def mode_tokens(t):
+def mode_tokens(t, skip_art=False):
     o = {}
     o["dark"] = None  # set by the caller
     o["board"] = fill(t["board"]); o["key"] = fill(t["key"]); o["mod"] = fill(t["mod"]); o["accent"] = fill(t["accent"])
@@ -160,17 +160,20 @@ def mode_tokens(t):
     if ts: o["textShadow"] = ts
     if t.get("tilt"): o["tilt"] = True
     o["space"] = t["space"]
-    if t.get("art"):
+    if t.get("art") and not skip_art:
         o["art"] = {"id": t["art"], "bg": fill(t["artBg"]) if t["artBg"] else None, "colors": [t["a1"], t["a2"], t["a3"]]}
         if o["art"]["bg"] is None: del o["art"]["bg"]
     return o
+
+# Pictures that were designed but are not wanted (the Y2K loading bar was judged out of taste).
+NO_ART = {"y2k"}
 
 def main(src):
     d = json.load(open(src))
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../app/src/main/assets/themes")
     for tid, v in d.items():
         modes = v["modes"]
-        toks = {m: mode_tokens(v[m]) for m in modes}
+        toks = {m: mode_tokens(v[m], tid in NO_ART) for m in modes}
         for m in modes: toks[m]["dark"] = (m == "dark")
         base_mode = modes[0]
         base = dict(toks[base_mode]); base["id"] = tid; base["name"] = NAMES[tid]

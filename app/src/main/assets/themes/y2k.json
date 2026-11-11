@@ -141,28 +141,5 @@
   }
  },
  "bandHeight": 8,
- "space": "English \u00b7 Wisp",
- "art": {
-  "id": "y2k",
-  "bg": {
-   "linear": {
-    "angle": 180.0,
-    "stops": [
-     [
-      0.0,
-      "#FFFFFF"
-     ],
-     [
-      1.0,
-      "#ECE9D8"
-     ]
-    ]
-   }
-  },
-  "colors": [
-   "#3C9A3C",
-   "#FFFFFF",
-   "#7F9DB9"
-  ]
- }
+ "space": "English \u00b7 Wisp"
 }
