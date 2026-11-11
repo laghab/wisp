@@ -6,7 +6,7 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 | Role | Device | Notes |
 |---|---|---|
 | Development device | Waydroid, Android 13 (API 33), x86_64, display forced to 950x1158 at density 216, host Intel Core Ultra 9 285H, 16 threads | Good for correctness and regressions. **Much faster than a phone**, so absolute latency and energy numbers are optimistic. |
-| Reference device (to be attached) | the owner's phone | Final numbers for latency, memory, energy and a 24-hour daily-use run must come from here. |
+| Reference device | vivo I2202i (arm64, Android 14, 1080x2400), connected over USB | Final numbers for latency, memory, energy and a 24-hour daily-use run come from here. |
 
 ## Budgets
 | Budget | Target |
@@ -74,5 +74,8 @@ The swipe index is built once per language start from the lexicon file, with sor
 
 The dot-product build is picked on arm64 phones that report `asimddp`. 32-bit ARM is not built (llama.cpp no longer builds for it) and the panel reports rewrite as unavailable there. Gemma 3 1B and Qwen 2.5 1.5B were not run; the same code path loads any GGUF the catalogue lists.
 
+## On the phone (vivo I2202i, release build, 2026-11-11)
+Installed and set as the keyboard over adb; the setup steps ticked themselves, the keyboard shows and types in the Home test area. Typing-only memory with the settings app in the same process: **51 MB PSS** (budget 80 MB).
+
 ## Not yet measured
-On the phone: press-to-commit and frame timing, memory, gesture decode, voice energy per minute, rewrite speed, battery and a 24-hour daily-use run.
+On the phone: press-to-commit and frame timing, gesture decode, voice energy per minute, rewrite speed, battery and a 24-hour daily-use run.
