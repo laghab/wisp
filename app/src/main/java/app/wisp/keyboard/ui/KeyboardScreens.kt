@@ -50,8 +50,15 @@ fun LookScreen(modifier: Modifier = Modifier) {
             ChoiceRow("The settings app", AppAppearance.options, mode) { mode = it; AppAppearance.set(context, it) }
         }
         Section("Theme", Icons.Icon.THEME) {
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                for (t in Themes.all(context)) ThemeCard(t, selected = t.id == style.theme) { edit { it.copy(theme = t.id) } }
+            // Equal-width columns that fill the card, as many as fit at about 100 dp each.
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val columns = maxOf(2, (maxWidth / 100.dp).toInt())
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    for (row in Themes.all(context).chunked(columns)) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        for (t in row) ThemeCard(t, selected = t.id == style.theme, Modifier.weight(1f)) { edit { it.copy(theme = t.id) } }
+                        repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
+                    }
+                }
             }
             val current = Themes.get(context, style.theme)
             if (current.dynamic && KeyboardStyle.DYNAMIC_AVAILABLE) SwitchRow("Colour from wallpaper", "Material You colours from your wallpaper", style.wallpaperColours) { v -> edit { it.copy(wallpaperColours = v) } }
@@ -83,10 +90,10 @@ fun LookScreen(modifier: Modifier = Modifier) {
 
 /** A small preview of a theme: its board, three keys and its accent. */
 @Composable
-private fun ThemeCard(t: Theme, selected: Boolean, onClick: () -> Unit) {
+private fun ThemeCard(t: Theme, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     val c = { v: Int -> Color(v) }
     Column(
-        Modifier.width(96.dp).clickable(onClick = onClick),
+        modifier.clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Canvas(

@@ -1,5 +1,9 @@
 package app.wisp.keyboard.training
 
+import app.wisp.keyboard.R
+import app.wisp.keyboard.kbd.Palette
+import app.wisp.keyboard.kbd.LayoutGuard
+import app.wisp.keyboard.kbd.LetterLayouts
 import android.app.Activity
 import android.app.AlertDialog
 import android.graphics.Color
@@ -62,7 +66,13 @@ class GestureTrainingActivity : Activity() {
         feedback = text(15f, cream)
         again = Button(this).apply { text = "Practice again"; setOnClickListener { startSession() }; visibility = android.view.View.GONE }
         reset = Button(this).apply { text = "Reset what Wisp learned about my swiping"; setOnClickListener { confirmReset() } }
-        keys = KeyboardView(this, LayoutLoader.load(this, language.layoutRes)).apply {
+        // The keyboard to practise on is the one you type with: your letter layout, number row and theme.
+        val style = app.wisp.keyboard.style.KeyboardStyle.load(this)
+        val letterRes = if (language.layoutRes == R.raw.layout_qwerty) LetterLayouts.res(style.layout) else language.layoutRes
+        val base = LayoutLoader.load(this, letterRes)
+        val palette = Palette().also { it.set(style.palette(this)) }
+        keys = KeyboardView(this, if (style.numberRow) LayoutGuard.withNumberRow(base) else base, palette).apply {
+            applyStyle(style)
             listener = object : KeyboardView.Listener {
                 override fun onKey(code: Int, x: Int, y: Int) {}
                 override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) = swiped(xs.copyOf(count), ys.copyOf(count))

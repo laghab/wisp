@@ -24,15 +24,13 @@ import kotlin.math.sin
  * the last few still-changing ones grey), a waveform, a pulsing mic, a status line, and Undo phrase / Auto-punctuation / Polish.
  * One View drawn directly, and it only animates while the microphone is open.
  *
- * The mic: press and hold to talk and let go to insert; tap once to keep listening hands-free, then tap to pause or resume; slide
- * away while holding to cancel. The back arrow inserts what was said and returns to the keys.
+ * The mic: tap to start listening, tap again to stop and insert. The X throws the dictation away; the back arrow inserts what was said
+ * and returns to the keys.
  */
 class VoicePanelView(context: Context, private val voice: VoiceController, private var theme: Theme) : View(context) {
 
     interface Listener {
-        fun onMicDown()              // start (hold)
-        fun onHandsFree()            // a quick tap: keep listening
-        fun onFinish()               // insert what was said
+        fun onMic()                  // the mic was tapped: start listening, or stop and insert what was said
         fun onCancel()
         fun onBack()                 // the arrow: insert what was said, or just go back when nothing is being said
         fun onFix(problem: VoiceController.Problem)
@@ -92,7 +90,7 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
         c.drawColor(theme.board.first().base() or (0xFF shl 24))
         val phase = voice.phase
         val listening = (phase == VoiceController.Phase.LISTENING || phase == VoiceController.Phase.WARMING)
-        val live = listening && !voice.paused
+        val live = listening
         smoothLevel += ((if (live) voice.level else 0f) - smoothLevel) * 0.25f
 
         drawHeader(c, listening)
@@ -165,7 +163,7 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
 
     private val heights = floatArrayOf(10f, 18f, 26f, 14f, 30f, 22f, 12f, 34f, 20f, 28f, 16f, 36f, 24f, 12f, 30f, 18f, 26f, 34f, 14f, 22f, 30f, 16f, 28f, 12f, 24f, 32f, 18f, 10f)
 
-    /** 28 bars that rise and fall with the voice (flat and dim when paused or idle). */
+    /** 28 bars that rise and fall with the voice (flat and dim when idle). */
     private fun drawBars(c: Canvas, live: Boolean) {
         val n = heights.size
         val bw = 4f * d; val gap = 4f * d
@@ -189,7 +187,7 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
     private fun drawMic(c: Canvas, phase: VoiceController.Phase, listening: Boolean) {
         val cx = width / 2f; val cy = micCy * d; val r = micR * d
         micRect.set(cx - r, cy - r, cx + r, cy + r)
-        val live = listening && !voice.paused
+        val live = listening
         if (live) {
             // Two rings that swell and fade, half a cycle apart.
             val t = (SystemClock.uptimeMillis() % 1800) / 1800f
@@ -200,16 +198,13 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
             }
             fill.alpha = 255
         }
-        val cancel = armed
-        fill.color = if (cancel) theme.mod.base() or (0xFF shl 24) else if (live || phase == VoiceController.Phase.FINISHING) amber else 0xFF2A2418.toInt()
+        fill.color = if (live || phase == VoiceController.Phase.FINISHING) amber else 0xFF2A2418.toInt()
         c.drawCircle(cx, cy, r, fill)
         val ink = if (live || phase == VoiceController.Phase.FINISHING) 0xFF1A1206.toInt() else amber
-        if (listening && voice.paused) Icons.draw(c, Icons.Icon.MIC, cx, cy, 30f * d, ink, strokeWidth = 1.9f)
-        else if (listening && voice.handsFree && phase == VoiceController.Phase.LISTENING) {
-            // Pause bars
+        if (listening) {
+            // Listening: a stop square, because another tap ends it.
             fill.color = ink
-            box.set(cx - 7f * d, cy - 11f * d, cx - 3f * d, cy + 11f * d); c.drawRoundRect(box, 2f * d, 2f * d, fill)
-            box.set(cx + 3f * d, cy - 11f * d, cx + 7f * d, cy + 11f * d); c.drawRoundRect(box, 2f * d, 2f * d, fill)
+            box.set(cx - 9f * d, cy - 9f * d, cx + 9f * d, cy + 9f * d); c.drawRoundRect(box, 3f * d, 3f * d, fill)
         } else Icons.draw(c, Icons.Icon.MIC, cx, cy, 30f * d, ink, strokeWidth = 1.9f)
         // Cancel, left of the mic, while recording
         if (voice.isActive) {
@@ -228,9 +223,8 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
             failure != null -> failure.message
             phase == VoiceController.Phase.WARMING -> "Warming up… you can start talking"
             phase == VoiceController.Phase.FINISHING -> "Finishing…"
-            phase == VoiceController.Phase.LISTENING && voice.paused -> "Paused. Tap the mic to continue"
-            phase == VoiceController.Phase.LISTENING -> if (voice.handsFree) "Listening, speak naturally" else "Listening… let go to insert"
-            else -> "Hold the mic and talk, or tap it to keep listening"
+            phase == VoiceController.Phase.LISTENING -> "Listening. Tap the mic to finish"
+            else -> "Tap the mic and start speaking"
         }
         status.color = if (failure != null) theme.accent.base() or (0xFF shl 24) else 0xFFC9D0DC.toInt().let { if (theme.dark) it else theme.stripFg }
         val sl = StaticLayout.Builder.obtain(s, 0, s.length, TextPaint(status).also { it.textAlign = Paint.Align.LEFT }, (width - 32f * d).toInt()).setAlignment(Layout.Alignment.ALIGN_CENTER).build()
@@ -268,42 +262,18 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
     // ---- touch
 
     private var downOnMic = false
-    private var startedByThisPress = false
-    private var downAt = 0L
-    private var downX = 0f; private var downY = 0f
-    private var armed = false
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
-                downX = e.x; downY = e.y; downAt = e.eventTime; armed = false; startedByThisPress = false
                 downOnMic = micRect.centerX().let { hypot(e.x - it, e.y - micRect.centerY()) <= micR * d * 1.4f }
-                if (downOnMic) {
-                    val failure = voice.failure
-                    when {
-                        failure != null -> { listener?.onFix(failure.problem); downOnMic = false }
-                        voice.isActive -> {}                          // a tap pauses or resumes (decided on lift)
-                        else -> { listener?.onMicDown(); startedByThisPress = voice.isActive }
-                    }
-                    invalidate()
-                }
-            }
-            MotionEvent.ACTION_MOVE -> if (downOnMic && startedByThisPress) {
-                val away = abs(e.x - downX) > 110f * d || (downY - e.y) > 110f * d
-                if (away != armed) { armed = away; invalidate() }
+                val failure = voice.failure
+                if (downOnMic && failure != null) { listener?.onFix(failure.problem); downOnMic = false }
             }
             MotionEvent.ACTION_UP -> {
                 val x = e.x; val y = e.y
                 when {
-                    downOnMic -> {
-                        val held = e.eventTime - downAt
-                        when {
-                            startedByThisPress && armed -> listener?.onCancel()
-                            startedByThisPress && held >= HOLD_MS -> listener?.onFinish()
-                            startedByThisPress -> listener?.onHandsFree()
-                            voice.isActive -> if (voice.paused) voice.resume() else voice.pause()
-                        }
-                    }
+                    downOnMic -> listener?.onMic()
                     cancelRect.contains(x, y) -> listener?.onCancel()
                     backRect.contains(x, y) -> listener?.onBack()
                     langRect.contains(x, y) -> listener?.onLanguage()
@@ -311,9 +281,9 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
                     punctRect.contains(x, y) -> listener?.onTogglePunctuation()
                     polishRect.contains(x, y) -> listener?.onPolish()
                 }
-                downOnMic = false; armed = false; invalidate()
+                downOnMic = false; invalidate()
             }
-            MotionEvent.ACTION_CANCEL -> { downOnMic = false; armed = false }
+            MotionEvent.ACTION_CANCEL -> downOnMic = false
         }
         return true
     }
@@ -322,6 +292,5 @@ class VoicePanelView(context: Context, private val voice: VoiceController, priva
 
     private companion object {
         const val HEIGHT_DP = 320f
-        const val HOLD_MS = 350L
     }
 }

@@ -138,9 +138,8 @@ class WispIme : InputMethodService() {
         val b = SuggestionBarView(this, palette)
         Probe.mark("p_bar")
         b.listener = object : SuggestionBarView.Listener {
-            override fun onMicDown() = openVoice(handsFree = false)
+            override fun onMic() { if (voice?.isActive == true) voice?.stop() else openVoice() }
             override fun onSettings() = openSettings(null)
-            override fun onMicUp(heldMs: Long) { if (heldMs >= HOLD_TO_TALK_MS) voice?.stop() else voice?.makeHandsFree() }
             override fun onSuggestion(index: Int) = controller.onSuggestionTapped(index)
             override fun onTool(tool: SuggestionBarView.Tool) = when (tool) {
                 SuggestionBarView.Tool.SELECT_ALL -> controller.selectAll()
@@ -175,9 +174,7 @@ class WispIme : InputMethodService() {
         voice = vc
         val vp = VoicePanelView(this, vc, style.themeFor(this))
         vp.listener = object : VoicePanelView.Listener {
-            override fun onMicDown() { vc.start(handsFree = false) }
-            override fun onHandsFree() = vc.makeHandsFree()
-            override fun onFinish() = vc.stop()
+            override fun onMic() { if (vc.isActive) vc.stop() else vc.start() }
             override fun onCancel() { vc.cancel(); setMode(Mode.LETTERS) }
             override fun onFix(problem: VoiceController.Problem) = fixVoiceProblem(problem)
             override fun onBack() { if (vc.isActive) vc.stop() else setMode(Mode.LETTERS) }
@@ -222,7 +219,7 @@ class WispIme : InputMethodService() {
         applyStyleIfChanged(force = true)
         b.incognito = incognito
 
-        controller.onShiftChanged = { s -> k.shifted = s != Shift.OFF && mode == Mode.LETTERS }
+        controller.onShiftChanged = { s -> k.shifted = s != Shift.OFF && mode == Mode.LETTERS; k.capsLock = s == Shift.CAPS && mode == Mode.LETTERS }
         Probe.mark("view_created")
         val outer = FrameLayout(this)
         outer.addView(root, FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, android.view.Gravity.BOTTOM))
@@ -332,7 +329,7 @@ class WispIme : InputMethodService() {
         if (m != Mode.EMOJI && m != Mode.VOICE && m != Mode.CLIPBOARD && m != Mode.REWRITE) {
             k.setLabel(KeyCodes.ENTER, field.enter.label)
             k.setLabel(KeyCodes.LANGUAGE, language.code)
-            k.shifted = m == Mode.LETTERS && controller.shift != Shift.OFF
+            k.shifted = m == Mode.LETTERS && controller.shift != Shift.OFF; k.capsLock = m == Mode.LETTERS && controller.shift == Shift.CAPS
         }
         emojiBar?.setLabel(KeyCodes.ENTER, field.enter.label)
     }
@@ -525,10 +522,10 @@ class WispIme : InputMethodService() {
         setMode(Mode.LETTERS)
     }
 
-    private fun openVoice(handsFree: Boolean) {
+    private fun openVoice() {
         if (!field.suggest || field.kind == FieldKind.PASSWORD) return        // never record into a password field
         setMode(Mode.VOICE)
-        voice?.start(handsFree)
+        voice?.start()
     }
 
     private fun fixVoiceProblem(problem: VoiceController.Problem) {
@@ -566,8 +563,10 @@ class WispIme : InputMethodService() {
 
     /** Opens Wisp's settings (the home screen, or [screen]) and hides the keyboard. */
     private fun openSettings(screen: String?) {
-        startActivity(Intent(this, SettingsActivity::class.java).apply { if (screen != null) putExtra(SettingsActivity.EXTRA_SCREEN, screen) }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
-        requestHideSelf(0)
+        val intent = Intent(this, SettingsActivity::class.java).apply { if (screen != null) putExtra(SettingsActivity.EXTRA_SCREEN, screen) }.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        try { startActivity(intent) } catch (e: RuntimeException) { android.util.Log.w("Wisp", "could not open settings", e); return }
+        // Hide after the other window is on its way, not while this one is still handling the tap that asked for it.
+        window?.window?.decorView?.post { requestHideSelf(0) } ?: requestHideSelf(0)
     }
 
     // ---- rewrite: a small on-device model rewrites the selected text or the current sentence; nothing changes until the user chooses ----
@@ -711,7 +710,7 @@ class WispIme : InputMethodService() {
         if (!restarting) mode = Mode.LETTERS
         setMode(mode)
         controller.onFieldStarted(restarting)
-        keys?.shifted = mode == Mode.LETTERS && controller.shift != Shift.OFF
+        keys?.shifted = mode == Mode.LETTERS && controller.shift != Shift.OFF; keys?.capsLock = mode == Mode.LETTERS && controller.shift == Shift.CAPS
     }
 
     override fun onFinishInput() {
@@ -732,5 +731,5 @@ class WispIme : InputMethodService() {
         }
     }
 
-    private companion object { const val HOLD_TO_TALK_MS = 350L; const val PANEL_FADE_MS = 120L }
+    private companion object { const val PANEL_FADE_MS = 120L }
 }

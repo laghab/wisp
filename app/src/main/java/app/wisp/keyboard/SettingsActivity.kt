@@ -79,6 +79,7 @@ class SettingsActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         intent.getStringExtra(EXTRA_SCREEN)?.let { screen = it }
     }
 

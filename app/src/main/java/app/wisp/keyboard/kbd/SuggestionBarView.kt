@@ -19,10 +19,8 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
     interface Listener {
         fun onSuggestion(index: Int)
         fun onTool(tool: Tool)
-        /** The mic was pressed: start listening. */
-        fun onMicDown()
-        /** ...and let go after [heldMs]: a long hold means "talk, then insert"; a quick tap means "keep listening". */
-        fun onMicUp(heldMs: Long)
+        /** The mic was tapped: start listening, or, while listening, stop and insert. */
+        fun onMic()
         /** The gear was tapped: open Wisp's settings. */
         fun onSettings() {}
     }
@@ -144,12 +142,11 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         return s.substring(0, n) + "…"
     }
 
-    private var micDownAt = 0L
     private var micPressed = false
 
     override fun onTouchEvent(e: MotionEvent): Boolean {
-        if (e.actionMasked == MotionEvent.ACTION_DOWN && e.x >= width - micArea && micEnabled) { micPressed = true; micDownAt = e.eventTime; listener?.onMicDown(); return true }
-        if (micPressed && (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL)) { micPressed = false; listener?.onMicUp(e.eventTime - micDownAt); return true }
+        if (e.actionMasked == MotionEvent.ACTION_DOWN && e.x >= width - micArea && micEnabled) { micPressed = true; return true }
+        if (micPressed && (e.actionMasked == MotionEvent.ACTION_UP || e.actionMasked == MotionEvent.ACTION_CANCEL)) { micPressed = false; if (e.actionMasked == MotionEvent.ACTION_UP) listener?.onMic(); return true }
         if (micPressed) return true
         if (e.actionMasked == MotionEvent.ACTION_UP) {
             if (e.x >= width - micArea) return true

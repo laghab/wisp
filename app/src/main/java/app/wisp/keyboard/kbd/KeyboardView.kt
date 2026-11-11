@@ -46,6 +46,9 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
 
     var shifted = false
         set(v) { if (field != v) { field = v; invalidate() } }
+    /** Caps lock (shift held on), as opposed to shift for one letter: the shift key shows a bar under its arrow. */
+    var capsLock = false
+        set(v) { if (field != v) { field = v; invalidate() } }
 
     private val tapLatency = LatencyStats("tap_up_to_commit")
     private val drawTime = LatencyStats("on_draw")
@@ -102,7 +105,6 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     /** When each key was let go, for the short fade back from the pressed colour. 0 = not fading. */
     private var releasedAt = LongArray(0)
     private var fading = false
-    private var dirty = IntArray(0)
     private var labelY = FloatArray(0)
 
     private val fill = Paint()
@@ -207,7 +209,6 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         layout = l
         pressed = BooleanArray(l.count)
         releasedAt = LongArray(l.count)
-        dirty = IntArray(l.count * 4) { i -> val v = l.rects[i]; if (i % 4 < 2) v.toInt() - 1 else v.toInt() + 1 }
         labelY = FloatArray(l.count) { i ->
             val p = if (l.kinds[i] == KeyKind.LETTER) bigText else smallText
             val fm = p.fontMetrics
@@ -304,7 +305,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         val cx = l.centerX(i); val cy = l.centerY(i)
         val d = density
         when (code) {
-            KeyCodes.SHIFT -> { Icons.draw(c, Icons.Icon.SHIFT, cx, cy, 22f * d, ink, fill = shifted); return }
+            KeyCodes.SHIFT -> { Icons.draw(c, if (capsLock) Icons.Icon.CAPS else Icons.Icon.SHIFT, cx, cy, 22f * d, ink, fill = shifted); return }
             KeyCodes.BACKSPACE -> { Icons.draw(c, Icons.Icon.BACK, cx, cy, 24f * d, ink); return }
             KeyCodes.EMOJI -> { Icons.draw(c, Icons.Icon.EMOJI, cx, cy, 22f * d, ink); return }
             KeyCodes.SWITCH -> { Icons.draw(c, Icons.Icon.GLOBE, cx, cy, 20f * d, ink); return }
@@ -312,7 +313,8 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         }
         val letter = l.kinds[i] == KeyKind.LETTER
         val raw = if (shifted) l.labelsUpper[i] else l.labels[i]
-        val label = if (theme.upper && !raw.isEmpty()) raw.uppercase() else raw
+        // Letters follow shift in every theme (small when it is off, capitals when it is on); a theme's "upper" look only applies to the other labels.
+        val label = if (theme.upper && !letter && !raw.isEmpty()) raw.uppercase() else raw
         if (label.isNotEmpty()) {
             val p = if (letter) bigText else smallText
             p.color = ink
@@ -491,7 +493,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         for (i in 0 until l.count) {
             if (l.kinds[i] != KeyKind.LETTER) continue
             val o = i * 4
-            if (x >= l.rects[o] && x < l.rects[o + 2] && y >= l.rects[o + 1] && y < l.rects[o + 3]) { if (!glideLit.get(i)) { glideLit.set(i); val d = dirty; invalidate(d[o], d[o + 1], d[o + 2], d[o + 3]) }; return }
+            if (x >= l.rects[o] && x < l.rects[o + 2] && y >= l.rects[o + 1] && y < l.rects[o + 3]) { if (!glideLit.get(i)) { glideLit.set(i); invalidateKey(i) }; return }
         }
     }
 
@@ -507,8 +509,13 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         if (key !in pressed.indices || pressed[key] == on) return
         pressed[key] = on
         releasedAt[key] = if (!on && android.animation.ValueAnimator.areAnimatorsEnabled()) SystemClock.uptimeMillis() else 0L
-        val o = key * 4
-        invalidate(dirty[o], dirty[o + 1], dirty[o + 2], dirty[o + 3])
+        invalidateKey(key)
+    }
+
+    /** Redraws a key and the glow around it: the pressed look reaches [ThemeRenderer.margin] px past the key, and a smaller area would clip it to a square. */
+    private fun invalidateKey(key: Int) {
+        val r = layout?.rects ?: return; val o = key * 4; val m = renderer.margin + 1
+        invalidate(r[o].toInt() - m, r[o + 1].toInt() - m, r[o + 2].toInt() + m, r[o + 3].toInt() + m)
     }
 
     companion object {

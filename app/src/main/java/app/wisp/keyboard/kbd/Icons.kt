@@ -9,6 +9,8 @@ import androidx.core.graphics.PathParser
 object Icons {
     enum class Icon(val paths: List<String>, val circle: Boolean = false, val dots: List<Triple<Float, Float, Float>> = emptyList(), val filled: Boolean = false) {
         SHIFT(listOf("M12 4 4 12h4.5v7h7v-7H20z")),
+        /** The shift arrow with a bar under it: caps lock, as opposed to shift for one letter. */
+        CAPS(listOf("M12 3 4 11h4.5v6h7v-6H20z", "M8.5 20.5h7")),
         BACK(listOf("M21 5H8.5L3 12l5.5 7H21z", "m12 9 5 6M17 9l-5 6")),
         ENTER(listOf("M20 5v7a3 3 0 0 1-3 3H5", "m9 11-4 4 4 4")),
         EMOJI(listOf("M8.5 14.5a4 4 0 0 0 7 0"), circle = true, dots = listOf(Triple(9f, 10f, 1f), Triple(15f, 10f, 1f))),
