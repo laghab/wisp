@@ -122,7 +122,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private val glideLit = java.util.BitSet()
     // The space bar's picture, where the theme has one and the user has not turned it off. It moves, so the space key redraws on a timer
     // while the keyboard is showing (and stays still when the phone's animations are off).
-    private var spaceArtOn = true
+    private var artMode = "subtle"
     private var art: app.wisp.keyboard.style.SvgArt? = null
     private var artFor: Theme? = null
     private var artSince = 0L
@@ -133,9 +133,10 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
 
     private fun currentArt(): app.wisp.keyboard.style.SvgArt? {
         if (artFor !== theme) { artFor = theme; art = if (theme.art != null) app.wisp.keyboard.style.SvgArt.load(context, theme.id, theme.dark) else null; artSince = SystemClock.uptimeMillis() }
-        return if (spaceArtOn) art else null
+        return if (artMode == "off") null else art
     }
 
+    private val QUIET_ART = setOf("sakura", "dandelion", "moon")
     private var tintedTheme: Theme? = null
     private var tintedBigSize = 0f
     private val box = RectF()
@@ -164,7 +165,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         setTheme(style.themeFor(context))
         keyHints = style.keyHints
         setPhoto(style.photo, style.photoDim)
-        spaceArtOn = style.spaceArt
+        artMode = style.spaceArt
         haptic = style.haptic; sound = style.sound; trailOn = style.trailOn
         wordSwipe = style.wordSwipe; cursorSlide = style.cursorSlide; longPressMs = style.longPressMs
         if (handle != 0L) Native.touchConfig(handle, touchConfig())
@@ -339,6 +340,16 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         if (BuildConfig.DEBUG) drawTime.record(System.nanoTime() - d0)
     }
 
+    /**
+     * The time the picture is drawn at. "Still" holds the first frame. "Subtle" lets the pictures that are quiet by nature (blossom, seeds, the
+     * moon) play as designed and slows the busy ones (belts, gears, neon, speed lines) to a crawl, so the space bar never pulls the eye.
+     */
+    private fun artSeconds(now: Long): Float {
+        if (artMode == "still") return 0f
+        val s = (now - artSince) / 1000f
+        return if (artMode == "subtle" && theme.id !in QUIET_ART) s * 0.3f else s
+    }
+
     private fun drawArt(c: Canvas, picture: app.wisp.keyboard.style.SvgArt, l: CompiledLayout, i: Int, lit: Boolean, now: Long) {
         val o = i * 4
         artRect.set(l.rects[o], l.rects[o + 1], l.rects[o + 2], l.rects[o + 3])
@@ -346,12 +357,12 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         artClip.rewind(); artClip.addRoundRect(artRect, rad, rad, android.graphics.Path.Direction.CW)
         c.save(); c.clipPath(artClip)
         theme.art?.bg?.let { bg -> bitmapPaint.color = bg.base(); c.drawRect(artRect, bitmapPaint); bitmapPaint.color = 0xFFFFFFFF.toInt() }      // behind a picture that does not reach the edges
-        picture.draw(c, artRect, (now - artSince) / 1000f, slice = theme.art?.id != "moon", fonts = artFonts)
+        picture.draw(c, artRect, artSeconds(now), slice = theme.art?.id != "moon", fonts = artFonts)
         if (lit) { bitmapPaint.alpha = 70; bitmapPaint.color = theme.accent.base(); c.drawRect(artRect, bitmapPaint); bitmapPaint.alpha = 255 }
         c.restore()
         // The language is still named, small, in the corner.
         if (languageName.isNotEmpty()) { smallText.color = theme.fg; smallText.alpha = 130; smallText.textSize = 10f * density; c.drawText(languageNow.ifEmpty { languageName }, artRect.left + 6f * density, artRect.bottom - 5f * density, smallText); smallText.alpha = 255; smallText.textSize = minOf(theme.size, 15f) * density }
-        if (picture.animated && android.animation.ValueAnimator.areAnimatorsEnabled() && isShown) postDelayed(artTick, 33)
+        if (picture.animated && artMode != "still" && android.animation.ValueAnimator.areAnimatorsEnabled() && isShown) postDelayed(artTick, if (artMode == "subtle") 66L else 33L)
     }
 
     private fun setThemePaints() {

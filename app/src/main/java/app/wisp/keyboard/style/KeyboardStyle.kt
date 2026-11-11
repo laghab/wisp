@@ -12,8 +12,8 @@ data class KeyboardStyle(
     val theme: String = Themes.DEFAULT,
     /** Which look of a theme that has both: "system" follows the phone, or "light" / "dark". */
     val colors: String = "system",
-    /** The space bar's animated picture, on the themes that have one. */
-    val spaceArt: Boolean = true,
+    /** The space bar's picture, on the themes that have one: "off", "still", "subtle" (busy pictures slowed right down) or "full" (as designed). */
+    val spaceArt: String = "subtle",
     /** Material You: take the colours from the wallpaper (Android 12 and later). */
     val wallpaperColours: Boolean = false,
     val keyBorders: Boolean = true,
@@ -70,7 +70,7 @@ data class KeyboardStyle(
     /** Writes every option to the settings file. */
     fun save(context: Context) {
         val s = WispSettings.get(context)
-        s.putString("style_theme", theme); s.putString("style_colors", colors); s.putBoolean("style_space_art", spaceArt); s.putBoolean("style_wallpaper", wallpaperColours); s.putBoolean("style_borders", keyBorders); s.putBoolean("style_hints", keyHints)
+        s.putString("style_theme", theme); s.putString("style_colors", colors); s.putString("style_art", spaceArt); s.putBoolean("style_wallpaper", wallpaperColours); s.putBoolean("style_borders", keyBorders); s.putBoolean("style_hints", keyHints)
         s.putString("style_photo", photo); s.putInt("style_photo_dim", photoDim)
         s.putBoolean("style_trail_on", trailOn); s.putString("style_trail_color", trailColor); s.putInt("style_trail_width", trailWidthDp)
         s.putInt("style_gap", gap)
@@ -92,7 +92,7 @@ data class KeyboardStyle(
         fun load(context: Context): KeyboardStyle {
             val s = WispSettings.get(context)
             return KeyboardStyle(
-                theme = s.getString("style_theme", Themes.DEFAULT)!!, colors = s.getString("style_colors", "system")!!, spaceArt = s.getBoolean("style_space_art", true), wallpaperColours = s.getBoolean("style_wallpaper", false), keyBorders = s.getBoolean("style_borders", true), keyHints = s.getBoolean("style_hints", true),
+                theme = s.getString("style_theme", Themes.DEFAULT)!!, colors = s.getString("style_colors", "system")!!, spaceArt = s.getString("style_art", "subtle")!!, wallpaperColours = s.getBoolean("style_wallpaper", false), keyBorders = s.getBoolean("style_borders", true), keyHints = s.getBoolean("style_hints", true),
                 photo = s.getString("style_photo", "")!!, photoDim = s.getInt("style_photo_dim", 40).coerceIn(0, 80),
                 trailOn = s.getBoolean("style_trail_on", true), trailColor = s.getString("style_trail_color", "accent")!!, trailWidthDp = s.getInt("style_trail_width", 5).coerceIn(2, 12),
                 gap = s.getInt("style_gap", 100).coerceIn(40, 200), numberRow = s.getBoolean("style_number_row", false),
