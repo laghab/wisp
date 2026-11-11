@@ -20,11 +20,23 @@ object LayoutGuard {
         return LayoutSpec(spec.name, rows)
     }
 
-    /** Puts a row of digits above the letters (the "number row" option). Layouts that already start with digits are left alone. */
+    /** Hold-symbols for the top letter row when the digits have their own row (HeliBoard's: the keys' first long-press character). */
+    private const val TOP_ROW_SYMBOLS = "%\\|=[]<>{}"
+
+    /**
+     * Puts a row of digits above the letters (the "number row" option). The letters below then offer symbols on hold instead of the digits
+     * they would otherwise carry. Layouts that already start with digits are left alone.
+     */
     fun withNumberRow(spec: LayoutSpec): LayoutSpec {
         val first = spec.rows.first().firstOrNull { !it.spacer }
         if (first != null && first.code in '0'.code..'9'.code) return spec
         val digits = "1234567890".map { KeySpec(it.code, it.toString(), it.toString(), 1f, KeyKind.LETTER, null) }
-        return LayoutSpec(spec.name, listOf(digits) + spec.rows)
+        var n = 0
+        val top = spec.rows.first().map { k ->
+            val i = if (k.spacer) -1 else n++
+            val pop = k.popups
+            if (i in TOP_ROW_SYMBOLS.indices && !pop.isNullOrEmpty() && pop[0].isDigit()) KeySpec(k.code, k.label, k.labelUpper, k.weight, k.kind, TOP_ROW_SYMBOLS[i] + pop.substring(1)) else k
+        }
+        return LayoutSpec(spec.name, listOf(digits, top) + spec.rows.drop(1))
     }
 }

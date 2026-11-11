@@ -29,10 +29,10 @@ Use at least two different apps for the typing sections (a messaging app and a b
 
 ## 3. Space bar and bottom row
 - [ ] 3.1 **(!)** The space bar is wide (roughly 40% of the row) and easy to hit with either thumb.
-- [ ] 3.2 Bottom row reads: ?123, globe, comma, EN (language), space, period, enter. There is no emoji key; emoji opens from the toolbar.
+- [ ] 3.2 Bottom row reads: ?123, comma, space, period, enter. There is no emoji key; emoji opens from the toolbar. Holding the space bar only slides the cursor.
 - [ ] 3.3 Tapping the right and left ends of the space bar both insert a space.
 - [ ] 3.4 Sliding a finger left and right along the space bar moves the cursor; it follows the finger and stops cleanly when you lift.
-- [ ] 3.5 Long-press the comma key: extra punctuation appears. Long-press the period key: the punctuation list appears.
+- [ ] 3.5 Long-press the comma key: the globe (switch keyboard), the language and extra punctuation appear. Long-press the period key: the punctuation list appears.
 - [ ] 3.6 The globe key: a tap goes to your previous keyboard; a long press opens Android's keyboard picker. Wisp can always be reached again from the picker.
 - [ ] 3.7 The EN key switches English, Hinglish in turn, and the key label changes.
 
@@ -74,7 +74,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 ## 7. Layouts, number row and number pad
 - [ ] 7.1 Settings > Layouts: switching between QWERTY, AZERTY, QWERTZ, Dvorak, Colemak and Workman changes the letter keys; typing, swiping and suggestions still work on each.
 - [ ] 7.2 **(!)** Number row: turning it on from the Home chip puts 1 to 0 above the letters; it is also in Layouts/Size settings and in keyboard edit mode ("Number row" chip). Turning it off removes it. The keys stay a sensible size.
-- [ ] 7.3 With the number row on, long-press hints no longer show digits that are now on their own row (or are harmless duplicates).
+- [ ] 7.3 With the number row on, the top letter row's hints read % \ | = [ ] < > { } instead of digits (HeliBoard's); with it off they read 1 to 0. The other rows read @ # $ _ & - + ( ) and * " ' : ; ! ? either way.
 - [ ] 7.4 **(!)** ?123 opens symbols page 1: digits row, then @ # $ _ & - + ( ) /, then * " ' : ; ! ?
 - [ ] 7.5 "=\<" opens symbols page 2; tapping it again returns to page 1; ABC returns to letters.
 - [ ] 7.6 **(!)** The "123" key on the symbols page opens a number pad with digits in the middle three columns (1 2 3 / 4 5 6 / 7 8 9 / , 0 .), operators + - * / down the left, and backspace, = , % and # down the right; the bottom row is ABC, globe, space, enter.

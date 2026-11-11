@@ -18,8 +18,8 @@ UNDO_CELL="$SLOT_L"                                                  # "Undo dic
 # Long-press menus: press a key, wait for its menu, slide to an item and let go.  menu_pick "<key x y>" "<item x y>"
 menu_pick() { local kx ky ix iy; read -r kx ky <<< "$1"; read -r ix iy <<< "$2"
   a input motionevent DOWN "$kx" "$ky"; sleep 0.8; a input motionevent MOVE "$ix" "$iy"; sleep 0.2; a input motionevent UP "$ix" "$iy"; sleep 0.6; }
-GLOBE_ITEM="178 978"; LANG_ITEM="265 978"                         # the first item of the comma's menu (the globe) and of the space bar's (the next language)
-lang_next() { menu_pick "$SPACE" "$LANG_ITEM"; }
+GLOBE_ITEM="178 978"; LANG_ITEM="265 978"                         # the comma's menu: the globe first, the next language second
+lang_next() { menu_pick "$COMMA" "$LANG_ITEM"; }
 # type <word>: taps each letter in turn, then gives the dictionary thread a moment to answer
 type_word() { local c; for c in $(echo "$1" | sed 's/./& /g'); do tap $(K "$c"); done; sleep 0.9; }
 
