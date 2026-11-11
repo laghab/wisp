@@ -121,8 +121,10 @@ fun FeedbackScreen(modifier: Modifier = Modifier) {
     val (style, edit) = rememberEditableStyle()
     Column(modifier.verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Section("Feedback", Icons.Icon.VIBRATE) {
-            ChoiceRow("Vibration on key press", listOf("off" to "Off", "light" to "Light", "strong" to "Strong"), style.haptic) { v -> edit { it.copy(haptic = v) } }
-            SwitchRow("Key click sound", "Uses the phone's own click sound and volume", style.sound) { v -> edit { it.copy(sound = v) } }
+            ChoiceRow("Vibration on key press", listOf("off" to "Off", "system" to "System", "custom" to "Custom"), style.haptic) { v -> edit { it.copy(haptic = v) } }
+            if (style.haptic == "custom") SliderRow("Vibration strength", style.hapticLevel, 1..100) { v -> edit { it.copy(hapticLevel = v) } }
+            SwitchRow("Key click sound", "Uses the phone's own click sound", style.sound) { v -> edit { it.copy(sound = v) } }
+            if (style.sound) SliderRow("Click volume", style.soundVolume, 5..100) { v -> edit { it.copy(soundVolume = v) } }
         }
         Text("Try it: open any text field and type.", style = MaterialTheme.typography.bodySmall)
     }

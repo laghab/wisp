@@ -136,7 +136,7 @@ fun HomeScreen(onOpen: (Target) -> Unit, modifier: Modifier = Modifier) {
                 Quick("Swipe to delete", style.wordSwipe) { v -> edit { it.copy(wordSwipe = v) } }
                 Quick("Space cursor", style.cursorSlide) { v -> edit { it.copy(cursorSlide = v) } }
                 Quick("Autocorrect", style.autoCorrect) { v -> edit { it.copy(autoCorrect = v) } }
-                Quick("Haptics", style.haptic != "off") { v -> edit { it.copy(haptic = if (v) "light" else "off") } }
+                Quick("Haptics", style.haptic != "off") { v -> edit { it.copy(haptic = if (v) "system" else "off") } }
                 Quick("Key sound", style.sound) { v -> edit { it.copy(sound = v) } }
             }
         }

@@ -25,7 +25,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 2.7 Long-pressed hint characters (the small glyph on each key) match what the popup gives first.
 - [ ] 2.8 Enter key: new line in a notes app; the right action (Send, Search, Go, Done) shows on the key in apps that set one, and does that action.
 - [ ] 2.9 **(!)** The key under your finger lights up on touch with the same rounded shape as the key (no square box around it), and the highlight goes away when you slide off it. Check a few themes (Wisp, Factory, Retro, Comic, Cyberpunk).
-- [ ] 2.10 Haptic feedback is felt on key press (Feedback settings: off / light / strong all change it). Key sound toggles on and off.
+- [ ] 2.10 Haptic feedback is felt on key press (Settings, Feedback: off / system / custom; custom has a strength slider you can feel change). Key sound toggles on and off and has a volume slider.
 
 ## 3. Space bar and bottom row
 - [ ] 3.1 **(!)** The space bar is wide (roughly 40% of the row) and easy to hit with either thumb.

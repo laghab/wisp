@@ -26,8 +26,11 @@ data class KeyboardStyle(
     val trailWidthDp: Int = 5,
     val gap: Int = 100,
     val numberRow: Boolean = false,
-    val haptic: String = "light",
+    /** "off", "system" (the phone's own key haptics) or "custom" (a tick of [hapticLevel] strength). */
+    val haptic: String = "system",
+    val hapticLevel: Int = 60,
     val sound: Boolean = false,
+    val soundVolume: Int = 100,
     /** Touch gestures, each switchable: swipe left from backspace deletes words; slide on the space bar moves the cursor. */
     val wordSwipe: Boolean = true,
     val cursorSlide: Boolean = true,
@@ -44,7 +47,7 @@ data class KeyboardStyle(
     val shortcuts: String = "",
 ) {
     /** A short string that changes whenever any option changes; views re-style only when it does. */
-    val signature: String get() = listOf(theme, colors, spaceArt, wallpaperColours, keyBorders, keyHints, photo, photoDim, trailOn, trailColor, trailWidthDp, gap, numberRow, haptic, sound, wordSwipe, cursorSlide, layout, glide, autoCorrect, autoCaps, doubleSpacePeriod, longPressMs, shortcuts).joinToString("|")
+    val signature: String get() = listOf(theme, colors, spaceArt, wallpaperColours, keyBorders, keyHints, photo, photoDim, trailOn, trailColor, trailWidthDp, gap, numberRow, haptic, hapticLevel, sound, soundVolume, wordSwipe, cursorSlide, layout, glide, autoCorrect, autoCaps, doubleSpacePeriod, longPressMs, shortcuts).joinToString("|")
 
     /** The skin to draw: the chosen theme, with wallpaper colours, border and photo options applied. */
     fun themeFor(context: Context): Theme {
@@ -75,7 +78,7 @@ data class KeyboardStyle(
         s.putBoolean("style_trail_on", trailOn); s.putString("style_trail_color", trailColor); s.putInt("style_trail_width", trailWidthDp)
         s.putInt("style_gap", gap)
         s.putBoolean("style_number_row", numberRow)
-        s.putString("style_haptic", haptic); s.putBoolean("style_sound", sound)
+        s.putString("style_haptic", haptic); s.putInt("style_haptic_level", hapticLevel); s.putBoolean("style_sound", sound); s.putInt("style_sound_volume", soundVolume)
         s.putBoolean("gesture_word_swipe", wordSwipe); s.putBoolean("gesture_cursor_slide", cursorSlide)
         s.putBoolean("typing_glide", glide); s.putBoolean("typing_autocorrect", autoCorrect); s.putBoolean("typing_autocaps", autoCaps); s.putBoolean("double_space_period", doubleSpacePeriod)
         s.putString("letter_layout", layout); s.putInt("long_press_ms", longPressMs); s.putString("text_shortcuts", shortcuts)
@@ -96,7 +99,8 @@ data class KeyboardStyle(
                 photo = s.getString("style_photo", "")!!, photoDim = s.getInt("style_photo_dim", 40).coerceIn(0, 80),
                 trailOn = s.getBoolean("style_trail_on", true), trailColor = s.getString("style_trail_color", "accent")!!, trailWidthDp = s.getInt("style_trail_width", 5).coerceIn(2, 12),
                 gap = s.getInt("style_gap", 100).coerceIn(40, 200), numberRow = s.getBoolean("style_number_row", false),
-                haptic = s.getString("style_haptic", "light")!!, sound = s.getBoolean("style_sound", false),
+                haptic = when (val h = s.getString("style_haptic", "system")) { "off", "custom" -> h; "strong" -> "custom"; else -> "system" }, hapticLevel = s.getInt("style_haptic_level", 60).coerceIn(1, 100),
+                sound = s.getBoolean("style_sound", false), soundVolume = s.getInt("style_sound_volume", 100).coerceIn(5, 100),
                 wordSwipe = s.getBoolean("gesture_word_swipe", true), cursorSlide = s.getBoolean("gesture_cursor_slide", true),
                 layout = s.getString("letter_layout", "qwerty")!!, glide = s.getBoolean("typing_glide", true), autoCorrect = s.getBoolean("typing_autocorrect", true), autoCaps = s.getBoolean("typing_autocaps", true), doubleSpacePeriod = s.getBoolean("double_space_period", true),
                 longPressMs = s.getInt("long_press_ms", 350).coerceIn(150, 700), shortcuts = s.getString("text_shortcuts", "").orEmpty(),

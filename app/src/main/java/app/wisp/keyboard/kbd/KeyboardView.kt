@@ -93,7 +93,9 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         set(v) { if (field != v) { field = v; rowHeightPx = ROW_HEIGHT_DP * density * v; if (width > 0) { release(); requestLayout(); rebuild(width, contentHeight()) } } }
     var splitGapPx = 0f
         set(v) { if (field != v) { field = v; if (width > 0) rebuild(width, contentHeight()) } }
-    private var haptic = "light"
+    private var haptic = "system"
+    private var hapticLevel = 60
+    private var soundVolume = 100
     private var wordSwipe = true
     private var longPressMs = android.view.ViewConfiguration.getLongPressTimeout()
     private var cursorSlide = true
@@ -170,7 +172,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         keyHints = style.keyHints
         setPhoto(style.photo, style.photoDim)
         artMode = style.spaceArt
-        haptic = style.haptic; sound = style.sound; trailOn = style.trailOn
+        haptic = style.haptic; hapticLevel = style.hapticLevel; sound = style.sound; soundVolume = style.soundVolume; trailOn = style.trailOn
         wordSwipe = style.wordSwipe; cursorSlide = style.cursorSlide; longPressMs = style.longPressMs
         if (handle != 0L) Native.touchConfig(handle, touchConfig())
         trailPaint.strokeWidth = style.trailWidthDp * density
@@ -180,12 +182,13 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     }
 
     private fun feedback() {
-        if (haptic == "light") performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
-        else if (haptic == "strong") {
+        if (haptic == "system") performHapticFeedback(android.view.HapticFeedbackConstants.KEYBOARD_TAP)
+        else if (haptic == "custom") {
             val v = vibrator ?: (context.getSystemService(android.os.Vibrator::class.java)).also { vibrator = it }
-            v?.vibrate(android.os.VibrationEffect.createOneShot(22, 200))
+            // strength sets the motor's amplitude where the phone allows it, and always the tick's length
+            v?.vibrate(android.os.VibrationEffect.createOneShot(6L + hapticLevel / 6, if (v.hasAmplitudeControl()) (hapticLevel * 255 / 100).coerceAtLeast(1) else android.os.VibrationEffect.DEFAULT_AMPLITUDE))
         }
-        if (sound) (context.getSystemService(android.media.AudioManager::class.java)).playSoundEffect(android.media.AudioManager.FX_KEYPRESS_STANDARD, -1f)
+        if (sound) (context.getSystemService(android.media.AudioManager::class.java)).playSoundEffect(android.media.AudioManager.FX_KEYPRESS_STANDARD, if (soundVolume >= 100) -1f else soundVolume / 100f)
     }
 
     private val labelOverrides = HashMap<Int, String>()
