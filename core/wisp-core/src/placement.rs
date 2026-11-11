@@ -98,7 +98,7 @@ pub fn solve(p: &Placement, screen_w: f32, screen_h: f32, strip: f32, keys: f32)
     // Keep the whole keyboard on screen with room above it, and never taller than about half the screen when docked.
     let room = (screen_h - TOP_ROOM).max(strip + keys * MIN_HEIGHT);
     let cap = if p.mode == Mode::Floating { room } else { (screen_h * 0.5).max(strip + keys * MIN_HEIGHT) };
-    let max_scale = (((cap - strip) / keys).min(MAX_HEIGHT)).max(MIN_HEIGHT);
+    let max_scale = ((cap - strip) / keys).clamp(MIN_HEIGHT, MAX_HEIGHT);
     let row_scale = p.height.clamp(MIN_HEIGHT, max_scale);
     let height = strip + keys * row_scale;
 

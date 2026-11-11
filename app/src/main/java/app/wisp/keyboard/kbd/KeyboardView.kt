@@ -633,6 +633,5 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         const val MAX_TRACE = 512
         const val FADE_MS = 260L
         const val RELEASE_FADE_MS = 90L
-        const val TRAIL_POINTS = 40
     }
 }

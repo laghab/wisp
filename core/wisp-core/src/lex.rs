@@ -235,7 +235,7 @@ impl Lexicon {
             let score = 250_000 + f as i32 * 800 - extra * 6_000 + bonus(&w);
             comp.push((score, w));
         }
-        comp.sort_by(|a, b| b.0.cmp(&a.0));
+        comp.sort_by_key(|a| std::cmp::Reverse(a.0));
         for (score, word) in comp.into_iter().take(limit) {
             out.push(Candidate { word, score, kind: Kind::Completion, safe: false });
         }
@@ -261,7 +261,7 @@ impl Lexicon {
                 out.push(Candidate { word: w, score, kind: Kind::Correction, safe: !known && cost <= 1.0 });
             }
         }
-        out.sort_by(|a, b| b.score.cmp(&a.score));
+        out.sort_by_key(|a| std::cmp::Reverse(a.score));
         let mut seen = std::collections::HashSet::new();
         out.retain(|c| seen.insert(c.word.clone()));
         out.truncate(limit);

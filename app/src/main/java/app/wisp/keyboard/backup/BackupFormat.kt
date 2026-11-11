@@ -33,7 +33,6 @@ object BackupFormat {
 
     class Parsed(val createdAt: Long, val appVersion: String, val entries: List<Entry>, val scopes: Set<String> = setOf(Scope.LEARNED, Scope.LAYOUTS, Scope.SETTINGS)) {
         fun entry(path: String) = entries.firstOrNull { it.path == path }
-        val wordFiles get() = entries.count { it.path.startsWith("personal/") && it.path.endsWith(".tsv") }
     }
 
     fun isAllowedPath(path: String) =

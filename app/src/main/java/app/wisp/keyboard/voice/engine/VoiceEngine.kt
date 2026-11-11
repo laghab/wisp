@@ -24,8 +24,6 @@ class VoiceEngine(private val context: Context) {
     var spec: ModelSpec? = null
         private set
 
-    val isLoaded get() = recognizer != null
-
     /** Loads [modelId] from [dir] unless it is already loaded with the same settings. Returns the load time in ms (0 if it was loaded). */
     fun load(modelId: String, dir: File, language: String, threads: Int): Long {
         val s = ModelCatalog.byId(modelId) ?: throw IllegalArgumentException("Unknown model $modelId")

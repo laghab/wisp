@@ -6,7 +6,6 @@ import java.io.Closeable
 
 /** One word list in the Rust core: lookups, completions, corrections and next-word guesses. Closing frees the native object. */
 class Lexicon(private var handle: Long) : Closeable {
-    val isOpen get() = handle != 0L
 
     /** How common [word] is, 0..255, or -1 when the lexicon does not contain it. */
     fun probability(word: String): Int = if (handle == 0L) -1 else Native.lexFreq(handle, word)

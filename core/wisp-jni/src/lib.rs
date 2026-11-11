@@ -274,7 +274,6 @@ pub extern "system" fn Java_app_wisp_keyboard_core_Native_glideNew(
     let _ = env.get_long_array_region(&lexes, 0, &mut handles);
     let mixed = ints(&env, &mixed);
     let alpha: Vec<u32> = ints(&env, &alphabet).into_iter().map(|c| c as u32).collect();
-    let mixed = mixed;
     let g = Glide::build_with(
         |add| {
             for (i, &h) in handles.iter().enumerate() {

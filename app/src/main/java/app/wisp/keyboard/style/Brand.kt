@@ -52,11 +52,6 @@ object Brand {
     /** Dark or light text for use on top of [accent]. */
     fun onAccent(accent: Int): Int = if (contrast(accent, INK) >= contrast(accent, 0xFFFFFFFF.toInt())) INK else 0xFFFFFFFF.toInt()
 
-    // Type: one family (the system's), a few weights. Sizes in sp for the settings app; the keys draw their own sizes in dp.
-    const val KEY_LETTER_SP = 22f
-    const val KEY_LABEL_SP = 15f
-    const val BAR_TEXT_SP = 17f
-
     // ---- WCAG contrast, used by the brand checks
     fun luminance(argb: Int): Double {
         fun ch(v: Int): Double { val c = v / 255.0; return if (c <= 0.03928) c / 12.92 else Math.pow((c + 0.055) / 1.055, 2.4) }

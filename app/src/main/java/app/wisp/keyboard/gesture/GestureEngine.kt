@@ -65,9 +65,6 @@ class GestureEngine(
         worker.post { if (lang !== language || glide == null) { language = lang; rebuild() } }
     }
 
-    /** Builds the index for the current language ahead of the first swipe. */
-    fun prepare() { worker.post { ensure() } }
-
     /** Call whenever the letter layout is (re)built. */
     fun setLayout(l: CompiledLayout) {
         worker.post { layout = l; val g = glide; if (g == null) ensure() else g.setGeometry(l) }

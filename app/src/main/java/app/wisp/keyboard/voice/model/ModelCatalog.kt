@@ -48,8 +48,6 @@ data class ModelSpec(
      * the others degrade gracefully but long chunks cost memory.
      */
     val maxChunkSeconds: Float,
-    /** Whether the model emits its own punctuation & casing. */
-    val punctuates: Boolean = true,
     /** Files that must exist for the install to count as complete. */
     val requiredFiles: List<String>,
     val buildConfig: (dir: File, language: String) -> OfflineModelConfig,

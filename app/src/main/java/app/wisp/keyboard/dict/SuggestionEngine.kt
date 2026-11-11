@@ -140,9 +140,6 @@ class SuggestionEngine(
         }
     }
 
-    /** Reloads from disk (the learned-data screen may have changed the file) and tells the gesture decoder. */
-    fun reloadPersonal() { worker.post { personalLanguage = null; loadPersonal() } }
-
     private fun personalFor(): PersonalDictionary { if (personalLanguage !== language) loadPersonal(); return personal }
 
     private fun loadPersonal() {
