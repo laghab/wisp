@@ -317,9 +317,11 @@ impl Glide {
             blob.extend_from_slice(w.as_bytes());
         });
         let fold_of = |r: &Rec| &folded[r.fold_off as usize..r.fold_off as usize + r.fold_len as usize];
-        // Words that fold to the same letters keep the most probable spelling (then the shorter one).
-        recs.sort_by(|a, b| fold_of(a).cmp(fold_of(b)).then(b.prob.cmp(&a.prob)).then(a.word_len.cmp(&b.word_len)));
-        recs.dedup_by(|b, a| fold_of(a) == fold_of(b));
+        // Words that fold to the same letters keep the most probable spelling (then the shorter one), except that a spelling with an apostrophe
+        // is kept next to the plain one: the swipe for "were" is also the swipe for "we're", and the person has to be able to get either.
+        let apos = |r: &Rec| blob[r.word_off as usize..][..r.word_len as usize].contains(&b'\'');
+        recs.sort_by(|a, b| fold_of(a).cmp(fold_of(b)).then(apos(a).cmp(&apos(b))).then(b.prob.cmp(&a.prob)).then(a.word_len.cmp(&b.word_len)));
+        recs.dedup_by(|b, a| fold_of(a) == fold_of(b) && apos(a) == apos(b));
         // Final order: grouped by first letter, most probable first inside each group.
         recs.sort_by(|a, b| {
             fold_of(a)[0].cmp(&fold_of(b)[0]).then(b.prob.cmp(&a.prob)).then_with(|| blob[a.word_off as usize..][..a.word_len as usize].cmp(&blob[b.word_off as usize..][..b.word_len as usize]))

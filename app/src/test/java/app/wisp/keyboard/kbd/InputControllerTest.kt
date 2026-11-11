@@ -305,12 +305,11 @@ class InputControllerTest {
         assertEquals("Hello ", e.shown); assertEquals(Shift.OFF, c.shift)
     }
 
-    @Test fun anUnsureSwipeInsertsNothingAndOffersTheLiteralLetters() {
+    @Test fun anUnsureSwipeStillTypesTheBestGuessAndOffersTheLiteralLetters() {
         val e = FakeEditor(); val c = controller(e); var bar = BarState.IDLE; c.onBarChanged = { bar = it }
         c.onGestureOutcome(outcome("rag", "raga", confident = false, literal = "raghav"))
-        assertEquals("", e.shown)
+        assertEquals("rag ", e.shown)
         assertEquals(listOf("raghav", "rag", "raga"), bar.items.map { it.text })
-        assertFalse(bar.items.any { it.highlight })
         c.onSuggestionTapped(0)
         assertEquals("raghav ", e.shown)
     }

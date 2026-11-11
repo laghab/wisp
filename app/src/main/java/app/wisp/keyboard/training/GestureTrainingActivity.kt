@@ -19,6 +19,7 @@ import app.wisp.keyboard.Languages
 import app.wisp.keyboard.gesture.Glide
 import app.wisp.keyboard.dict.DictionaryProvider
 import app.wisp.keyboard.kbd.KeyboardView
+import app.wisp.keyboard.kbd.Placement
 import app.wisp.keyboard.kbd.LayoutLoader
 import java.io.File
 import java.util.Random
@@ -78,6 +79,14 @@ class GestureTrainingActivity : Activity() {
                 override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) = swiped(xs.copyOf(count), ys.copyOf(count))
             }
         }
+        // The keyboard sits where it does in everyday use: the same width, side, key height, split and raise.
+        val d = resources.displayMetrics.density
+        val landscape = resources.configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+        val frame = Placement.load(this, landscape).solve(resources.displayMetrics.widthPixels / d, resources.displayMetrics.heightPixels / d)
+        keys.rowScale = frame.rowScale; keys.splitGapPx = frame.splitGap * d
+        val keysFrame = android.widget.FrameLayout(this).apply {
+            addView(keys, android.widget.FrameLayout.LayoutParams((frame.width * d).toInt(), ViewGroup.LayoutParams.WRAP_CONTENT).apply { leftMargin = (frame.left * d).toInt(); bottomMargin = (frame.gap * d).toInt() })
+        }
         setContentView(LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL; setBackgroundColor(plum)
             addView(TextView(this@GestureTrainingActivity).apply { text = "Swipe the word across the letters"; textSize = 14f; setTextColor(muted); gravity = Gravity.CENTER; setPadding(0, 72, 0, 0) })
@@ -86,7 +95,7 @@ class GestureTrainingActivity : Activity() {
             addView(feedback, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(again, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
             addView(reset, ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            addView(keys, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+            addView(keysFrame, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         })
         prompt.text = "..."; progress.text = "Getting the word list ready"
         thread {

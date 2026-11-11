@@ -721,7 +721,7 @@ class WispIme : InputMethodService() {
         keys?.soundOff = f.kind == FieldKind.PASSWORD
         engine?.refreshSources(); gestureEngine?.refreshSources()
         updateLearning()
-        keys?.gesturesEnabled = controller.suggestionsEnabled && style.glide
+        keys?.gesturesEnabled = style.glide && f.kind in listOf(FieldKind.TEXT, FieldKind.URL, FieldKind.EMAIL)      // not only in "suggestion" fields: search boxes and address bars swipe too
         if (!restarting) mode = Mode.LETTERS
         setMode(mode)
         controller.onFieldStarted(restarting)

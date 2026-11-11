@@ -216,3 +216,25 @@ fn a_tap_is_not_a_swipe_and_style_learns() {
     let t = g.style.to_text();
     assert_eq!(wisp_core::glide::Style::from_text(&t).bias_y, g.style.bias_y);
 }
+
+/// Contractions are swiped without the apostrophe: the word with its apostrophe has to come out, and must be offered even when a plainer
+/// word has the same letters (were / we're).
+#[test]
+fn contractions_come_out_with_their_apostrophe() {
+    let (mut g, _) = load();
+    let mut rng = Rng(7);
+    let mut worst = 1.0f32;
+    for word in ["they're", "we're", "you're", "i'm", "don't", "can't", "it's", "i'll", "that's", "isn't", "wasn't", "didn't", "he's", "she's", "we'll", "i'd", "i've", "they'll", "couldn't", "won't"] {
+        let letters = g.fold(word).expect("swipeable");
+        let (mut first, mut shown) = (0, 0);
+        for _ in 0..200 {
+            let (xs, ys) = generate(&g.geo, &mut rng, &letters, 0.15);
+            let hits: Vec<_> = g.decode(&xs, &ys).iter().take(3).cloned().collect();
+            if hits.first().map(|h| g.word(h.id) == word).unwrap_or(false) { first += 1 }
+            if hits.iter().any(|h| g.word(h.id) == word) { shown += 1 }
+        }
+        println!("CONTRACTION {word}: top1 {first}/200, in top 3 {shown}/200");
+        worst = worst.min(shown as f32 / 200.0);
+    }
+    assert!(worst >= 0.85, "a contraction is missing from the top 3 too often: {worst}");
+}

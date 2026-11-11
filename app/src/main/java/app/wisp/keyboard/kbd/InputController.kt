@@ -380,7 +380,9 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         if (items.isEmpty()) { publishBar(); return@edit }
         gesturePrevious = previousWord
         gestureItems = items
-        if (o.plausible) { insertGestureWord(items[0]); gestureInserted = true; gestureSelected = 0; onGestureInserted?.invoke() }
+        // Whatever the decoder thinks fits best is always typed, even when it is a poor fit, so a swipe never leaves the field empty; the others stay in the strip.
+        val best = if (o.plausible) 0 else (o.words.firstOrNull()?.let { items.indexOf(it) }?.takeIf { it >= 0 } ?: 0)
+        insertGestureWord(items[best]); gestureInserted = true; gestureSelected = best; onGestureInserted?.invoke()
         publishBar()
     }
 
