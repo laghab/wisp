@@ -18,6 +18,25 @@ class ThemeTest {
         assertEquals(11, themes.size)
     }
 
+    @Test fun oneThemeCanHaveALightAndADarkLook() {
+        val base = """{"id":"duo","name":"Duo","board":"#111111","key":"#222222","mod":"#333333","accent":"#ff0000","fg":"#ffffff","modFg":"#ffffff","accentFg":"#000000",
+            "radius":8,"font":"inter","size":20,"stripFg":"#cccccc","sep":"#444444","dark":true,
+            "variants":{"dark":{"board":"#111111"},"light":{"board":"#f0f0f0","key":"#ffffff","fg":"#111111","stripFg":"#444444"}}}"""
+        val dark = ThemeParser.parse(base, dark = true); val light = ThemeParser.parse(base, dark = false)
+        assertEquals("duo", dark.id); assertEquals("duo", light.id)
+        assertTrue(dark.dark); assertTrue(!light.dark)
+        assertTrue(dark.hasVariants && light.hasVariants)
+        assertEquals(0xFFF0F0F0.toInt(), light.board.first().base()); assertEquals(0xFF111111.toInt(), dark.board.first().base())
+        assertEquals(0xFFFFFFFF.toInt(), light.key.base())
+    }
+
+    @Test fun aThemeWithoutVariantsIsTheSameInEitherLook() {
+        val t = themes.first { it.id == "midnight" }
+        val file = dir.resolve("midnight.json").readText()
+        assertEquals(t.dark, ThemeParser.parse(file, dark = false).dark)
+        assertTrue(!t.hasVariants)
+    }
+
     @Test fun fileNameMatchesId() {
         for (f in dir.listFiles()!!) assertEquals(f.nameWithoutExtension, ThemeParser.parse(f.readText()).id)
     }

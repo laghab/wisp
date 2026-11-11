@@ -10,6 +10,8 @@ import app.wisp.keyboard.settings.WispSettings
 data class KeyboardStyle(
     /** Id of the skin (see [Themes]). */
     val theme: String = Themes.DEFAULT,
+    /** Which look of a theme that has both: "system" follows the phone, or "light" / "dark". */
+    val colors: String = "system",
     /** Material You: take the colours from the wallpaper (Android 12 and later). */
     val wallpaperColours: Boolean = false,
     val keyBorders: Boolean = true,
@@ -40,14 +42,21 @@ data class KeyboardStyle(
     val shortcuts: String = "",
 ) {
     /** A short string that changes whenever any option changes; views re-style only when it does. */
-    val signature: String get() = listOf(theme, wallpaperColours, keyBorders, keyHints, photo, photoDim, trailOn, trailColor, trailWidthDp, gap, numberRow, haptic, sound, wordSwipe, cursorSlide, layout, glide, autoCorrect, autoCaps, doubleSpacePeriod, longPressMs, shortcuts).joinToString("|")
+    val signature: String get() = listOf(theme, colors, wallpaperColours, keyBorders, keyHints, photo, photoDim, trailOn, trailColor, trailWidthDp, gap, numberRow, haptic, sound, wordSwipe, cursorSlide, layout, glide, autoCorrect, autoCaps, doubleSpacePeriod, longPressMs, shortcuts).joinToString("|")
 
     /** The skin to draw: the chosen theme, with wallpaper colours, border and photo options applied. */
     fun themeFor(context: Context): Theme {
-        var t = Themes.get(context, theme)
+        var t = Themes.get(context, theme, wantsDark(context))
         if (t.dynamic && wallpaperColours && DYNAMIC_AVAILABLE) t = DynamicColours.apply(context, t)
         if (!keyBorders && t.border != null) t = t.copy(border = null)
         return t
+    }
+
+    /** Whether the dark look is wanted: as chosen, or as the phone is when it is left on "system". */
+    fun wantsDark(context: Context): Boolean = when (colors) {
+        "light" -> false
+        "dark" -> true
+        else -> (context.resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) == android.content.res.Configuration.UI_MODE_NIGHT_YES
     }
 
     fun isDark(context: Context): Boolean = themeFor(context).dark
@@ -59,7 +68,7 @@ data class KeyboardStyle(
     /** Writes every option to the settings file. */
     fun save(context: Context) {
         val s = WispSettings.get(context)
-        s.putString("style_theme", theme); s.putBoolean("style_wallpaper", wallpaperColours); s.putBoolean("style_borders", keyBorders); s.putBoolean("style_hints", keyHints)
+        s.putString("style_theme", theme); s.putString("style_colors", colors); s.putBoolean("style_wallpaper", wallpaperColours); s.putBoolean("style_borders", keyBorders); s.putBoolean("style_hints", keyHints)
         s.putString("style_photo", photo); s.putInt("style_photo_dim", photoDim)
         s.putBoolean("style_trail_on", trailOn); s.putString("style_trail_color", trailColor); s.putInt("style_trail_width", trailWidthDp)
         s.putInt("style_gap", gap)
@@ -81,7 +90,7 @@ data class KeyboardStyle(
         fun load(context: Context): KeyboardStyle {
             val s = WispSettings.get(context)
             return KeyboardStyle(
-                theme = s.getString("style_theme", Themes.DEFAULT)!!, wallpaperColours = s.getBoolean("style_wallpaper", false), keyBorders = s.getBoolean("style_borders", true), keyHints = s.getBoolean("style_hints", true),
+                theme = s.getString("style_theme", Themes.DEFAULT)!!, colors = s.getString("style_colors", "system")!!, wallpaperColours = s.getBoolean("style_wallpaper", false), keyBorders = s.getBoolean("style_borders", true), keyHints = s.getBoolean("style_hints", true),
                 photo = s.getString("style_photo", "")!!, photoDim = s.getInt("style_photo_dim", 40).coerceIn(0, 80),
                 trailOn = s.getBoolean("style_trail_on", true), trailColor = s.getString("style_trail_color", "accent")!!, trailWidthDp = s.getInt("style_trail_width", 5).coerceIn(2, 12),
                 gap = s.getInt("style_gap", 100).coerceIn(40, 200), numberRow = s.getBoolean("style_number_row", false),

@@ -58,6 +58,8 @@ data class Theme(
     val blur: Float,
     /** True for the theme that takes its colours from the wallpaper when that is switched on. */
     val dynamic: Boolean,
+    /** True when the theme has both a light and a dark look, so the keyboard-colours setting applies to it. */
+    val hasVariants: Boolean = false,
 ) {
     /** The reach of the largest outside shadow, so a cached key bitmap has room for it. */
     val shadowReach: Float get() = (shadow + lit + listOfNotNull(micGlow)).maxOfOrNull { it.reach } ?: 0f
@@ -69,13 +71,31 @@ class ThemeException(message: String) : Exception(message)
 object ThemeParser {
     val REQUIRED = listOf("id", "name", "board", "key", "mod", "accent", "fg", "modFg", "accentFg", "radius", "font", "size", "stripFg", "sep")
 
-    fun parse(json: String): Theme {
-        val o = try { JSONObject(json) } catch (e: Exception) { throw ThemeException("Not valid JSON: ${e.message}") }
+    /**
+     * Reads a theme. A theme with a light and a dark look is ONE theme: its file holds the shared tokens and a `"variants"` object with
+     * `"light"` and `"dark"` entries, each listing the tokens that change. [dark] picks which look to build (null: the file's own).
+     */
+    fun parse(json: String, dark: Boolean? = null): Theme {
+        val root = try { JSONObject(json) } catch (e: Exception) { throw ThemeException("Not valid JSON: ${e.message}") }
+        val o = merged(root, dark)
         for (k in REQUIRED) if (!o.has(k)) throw ThemeException("Missing required token \"$k\"")
-        return try { build(o) } catch (e: ThemeException) { throw e } catch (e: Exception) { throw ThemeException("Bad theme: ${e.message}") }
+        return try { build(o, root) } catch (e: ThemeException) { throw e } catch (e: Exception) { throw ThemeException("Bad theme: ${e.message}") }
     }
 
-    private fun build(o: JSONObject): Theme {
+    /** Whether the theme in [json] has both a light and a dark look. */
+    fun hasVariants(json: String): Boolean = runCatching { JSONObject(json).optJSONObject("variants")?.let { it.has("light") && it.has("dark") } == true }.getOrDefault(false)
+
+    private fun merged(root: JSONObject, dark: Boolean?): JSONObject {
+        val variants = root.optJSONObject("variants") ?: return root
+        val mode = if (dark == null) return root else if (dark) "dark" else "light"
+        val change = variants.optJSONObject(mode) ?: return root
+        val out = JSONObject(root.toString()); out.remove("variants")
+        for (k in change.keys()) out.put(k, change.get(k))
+        out.put("dark", dark)
+        return out
+    }
+
+    private fun build(o: JSONObject, root: JSONObject = o): Theme {
         val id = o.getString("id")
         if (!id.matches(Regex("[a-z0-9-]{1,32}"))) throw ThemeException("\"id\" must be 1-32 lowercase letters, digits or dashes")
         val radius = o.get("radius").let { r ->
@@ -101,6 +121,7 @@ object ThemeParser {
             spaceLabel = o.optString("space", "English"),
             blur = o.optDouble("blur", 0.0).toFloat(),
             dynamic = o.optBoolean("dynamic", false),
+            hasVariants = root.optJSONObject("variants")?.let { it.has("light") && it.has("dark") } == true,
         )
     }
 
