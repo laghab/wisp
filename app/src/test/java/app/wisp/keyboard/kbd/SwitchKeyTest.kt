@@ -7,7 +7,8 @@ import org.junit.Test
 
 class SwitchKeyTest {
     private fun hasSwitch(spec: LayoutSpec) = spec.rows.any { r -> r.any { !it.spacer && it.code == KeyCodes.SWITCH } }
-    private fun switchCount(spec: LayoutSpec) = spec.rows.sumOf { r -> r.count { !it.spacer && it.code == KeyCodes.SWITCH } }
+    /** The way out of Wisp is a switch key, or the globe in a key's long-press menu (the comma). */
+    private fun switchCount(spec: LayoutSpec) = spec.rows.sumOf { r -> r.count { !it.spacer && (it.code == KeyCodes.SWITCH || it.popups?.contains(String(Character.toChars(KeyCodes.POP_GLOBE))) == true) } }
 
     @Test fun layoutWithoutSwitchKeyGetsOne() {
         val spec = LayoutParser.parse("""{"rows":[["a","b"],[{"k":"symbols"},{"k":"space","w":5},{"k":"enter"}]]}""")
