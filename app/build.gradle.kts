@@ -81,6 +81,7 @@ kotlin { compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarg
 // network stack (see design.md D4, D9, D10). Add dependencies only with a reason.
 dependencies {
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.autofill)  // styles for the password manager's login chips in the toolbar (Android 11+)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.material3)

@@ -113,6 +113,13 @@ struct Pointer {
     mode: Mode,
 }
 
+// Glide detection (key widths, key widths per second, ms), from the open gesture parameters of AOSP / HeliBoard.
+const GLIDE_MIN_KEYS: f32 = 0.35;            // the least a swipe travels before it counts
+const GLIDE_FAST_TYPING_KEYS: f32 = 6.0;     // ... right after a letter was typed, decaying back to the minimum
+const GLIDE_AFTER_TYPING_MS: f32 = 450.0;
+const GLIDE_MIN_SPEED: f32 = 1.5;            // slower than this it is a drifting finger, unless it has gone a full key
+const GLIDE_SURE_KEYS: f32 = 1.0;
+
 const IDLE: Pointer = Pointer {
     id: -1,
     active: false,
@@ -133,6 +140,8 @@ pub struct Touch {
     view_w: f32,
     ptrs: [Pointer; MAX_POINTERS],
     glide_slot: Option<usize>,
+    /// When the last letter key was tapped: a swipe that starts soon after is probably fast typing, not a glide.
+    last_letter_tap: i64,
     pub trace_x: Vec<f32>,
     pub trace_y: Vec<f32>,
     out: Vec<Action>,
@@ -149,6 +158,7 @@ impl Touch {
             view_w,
             ptrs: [IDLE; MAX_POINTERS],
             glide_slot: None,
+            last_letter_tap: i64::MIN / 2,
             trace_x: Vec::with_capacity(MAX_TRACE),
             trace_y: Vec::with_capacity(MAX_TRACE),
             out: Vec::with_capacity(16),
@@ -276,7 +286,7 @@ impl Touch {
                         p.last_x += steps as f32 * self.cfg.cursor_step;
                         self.out.push(Action::CursorSteps(steps));
                     }
-                } else if far && self.glide_slot == Some(s) && kind == Kind::Plain {
+                } else if far && self.glide_slot == Some(s) && kind == Kind::Plain && self.glide_started(&p, x, y, now) {
                     self.release_cur(&mut p);
                     p.mode = Mode::Glide;
                     self.out.push(Action::GlideStart);
@@ -299,7 +309,6 @@ impl Touch {
     pub fn up(&mut self, id: i32, x: f32, y: f32, now: i64) {
         self.out.clear();
         let Some(s) = self.slot_of(id) else { return };
-        let _ = now;
         let p = self.ptrs[s];
         if self.glide_slot == Some(s) {
             self.add_trace(x, y);
@@ -331,6 +340,7 @@ impl Touch {
                 let k = self.layout.key_at(x, y).map_or(-1, |k| k as i32);
                 if p.down_key >= 0 && k >= 0 {
                     if k == p.down_key {
+                        if self.keys[k as usize].glide { self.last_letter_tap = now; }
                         self.out.push(Action::Tap(k as usize));
                     } else if self.keys[p.down_key as usize].kind == Kind::Shift
                         && self.keys[k as usize].kind == Kind::Plain
@@ -419,6 +429,20 @@ impl Touch {
             self.out.push(Action::Release(p.cur_key as usize));
             p.cur_key = -1;
         }
+    }
+
+    /// Whether a drag that has left its first key is a glide (swipe typing) or still just a finger that moved: the same tests the open
+    /// part of AOSP/HeliBoard gesture detection uses. It must have gone far enough (a long way if it began right after a letter was
+    /// typed, since fast typing slides a little) and either be moving at swiping speed or have gone a full key.
+    fn glide_started(&self, p: &Pointer, x: f32, y: f32, now: i64) -> bool {
+        let key_w = (self.view_w / 10.0).max(1.0);
+        let dist = ((x - p.down_x).powi(2) + (y - p.down_y).powi(2)).sqrt() / key_w;       // in key widths
+        let since_typing = (p.down_t - self.last_letter_tap).max(0) as f32;
+        let need = if since_typing >= GLIDE_AFTER_TYPING_MS { GLIDE_MIN_KEYS }
+            else { GLIDE_MIN_KEYS + (GLIDE_FAST_TYPING_KEYS - GLIDE_MIN_KEYS) * (1.0 - since_typing / GLIDE_AFTER_TYPING_MS) };
+        if dist < need { return false; }
+        let secs = ((now - p.down_t).max(1) as f32) / 1000.0;
+        dist / secs >= GLIDE_MIN_SPEED || dist >= GLIDE_SURE_KEYS
     }
 
     fn words_for(&self, p: &Pointer, x: f32) -> u32 {
@@ -610,6 +634,40 @@ mod tests {
             all.extend_from_slice(t.actions());
         }
         all
+    }
+
+    #[test]
+    fn a_quick_swipe_across_keys_is_a_glide() {
+        let mut t = rig();
+        let (x, y) = at(&t, Q);
+        let kw = 39.0;
+        let a = replay(&mut t, &[(0, Ev::Down(x, y)), (40, Ev::Move(x + kw, y)), (80, Ev::Move(x + 2.0 * kw, y)), (120, Ev::Up(x + 3.0 * kw, y))]);
+        assert!(a.contains(&Action::GlideStart));
+        assert!(a.contains(&Action::GlideEnd));
+    }
+
+    #[test]
+    fn a_slow_drifting_finger_is_not_a_glide() {
+        let mut t = rig();
+        let (x, y) = at(&t, E);
+        // half a key sideways over most of a second: a tap with a wobble, not swipe typing
+        let a = replay(&mut t, &[(0, Ev::Down(x, y)), (300, Ev::Move(x + 8.0, y)), (700, Ev::Move(x + 20.0, y)), (900, Ev::Up(x + 20.0, y))]);
+        assert!(!a.contains(&Action::GlideStart));
+    }
+
+    #[test]
+    fn a_swipe_right_after_typing_a_letter_needs_a_longer_stroke() {
+        let mut t = rig();
+        let (qx, qy) = at(&t, Q);
+        let (ax, ay) = at(&t, A);
+        let kw = 39.0;
+        let a = replay(&mut t, &[
+            (0, Ev::Down(qx, qy)), (50, Ev::Up(qx, qy)),                           // a letter is typed
+            (100, Ev::Down(ax, ay)), (140, Ev::Move(ax + 1.5 * kw, ay)),           // 1.5 keys in 40 ms, 50 ms after: still fast typing
+        ]);
+        assert!(!a.contains(&Action::GlideStart));
+        let b = replay(&mut t, &[(180, Ev::Move(ax + 7.0 * kw, ay)), (220, Ev::Up(ax + 7.0 * kw, ay))]);
+        assert!(b.contains(&Action::GlideStart));
     }
 
     #[test]
