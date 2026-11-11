@@ -1,0 +1,30 @@
+<b>Talk to your keyboard. It never phones home.</b>
+
+Wisp is a keyboard where voice typing runs on your phone. Tap the microphone and your words appear as you speak, using a speech model that stays on the device. No account, no cloud, no recordings sent anywhere. Pick the model that suits your phone (English-only models that are small and fast, Parakeet V3 for 25 European languages, Whisper for 99 languages including Hindi), and test its speed on your own phone.
+
+<b>Voice typing</b>
+• Tap once to talk hands-free, or hold the mic to talk while you hold it
+• Undo dictation removes exactly what was inserted
+• The model loads only while you dictate and is freed after a few idle minutes
+
+<b>Typing that learns you</b>
+• Glide typing with no download and no Google library. It learns your words and how you swipe, with a practice mode
+• Autocorrect, next-word suggestions, English and Hinglish (Hindi in Latin letters)
+• Hold backspace and slide to delete whole words, slide on the space bar to move the cursor
+
+<b>A writing assistant on the phone</b>
+Select text and tap the sparkle: Polish, Friendly, Formal, Shorter, Bullets or Gen Z, written by a small AI model that runs on your phone. Nothing changes until you accept the result.
+
+<b>Yours to shape</b>
+• 30 themes, each with a light and a dark look, favourites that shuffle daily or weekly
+• Move, resize, raise, split, float or one-hand the keyboard from the keyboard itself
+• Clipboard history that skips passwords, emoji with search, number row, six letter layouts
+• Key sounds and haptics with strength sliders
+
+<b>Private by design</b>
+• Typing, swiping, learning and dictation never use the network
+• The only network feature is an optional downloader for speech and rewrite models, off until you press a button
+• Everything Wisp learns is a file on your phone that you can see, export or erase
+• Open source, GPL-3.0
+
+Speech and rewrite models are not part of the app. Download one from inside Wisp, or import a file.

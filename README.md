@@ -13,7 +13,7 @@ Project page and case study: https://raghavdaksh.com/projects/wisp-keyboard
 Licence: GPL-3.0 (`LICENSE`); reused code and data are listed in `THIRD_PARTY.md`.
 
 ## Download
-A prebuilt APK is on the [releases page](https://github.com/laghab/wisp/releases/latest) (`arm64-v8a` for almost every recent phone). It is an early, debug-signed build; see the release notes.
+A prebuilt APK is on the [releases page](https://github.com/laghab/wisp/releases/latest) (`arm64-v8a` for almost every recent phone). It is signed with the Android debug key; see the release notes. The store listing text and screenshots are in `fastlane/metadata/android/`.
 
 ## Build and install
 Needs the Rust toolchain with the Android targets and `cargo-ndk` (`rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android && cargo install cargo-ndk`). Gradle builds `core/` automatically.
