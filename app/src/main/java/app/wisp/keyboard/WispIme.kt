@@ -40,7 +40,6 @@ import app.wisp.keyboard.kbd.LayoutGuard
 import app.wisp.keyboard.style.KeyboardStyle
 import app.wisp.keyboard.voice.MicPermissionActivity
 import app.wisp.keyboard.voice.VoiceController
-import app.wisp.keyboard.voice.VoicePanelView
 import app.wisp.keyboard.voice.llm.RewriteController
 import app.wisp.keyboard.voice.llm.RewritePanelView
 import app.wisp.keyboard.voice.llm.Tone
@@ -50,7 +49,7 @@ import android.content.Intent
 /** Entry point of the keyboard. */
 class WispIme : InputMethodService() {
 
-    private enum class Mode { LETTERS, SYMBOLS, SYMBOLS_MORE, NUMPAD, EMOJI, VOICE, CLIPBOARD, REWRITE }
+    private enum class Mode { LETTERS, SYMBOLS, SYMBOLS_MORE, NUMPAD, EMOJI, CLIPBOARD, REWRITE }
 
     private val editor = ImeEditor(this)
     private val controller = InputController(editor)
@@ -62,8 +61,6 @@ class WispIme : InputMethodService() {
     private var emojiPanel: View? = null
     private var emojiBar: KeyboardView? = null
     private var voice: VoiceController? = null
-    private var voicePanel: View? = null
-    private var voiceBar: View? = null
     private var mode = Mode.LETTERS
     private var incognito = false
     private var packageName: String? = null
@@ -138,7 +135,11 @@ class WispIme : InputMethodService() {
         val b = SuggestionBarView(this, palette)
         Probe.mark("p_bar")
         b.listener = object : SuggestionBarView.Listener {
-            override fun onMic() { if (voice?.isActive == true) voice?.stop() else openVoice() }
+            override fun onMic() {
+                val vc = voice
+                val problem = vc?.failure?.problem
+                if (problem != null) fixVoiceProblem(problem) else if (vc?.isActive == true) vc.stop() else openVoice()
+            }
             override fun onSettings() = openSettings(null)
             override fun onSuggestion(index: Int) = controller.onSuggestionTapped(index)
             override fun onTool(tool: SuggestionBarView.Tool) = when (tool) {
@@ -168,54 +169,20 @@ class WispIme : InputMethodService() {
             visibility = View.GONE
         }
 
-        // Voice panel: the words as you speak, the ribbon, the mic. It shares the one-row bar (ABC, globe, ...) with the emoji panel's layout.
+        // Voice typing lives in the toolbar strip (SuggestionBarView.setVoice), so it has no panel and the keys never change size.
         Probe.mark("p_panels")
-        val vc = VoiceController(this, onChange = { voicePanel?.invalidate() }, onResult = { text -> controller.onDictation(text); setMode(if (pendingPolish) Mode.REWRITE else Mode.LETTERS); pendingPolish = false })
-        voice = vc
-        val vp = VoicePanelView(this, vc, style.themeFor(this))
-        vp.listener = object : VoicePanelView.Listener {
-            override fun onMic() { if (vc.isActive) vc.stop() else vc.start() }
-            override fun onCancel() { vc.cancel(); setMode(Mode.LETTERS) }
-            override fun onFix(problem: VoiceController.Problem) = fixVoiceProblem(problem)
-            override fun onBack() { if (vc.isActive) vc.stop() else setMode(Mode.LETTERS) }
-            override fun onUndoPhrase() { controller.undoDictation() }
-            override fun onTogglePunctuation() {
-                val on = !WispSettings.get(this@WispIme).getBoolean("voice_auto_punct", true)
-                WispSettings.get(this@WispIme).putBoolean("voice_auto_punct", on); vp.autoPunctuation = on
-            }
-            override fun onPolish() { if (vc.isActive) { pendingPolish = true; vc.stop() } else setMode(Mode.REWRITE) }
-            override fun onLanguage() = cycleLanguage()
-        }
-        vp.autoPunctuation = WispSettings.get(this).getBoolean("voice_auto_punct", true)
-        vp.polishAvailable = true
-        voicePanel = vp
-        val vbar = KeyboardView(this, LayoutLoader.load(this, R.raw.layout_emoji_bar), palette).also { it.listener = listener }
-        val voiceBox = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            addView(vp, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            addView(vbar, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-            visibility = View.GONE
-        }
-        voiceBar = voiceBox
-        // The names and words the user has taught Wisp also correct what the speech model mishears.
-        controller.dictationProcessor = { raw ->
-            val t = TextProcessor.process(raw, null, removeFillers = true, customWords = personalWords, threshold = 0.18)
-            // With auto-punctuation off the words come out plain, as spoken.
-            if (WispSettings.get(this).getBoolean("voice_auto_punct", true)) t else t.replace(Regex("[.,!?;:]"), "").lowercase()
-        }
-
+        voice = VoiceController(this, onChange = ::updateVoiceBar, onResult = { text -> controller.onDictation(text); updateVoiceBar() })
         Probe.mark("p_voice")
         val stack = FrameLayout(this)
         panelStack = stack
         stack.addView(k, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        stack.addView(voiceBox, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val grip = FloatHandle(this, palette).also { it.visibility = View.GONE; it.onMoved = ::onFloatMoved; it.onGrab = { grabbed = frame } }
         root.addView(grip, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         root.addView(b, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         root.addView(stack, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        keys = k; bar = b; emojiPanel = panel; emojiBar = eb; voiceKeys = vbar
+        keys = k; bar = b; emojiPanel = panel; emojiBar = eb
         applyStyleIfChanged(force = true)
         b.incognito = incognito
 
@@ -296,6 +263,7 @@ class WispIme : InputMethodService() {
     }
 
     private fun handleKey(code: Int, x: Int, y: Int) {
+        if (voice?.isActive == true) { voice?.stop(); return }      // touching the keys while listening ends the dictation (its text arrives a moment later)
         if (searchKey(code)) return
         when (code) {
             KeyCodes.SWITCH -> switchKeyboard()
@@ -310,7 +278,6 @@ class WispIme : InputMethodService() {
     }
 
     private fun setMode(m: Mode) {
-        if (mode == Mode.VOICE && m != Mode.VOICE) voice?.cancel()      // leaving the voice panel throws a recording away
         mode = m
         val k = keys ?: return
         when (m) {
@@ -318,17 +285,16 @@ class WispIme : InputMethodService() {
             Mode.SYMBOLS -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols))
             Mode.SYMBOLS_MORE -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols_more))
             Mode.NUMPAD -> k.setSpec(LayoutLoader.load(this, R.raw.layout_numpad))
-            Mode.EMOJI, Mode.VOICE, Mode.CLIPBOARD, Mode.REWRITE -> {}
+            Mode.EMOJI, Mode.CLIPBOARD, Mode.REWRITE -> {}
         }
-        k.visibility = if (m == Mode.EMOJI || m == Mode.VOICE || m == Mode.CLIPBOARD || m == Mode.REWRITE) View.INVISIBLE else View.VISIBLE
+        k.visibility = if (m == Mode.EMOJI || m == Mode.CLIPBOARD || m == Mode.REWRITE) View.INVISIBLE else View.VISIBLE
         if (m == Mode.REWRITE) showRewritePanel() else hideRewritePanel()
         if (m == Mode.EMOJI) showEmojiPanel() else hideEmojiPanel()
         if (m == Mode.CLIPBOARD) showClipboardPanel() else hideClipboardPanel()
         fadeTo(emojiPanel, m == Mode.EMOJI)
-        fadeTo(voiceBar, m == Mode.VOICE)
-        if (m != Mode.EMOJI && m != Mode.VOICE && m != Mode.CLIPBOARD && m != Mode.REWRITE) {
+        if (m != Mode.EMOJI && m != Mode.CLIPBOARD && m != Mode.REWRITE) {
             k.setLabel(KeyCodes.ENTER, field.enter.label)
-            k.setLabel(KeyCodes.LANGUAGE, language.code)
+            k.languageName = language.name; k.languageCode = enabledLanguages[(enabledLanguages.indexOf(language) + 1) % enabledLanguages.size].code   // the space bar names this language; its menu offers the next
             k.shifted = m == Mode.LETTERS && controller.shift != Shift.OFF; k.capsLock = m == Mode.LETTERS && controller.shift == Shift.CAPS
         }
         emojiBar?.setLabel(KeyCodes.ENTER, field.enter.label)
@@ -349,7 +315,7 @@ class WispIme : InputMethodService() {
     /** Ordinary text fields use the current language's layout (with the language key when there are several); other fields keep their special layouts. */
     private fun lettersSpec(): LayoutSpec {
         val letterRes = if (language.layoutRes == R.raw.layout_qwerty) LetterLayouts.res(style.layout) else language.layoutRes
-        val base = if (field.kind == FieldKind.TEXT) LayoutLoader.load(this, letterRes, withLanguageKey = enabledLanguages.size > 1)
+        val base = if (field.kind == FieldKind.TEXT) LayoutLoader.load(this, letterRes)
         else LayoutLoader.load(this, layoutFor(field.kind))
         val letters = field.kind == FieldKind.TEXT || field.kind == FieldKind.EMAIL || field.kind == FieldKind.URL
         return if (style.numberRow && letters) LayoutGuard.withNumberRow(base) else base
@@ -473,10 +439,12 @@ class WispIme : InputMethodService() {
         val (sw, _) = screenDp()
         if (f.gap == 0f && f.width >= sw - 0.5f && placement.mode != Placement.Mode.FLOATING) return
         val d = resources.displayMetrics.density
-        val top = if (placement.mode == Placement.Mode.FLOATING) h.height else h.height - ((f.gap + f.height) * d).toInt()
+        val loc = IntArray(2); r.getLocationInWindow(loc)
+        // Where the keyboard really starts, measured, not worked out from the placement: a number row or a taller panel makes it taller than the
+        // plan, and an app told the wrong top leaves its text box hidden behind the keys.
+        val top = if (placement.mode == Placement.Mode.FLOATING) h.height else loc[1]
         outInsets.contentTopInsets = top; outInsets.visibleTopInsets = top
         outInsets.touchableInsets = Insets.TOUCHABLE_INSETS_REGION
-        val loc = IntArray(2); r.getLocationInWindow(loc)
         outInsets.touchableRegion.set(loc[0], loc[1], loc[0] + r.width, loc[1] + r.height)
         rail?.takeIf { it.visibility == View.VISIBLE }?.let { rl -> val l2 = IntArray(2); rl.getLocationInWindow(l2); outInsets.touchableRegion.union(android.graphics.Rect(l2[0], l2[1], l2[0] + rl.width, l2[1] + rl.height)) }
     }
@@ -486,7 +454,6 @@ class WispIme : InputMethodService() {
     private val palette = Palette()
     private var style = KeyboardStyle()
     private var styleKey = ""
-    private var voiceKeys: KeyboardView? = null
 
     /** Re-reads the style settings and, only if something changed (or the phone switched between light and dark), restyles every view in place. */
     private fun applyStyleIfChanged(force: Boolean = false) {
@@ -497,9 +464,8 @@ class WispIme : InputMethodService() {
         styleKey = key; style = next
         palette.set(next.palette(this))
         bar?.setTheme(next.themeFor(this))
-        (voicePanel as? VoicePanelView)?.setTheme(next.themeFor(this))
-        keys?.applyStyle(next); emojiBar?.applyStyle(next); voiceKeys?.applyStyle(next)
-        bar?.invalidate(); voicePanel?.invalidate()
+        keys?.applyStyle(next); emojiBar?.applyStyle(next)
+        bar?.invalidate()
         if (numberRowChanged && !force) setMode(mode)
         floatRoot?.setBackgroundColor(palette.background)
         rail?.setTheme(next.themeFor(this))
@@ -524,8 +490,16 @@ class WispIme : InputMethodService() {
 
     private fun openVoice() {
         if (!field.suggest || field.kind == FieldKind.PASSWORD) return        // never record into a password field
-        setMode(Mode.VOICE)
         voice?.start()
+        updateVoiceBar()
+    }
+
+    /** The toolbar strip shows the live transcript while the microphone is open (or why it could not start). */
+    private fun updateVoiceBar() {
+        val vc = voice ?: return
+        val warming = vc.phase == VoiceController.Phase.WARMING
+        val message = vc.failure?.message ?: if (vc.phase == VoiceController.Phase.FINISHING) "Finishing…" else if (warming && vc.partial.isBlank()) "Warming up… you can start talking" else null
+        bar?.setVoice(vc.isActive, vc.partial, message)
     }
 
     private fun fixVoiceProblem(problem: VoiceController.Problem) {
@@ -534,7 +508,7 @@ class WispIme : InputMethodService() {
             VoiceController.Problem.NO_MODEL -> startActivity(Intent(this, SettingsActivity::class.java).putExtra(SettingsActivity.EXTRA_SCREEN, SettingsActivity.SCREEN_VOICE).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK))
             else -> { voice?.cancel(); return }
         }
-        voice?.cancel(); setMode(Mode.LETTERS); requestHideSelf(0)
+        voice?.cancel(); updateVoiceBar(); requestHideSelf(0)
     }
 
     private fun layoutFor(kind: FieldKind): Int = when (kind) {
@@ -571,7 +545,6 @@ class WispIme : InputMethodService() {
 
     // ---- rewrite: a small on-device model rewrites the selected text or the current sentence; nothing changes until the user chooses ----
 
-    private var pendingPolish = false
     private var rewritePanel: RewritePanelView? = null
     private var rewriteControl: RewriteController? = null
     private var rewriteDraft = ""

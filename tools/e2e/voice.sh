@@ -9,7 +9,7 @@ voice_pids() { a "ps -A | grep ':voice'" | wc -l; }
 pss_kb() { a dumpsys meminfo "$1" 2>/dev/null | grep -E "TOTAL PSS:" | head -1 | awk '{print $3}'; }
 check() { if [ "$1" = ok ]; then echo "PASS $2"; else echo "FAIL $2"; FAILED=1; fi; }
 reset_all() { a am force-stop "$P"; as_app "rm -rf files/personal" >/dev/null 2>&1; }
-dictate_hands_free() { tap $MIC; sleep "${1:-9}"; tap $PANEL_MIC; sleep 3; }
+dictate_hands_free() { tap $MIC; sleep "${1:-9}"; tap $MIC; sleep 3; }
 
 "$HERE/../install-test-model.sh" "$DEV" >/dev/null || { echo "FAIL could not install the test model"; exit 1; }
 a pm grant "$P" android.permission.RECORD_AUDIO
@@ -21,7 +21,7 @@ type_word te
 check "$([ "$(voice_pids)" = 0 ] && echo ok)" "typing alone starts no voice process (no model in memory)"
 main_before=$(pss_kb "$P")
 
-# 2. tap the mic to start, tap the big button to stop: the transcript is inserted
+# 2. tap the mic to start (the transcript shows in the toolbar), tap it again to stop: the transcript is inserted
 reset_all; launch_field
 dictate_hands_free 9
 got="$(field_text)"; echo "field: '$got'"
@@ -36,12 +36,6 @@ check "$([ "$(voice_pids)" = 0 ] && echo ok)" "...and stays gone: the system doe
 main_after=$(pss_kb "$P"); echo "keyboard process PSS: before ${main_before:-?} KB, after ${main_after:-?} KB"
 check "$(awk -v a="${main_after:-0}" -v b="${main_before:-0}" 'BEGIN { exit !(a - b < 15360) }' && echo ok)" "memory returns to within 15 MB of the level before voice"
 
-# 3. the toolbar mic stops it too: tap it while listening and the transcript is inserted
-reset_all; launch_field
-tap $MIC; sleep 9; tap 917 540; sleep 3.5   # while listening the toolbar sits higher (the panel is taller than the keys)
-got="$(field_text)"; echo "field: '$got'"
-check "$(case "$got" in *"$SENTENCE"*) echo ok;; esac)" "tapping the toolbar mic again stops and inserts the transcript"
-
 # 4. nothing said while the model loads is lost (the load is slowed down by 3 s in debug builds)
 set_prefs voice_idle_minutes=0 debug_load_delay_ms=3000
 reset_all; launch_field
@@ -50,18 +44,12 @@ got="$(field_text)"; echo "field: '$got'"
 check "$(case "$got" in *"Ask not what your country"*) echo ok;; esac)" "words spoken during a slow model load are not lost (pre-roll)"
 set_prefs voice_idle_minutes=0
 
-# 5. cancel throws the dictation away
-reset_all; launch_field
-tap $MIC; sleep 3; tap $PANEL_CANCEL; sleep 2.5
-check "$([ -z "$(field_text)" ] && echo ok)" "cancel inserts nothing"
-check "$([ "$(voice_pids)" = 0 ] && echo ok)" "cancel lets the voice process exit"
-
-# 6. password fields never record
+# 5. password fields never record
 reset_all; launch_field --ei inputType 129
 tap $MIC; sleep 2
 check "$([ "$(voice_pids)" = 0 ] && echo ok)" "the mic does nothing in a password field"
 
-# 7. latency and no audio kept
+# 6. latency and no audio kept
 reset_all; launch_field; a logcat -c
 dictate_hands_free 9
 fin=$(a logcat -d -s WISP_PROBE | grep voice_finish_ms | tail -1 | sed 's/.*voice_finish_ms=\([0-9]*\).*/\1/')

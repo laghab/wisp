@@ -14,6 +14,10 @@ object KeyCodes {
     const val SYMBOLS_MORE = -10
     const val NUMPAD = -11
     const val SPACE = ' '.code
+
+    /** Long-press menu items that are actions, not characters (private-use code points in a key's "pop" list). */
+    const val POP_GLOBE = 0xE000        // switch to another keyboard
+    const val POP_LANGUAGE = 0xE001     // next typing language
 }
 
 /** How a key is drawn. */

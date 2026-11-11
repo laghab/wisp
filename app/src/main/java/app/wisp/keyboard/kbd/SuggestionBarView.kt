@@ -1,5 +1,6 @@
 package app.wisp.keyboard.kbd
 
+import android.os.SystemClock
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
@@ -63,6 +64,19 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         invalidate()
     }
 
+    // Voice typing shows in this strip, not in a panel of its own: the live transcript takes the place of the suggestions and tools, and the
+    // mic becomes the stop button. The keys below stay exactly as they are.
+    private var voiceActive = false
+    private var voiceText = ""
+    private var voiceMessage: String? = null
+
+    /** [active]: the microphone is open; [text]: what has been recognised so far; [message]: a status or problem to show instead of text. */
+    fun setVoice(active: Boolean, text: String, message: String?) {
+        if (voiceActive == active && voiceText == text && voiceMessage == message) return
+        voiceActive = active; voiceText = text; voiceMessage = message
+        invalidate()
+    }
+
     fun setState(s: BarState) {
         if (items === s.items && composing == s.composing) return
         items = s.items; composing = s.composing
@@ -85,6 +99,7 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         line.color = t?.sep ?: palette.key
         drawMic(c)
         val d = density
+        if (voiceActive || voiceMessage != null) { drawTranscript(c); return }
         val left = if (composing) 4f * d else 4f * d + cell
         if (!composing) Icons.draw(c, Icons.Icon.GRID, 4f * d + cell / 2f, height / 2f, 20f * d, if (showEdit) palette.accent else ink)
         val x0 = left; val x1 = width - micArea
@@ -122,7 +137,34 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         }
     }
 
-    /** The voice button, always there so voice is one tap away: an accent disc with the mic on it. */
+    /** The words so far: confirmed ones solid, the last three (still changing) dimmer; a long dictation keeps its newest words in view. */
+    private fun drawTranscript(c: Canvas) {
+        val d = density
+        val y = height / 2f - (text.fontMetrics.ascent + text.fontMetrics.descent) / 2f
+        var x = 14f * d
+        if (voiceActive) { fill.color = app.wisp.keyboard.style.Brand.RECORDING; c.drawCircle(x + 3.5f * d, height / 2f, 3.5f * d, fill); x += 18f * d }
+        val room = width - micArea - x - 8f * d
+        text.textAlign = Paint.Align.LEFT
+        val message = voiceMessage
+        if (voiceText.isBlank() || message != null) {
+            text.color = if (message != null && !voiceActive) palette.accent else ink; text.alpha = 200
+            c.drawText(ellipsize(message ?: "Listening…", room), x, y, text)
+        } else {
+            val words = voiceText.trim()
+            var from = 0
+            while (from < words.length - 1 && text.measureText(words, from, words.length) > room) from++
+            val shown = words.substring(from)
+            val tent = words.split(' ').takeLast(3).joinToString(" ").length.coerceAtMost(shown.length)
+            val solid = shown.substring(0, shown.length - tent)
+            text.color = palette.text; text.alpha = 255
+            c.drawText(solid, x, y, text)
+            text.alpha = 140
+            c.drawText(shown.substring(solid.length), x + text.measureText(solid), y, text)
+        }
+        text.alpha = 255; text.textAlign = Paint.Align.CENTER
+    }
+
+    /** The voice button, always there so voice is one tap away: an accent disc with the mic on it (a stop square while listening). */
     private fun drawMic(c: Canvas) {
         val t = theme
         val cx = width - micArea / 2f; val cy = height / 2f
@@ -130,9 +172,16 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         fill.color = acc
         fill.setShadowLayer(0f, 0f, 0f, 0)
         if (micEnabled && t?.micGlow != null) { fill.setShadowLayer(t.micGlow.blur * density, 0f, 0f, t.micGlow.color); setLayerType(LAYER_TYPE_SOFTWARE, null) }
+        if (voiceActive) {
+            // A ring that swells and fades while the microphone is open.
+            val ph = (SystemClock.uptimeMillis() % 1500) / 1500f
+            fill.alpha = ((1f - ph) * 110).toInt(); c.drawCircle(cx, cy, micSize / 2f * (1f + 0.6f * ph), fill); fill.alpha = 255
+            postInvalidateOnAnimation()
+        }
         c.drawCircle(cx, cy, micSize / 2f, fill)
         fill.clearShadowLayer()
-        Icons.draw(c, Icons.Icon.MIC, cx, cy, 19f * density, if (micEnabled) palette.onAccent else palette.textMuted, strokeWidth = 1.9f)
+        if (voiceActive) { fill.color = palette.onAccent; c.drawRoundRect(cx - 7f * density, cy - 7f * density, cx + 7f * density, cy + 7f * density, 2.5f * density, 2.5f * density, fill) }
+        else Icons.draw(c, Icons.Icon.MIC, cx, cy, 19f * density, if (micEnabled) palette.onAccent else palette.textMuted, strokeWidth = 1.9f)
     }
 
     private fun ellipsize(s: String, maxWidth: Float): String {

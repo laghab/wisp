@@ -14,7 +14,6 @@ K() { python3 "$E2E/swipe.py" --key "$1"; }
 SHIFT="70 $R3"; BKSP="878 $R3"; SYM="63 $R4"; SWITCH="168 $R4"; COMMA="255 $R4"; LANG_KEY="340 $R4"; SPACE="560 $R4"; PERIOD="780 $R4"; ENTER="885 $R4"
 TOOL_EMOJI="270 $STRIP"; NUMPAD_KEY="235 $R4"   # the emoji panel opens from the toolbar; the number pad from the symbols page (the "123" key beside the globe)
 MIC="917 $STRIP"; SLOT_L="150 $STRIP"; SLOT_M="445 $STRIP"; SLOT_R="730 $STRIP"
-PANEL_MIC="475 812"; PANEL_CANCEL="370 812"   # voice panel: the big mic button (tap to start or stop), cancel
 UNDO_CELL="$SLOT_L"                                                  # "Undo dictation" takes the first strip slot after an insert
 # type <word>: taps each letter in turn, then gives the dictionary thread a moment to answer
 type_word() { local c; for c in $(echo "$1" | sed 's/./& /g'); do tap $(K "$c"); done; sleep 0.9; }

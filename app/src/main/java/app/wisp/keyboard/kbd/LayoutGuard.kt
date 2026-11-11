@@ -7,7 +7,8 @@ package app.wisp.keyboard.kbd
 object LayoutGuard {
 
     fun ensureSwitchKey(spec: LayoutSpec): LayoutSpec {
-        if (spec.rows.any { row -> row.any { !it.spacer && it.code == KeyCodes.SWITCH } }) return spec
+        // The key itself, or the globe in a key's long-press menu (the comma), keeps the way out of Wisp always at hand.
+        if (spec.rows.any { row -> row.any { !it.spacer && (it.code == KeyCodes.SWITCH || it.popups?.contains(String(Character.toChars(KeyCodes.POP_GLOBE))) == true) } }) return spec
         val rows = spec.rows.toMutableList()
         val last = rows.last().toMutableList()
         // Take the width from the widest key (normally space) so the other keys keep their size.
@@ -25,18 +26,5 @@ object LayoutGuard {
         if (first != null && first.code in '0'.code..'9'.code) return spec
         val digits = "1234567890".map { KeySpec(it.code, it.toString(), it.toString(), 1f, KeyKind.LETTER, null) }
         return LayoutSpec(spec.name, listOf(digits) + spec.rows)
-    }
-
-    /** Adds the language key just before the space bar when more than one language is enabled (and the layout has a space bar). */
-    fun ensureLanguageKey(spec: LayoutSpec): LayoutSpec {
-        if (spec.rows.any { row -> row.any { !it.spacer && it.code == KeyCodes.LANGUAGE } }) return spec
-        val rows = spec.rows.toMutableList()
-        val last = rows.last().toMutableList()
-        val space = last.indexOfFirst { !it.spacer && it.code == KeyCodes.SPACE }
-        if (space < 0) return spec
-        if (last[space].weight >= 3f) last[space] = last[space].withWeight(last[space].weight - 1f)
-        last.add(space, KeySpec(KeyCodes.LANGUAGE, "", "", 1f, KeyKind.SPECIAL, null))
-        rows[rows.lastIndex] = last
-        return LayoutSpec(spec.name, rows)
     }
 }

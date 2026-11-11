@@ -46,6 +46,11 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
 
     var shifted = false
         set(v) { if (field != v) { field = v; invalidate() } }
+    /** The typing language shown on the space bar, and the code of the next one, which its long-press menu switches to. */
+    var languageName = ""
+        set(v) { if (field != v) { field = v; invalidate() } }
+    var languageCode = ""
+
     /** Caps lock (shift held on), as opposed to shift for one letter: the shift key shows a bar under its arrow. */
     var capsLock = false
         set(v) { if (field != v) { field = v; invalidate() } }
@@ -324,7 +329,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         } else if (code == KeyCodes.SPACE) {
             smallText.color = ink; smallText.alpha = 166
             val fm = smallText.fontMetrics
-            canvas_text(c, theme.spaceLabel, cx, cy - (fm.ascent + fm.descent) / 2f, smallText.also { it.textSize = 12f * density })
+            canvas_text(c, languageName.ifEmpty { theme.spaceLabel }, cx, cy - (fm.ascent + fm.descent) / 2f, smallText.also { it.textSize = 12f * density })
             smallText.alpha = 255; smallText.textSize = minOf(theme.size, 15f) * density
         }
         if (keyHints && letter && Character.isLetter(code)) {
@@ -404,7 +409,12 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
                     if (i == popupIndex) { bg.color = palette.accent; c.drawRoundRect(i * cell + inset, inset, (i + 1) * cell - inset, height - inset, radius, radius, bg) }
                     tp.color = if (i == popupIndex) palette.onAccent else palette.text
                     val fm = tp.fontMetrics
-                    c.drawText(if (shifted) list[i].uppercase() else list[i], i * cell + cell / 2f, height / 2f - (fm.ascent + fm.descent) / 2f, tp)
+                    val cx = i * cell + cell / 2f
+                    when (list[i].codePointAt(0)) {
+                        KeyCodes.POP_GLOBE -> Icons.draw(c, Icons.Icon.GLOBE, cx, height / 2f, 22f * density, tp.color)
+                        KeyCodes.POP_LANGUAGE -> { val t = tp.textSize; tp.textSize = 16f * density; c.drawText(languageCode, cx, height / 2f - (tp.fontMetrics.ascent + tp.fontMetrics.descent) / 2f, tp); tp.textSize = t }
+                        else -> c.drawText(if (shifted) list[i].uppercase() else list[i], cx, height / 2f - (fm.ascent + fm.descent) / 2f, tp)
+                    }
                 }
             }
         }
@@ -424,6 +434,8 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         val count = popupChars.codePointCount(0, popupChars.length)
         val cp = popupChars.codePointAt(popupChars.offsetByCodePoints(0, index.coerceIn(0, count - 1)))
         dismissPopup()
+        val action = when (cp) { KeyCodes.POP_GLOBE -> KeyCodes.SWITCH; KeyCodes.POP_LANGUAGE -> KeyCodes.LANGUAGE; else -> 0 }
+        if (action != 0) { listener?.onKey(action, x.toInt(), y.toInt()); return }
         val ch = if (shifted) String(Character.toChars(cp)).uppercase().codePointAt(0) else cp
         listener?.onKey(ch, x.toInt(), y.toInt())
     }

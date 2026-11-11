@@ -150,6 +150,9 @@ fun TypingScreen(modifier: Modifier = Modifier) {
             SwitchRow("Autocorrect", "Fixes likely typos when you type a space; backspace undoes it", style.autoCorrect) { v -> edit { it.copy(autoCorrect = v) } }
             SwitchRow("Auto-capitalise", "A capital letter at the start of a sentence", style.autoCaps) { v -> edit { it.copy(autoCaps = v) } }
             SwitchRow("Double space makes a full stop", "Two spaces after a word type \". \"", style.doubleSpacePeriod) { v -> edit { it.copy(doubleSpacePeriod = v) } }
+            val context = LocalContext.current
+            var punct by remember { mutableStateOf(app.wisp.keyboard.settings.WispSettings.get(context).getBoolean("voice_auto_punct", true)) }
+            SwitchRow("Punctuate dictation", "Voice typing adds capitals and punctuation; off types the words as spoken", punct) { v -> punct = v; app.wisp.keyboard.settings.WispSettings.get(context).putBoolean("voice_auto_punct", v) }
         }
         Section("Feedback", Icons.Icon.VIBRATE) {
             ChoiceRow("Vibration", listOf("off" to "Off", "light" to "Light", "strong" to "Strong"), style.haptic) { v -> edit { it.copy(haptic = v) } }
