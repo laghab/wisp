@@ -460,8 +460,8 @@ class WispIme : InputMethodService() {
     override fun onInlineSuggestionsResponse(response: android.view.inputmethod.InlineSuggestionsResponse): Boolean {
         val host = inlineScroll ?: return false
         val suggestions = response.inlineSuggestions
+        if (suggestions.isEmpty()) return false          // an empty answer follows the real one; the chips stay until the field closes
         host.removeAllViews()
-        if (suggestions.isEmpty()) { host.visibility = View.GONE; return false }
         host.addView(InlineAutofill.view(suggestions, this), FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT))
         host.setBackgroundColor(palette.background)
         host.visibility = View.VISIBLE
