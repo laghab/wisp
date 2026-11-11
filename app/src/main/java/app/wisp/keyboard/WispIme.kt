@@ -648,14 +648,19 @@ class WispIme : InputMethodService() {
     private val clipListener = android.content.ClipboardManager.OnPrimaryClipChangedListener { onClipChanged() }
 
     private var lastClipAt = 0L
+    private var clipProblem: String? = null
 
     /**
      * Records what is on the clipboard. Called when the system says it changed, and again whenever the keyboard or the clipboard panel opens,
      * because on some phones the change notice does not reach the keyboard; a copy is only taken once (by its time stamp).
      */
     private fun onClipChanged() {
-        val clip = runCatching { getSystemService(android.content.ClipboardManager::class.java).primaryClip }.getOrNull() ?: return
-        if (clip.itemCount == 0) return
+        val clip = try {
+            getSystemService(android.content.ClipboardManager::class.java).primaryClip.also { clipProblem = null }
+        } catch (e: Exception) { clipProblem = "Android refused: ${e.javaClass.simpleName}. Make sure Wisp is the active keyboard."; null }
+        if (clip == null && clipProblem == null && lastClipAt == 0L) clipProblem = "The phone returned an empty clipboard. Some phones hide it from keyboards."
+        clipPanel?.let { it.problem = clipProblem; it.refresh() }
+        if (clip == null || clip.itemCount == 0) return
         val at = clip.description.timestamp
         if (at != 0L && at <= lastClipAt) return
         if (at != 0L) lastClipAt = at
@@ -683,7 +688,7 @@ class WispIme : InputMethodService() {
             override fun onChanged() = saveClipSoon()
         }
         stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
-        panel.refresh()
+        panel.problem = clipProblem; panel.refresh()
         clipPanel = panel
     }
 

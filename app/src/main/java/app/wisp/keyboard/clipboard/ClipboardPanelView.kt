@@ -27,6 +27,9 @@ class ClipboardPanelView(context: Context, private val history: ClipboardHistory
     }
 
     var listener: Listener? = null
+
+    /** Why the last look at the clipboard found nothing: null when it worked, otherwise a short reason shown in the empty panel. */
+    var problem: String? = null
     private val d = resources.displayMetrics.density
     private val slop = ViewConfiguration.get(context).scaledTouchSlop
     private val longPressMs = ViewConfiguration.getLongPressTimeout().toLong()
@@ -111,6 +114,7 @@ class ClipboardPanelView(context: Context, private val history: ClipboardHistory
         c.save(); c.clipRect(0f, gridTop, width.toFloat(), height - footerH)
         cardRects.clear(); menuRects.clear()
         if (!history.enabled) empty(c, "History is off", "Copied text is not kept. Turn it on to see recent copies here.")
+        else if (items.isEmpty() && problem != null) empty(c, "Can't read the clipboard", problem!!)
         else if (items.isEmpty()) empty(c, "Nothing here yet", "Things you copy appear here for an hour. Pin the ones you reuse.")
         else {
             val cw = (width - 2 * pad - gap) / 2f
