@@ -69,6 +69,7 @@
  "weight": 400,
  "size": 26,
  "upper": true,
+ "bandHeight": 4,
  "band": {
   "linear": {
    "angle": 90.0,
@@ -108,7 +109,6 @@
    ]
   }
  },
- "bandHeight": 4,
  "space": "English \u00b7 Wisp",
  "art": {
   "id": "retro",

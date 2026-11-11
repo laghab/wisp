@@ -134,7 +134,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 11.10 The app behind the keyboard scrolls so the field you are typing in stays visible when the keyboard is raised or resized.
 
 ## 12. Themes and the settings app
-- [ ] 12.1 Settings > Themes: the theme cards fill the card edge to edge with no gap on the right; all fifteen themes apply live to the preview and the keyboard (Wisp, Moon Phase, Dandelion, Sakura, Factory, Cyberpunk, Terminal, Y2K Desktop, Material You, Liquid Glass, Modern, Retro, Brutalist, Comic, Manga).
+- [ ] 12.1 Settings > Themes: the theme cards fill the card edge to edge with no gap on the right; all sixteen themes apply live to the preview and the keyboard (Wisp, Moon Phase, Dandelion, Sakura, Sakura Storm, Factory, Cyberpunk, Terminal, Y2K Desktop, Material You, Liquid Glass, Modern, Retro, Brutalist, Comic, Manga).
 - [ ] 12.2 Every theme is legible: key letters, hints, suggestions, toolbar icons, the mic button, the enter key.
 - [ ] 12.3 Material You picks up wallpaper colours when "Colour from wallpaper" is on (Android 12+).
 - [ ] 12.4 Liquid Glass shows a blurred, translucent keyboard (Android 12+) and falls back to plain translucent keys on older phones.
@@ -146,9 +146,10 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 12.10 Text sizes follow the phone's font-size setting; nothing is cut off at the largest size.
 - [ ] 12.11 Home quick chips (Glide typing, Number row, Swipe to delete, Space cursor, Autocorrect, Haptics, Key sound) each flip their setting, and the keyboard follows the next time it is shown.
 
-- [ ] 12.13 **(!)** Keyboard colours (Themes screen): System, Light and Dark each switch every theme that has both looks (Wisp, Moon Phase, Dandelion, Sakura, Material You, Liquid Glass, Modern, Retro, Brutalist, Comic, Manga) between its light and dark look, keeping the same theme selected. Factory, Cyberpunk, Terminal (dark only) and Y2K Desktop (light only) do not change.
-- [ ] 12.14 **(!)** Space-bar art: Moon Phase, Dandelion, Sakura, Factory, Cyberpunk, Terminal, Retro, Brutalist, Comic and Manga show their animated picture (Y2K Desktop has none) on the space bar; the "Space-bar art" choice (Themes > Fine-tune: Off, Still, Subtle, Full) sets it; Subtle (the default) slows the busy pictures to a crawl and leaves Sakura, Dandelion and Moon as designed; Off shows the plain language name. Pressing the space bar still types a space and feels like a normal key.
-- [ ] 12.15 Animations stop when the keyboard is hidden and when the phone's "remove animations" is on (the picture is then still).
+- [ ] 12.13 **(!)** Keyboard colours (Themes screen): System, Light and Dark each switch every theme that has both looks (Wisp, Moon Phase, Dandelion, Sakura, Sakura Storm, Material You, Liquid Glass, Modern, Retro, Brutalist, Comic, Manga) between its light and dark look, keeping the same theme selected. Factory, Cyberpunk, Terminal (dark only) and Y2K Desktop (light only) do not change.
+- [ ] 12.14 **(!)** Space-bar art: Moon Phase, Dandelion, Sakura, Sakura Storm, Factory, Cyberpunk, Terminal, Y2K Desktop, Retro, Brutalist, Comic and Manga show their picture (several are static by design; motion is only ambient: drifting petals or seeds, sparks, twinkles, blinking cursors) on the space bar; the "Space-bar art" choice (Themes > Fine-tune: Off, Still, Subtle, Full) sets it; Subtle (the default) slows the busy pictures to a crawl and leaves Sakura, Dandelion and Moon as designed; Off shows the plain language name. Pressing the space bar still types a space and feels like a normal key.
+- [ ] 12.15 **(!)** Sakura Storm: a blossoming branch along the top of the keys and petals drifting down across every key; the petals never block a tap, and the labels stay readable. The Space-bar art choice (Off) removes the petals too.
+- [ ] 12.15b Animations stop when the keyboard is hidden and when the phone's "remove animations" is on (the picture is then still).
 - [ ] 12.16 Comic tilts its keys a little; Factory keys have corner rivets; Terminal, Cyberpunk and Factory labels glow or shadow as designed.
 
 ## 13. Learned data and privacy

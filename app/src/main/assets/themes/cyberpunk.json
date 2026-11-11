@@ -90,6 +90,7 @@
  "upper": true,
  "track": 0.04,
  "cut": 8.0,
+ "bandHeight": 2,
  "band": {
   "linear": {
    "angle": 90.0,
@@ -109,7 +110,6 @@
    ]
   }
  },
- "bandHeight": 2,
  "micGlow": {
   "color": "rgba(252,238,10,0.55)",
   "blur": 16.0

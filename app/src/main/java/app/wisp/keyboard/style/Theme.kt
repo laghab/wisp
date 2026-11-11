@@ -75,6 +75,8 @@ data class Theme(
     val tilt: Boolean = false,
     /** The space bar's animated art, where the theme has one. */
     val art: Art? = null,
+    /** A picture drawn over the whole keyboard ("petals": Sakura Storm's branch and falling blossom). */
+    val fx: String? = null,
 ) {
     /** The reach of the largest outside shadow, so a cached key bitmap has room for it. */
     val shadowReach: Float get() = (shadow + lit + listOfNotNull(micGlow)).maxOfOrNull { it.reach } ?: 0f
@@ -139,6 +141,7 @@ object ThemeParser {
             hasVariants = root.optJSONObject("variants")?.let { it.has("light") && it.has("dark") } == true,
             textShadow = o.optJSONObject("textShadow")?.let { shadow(it, "textShadow") },
             tilt = o.optBoolean("tilt", false),
+            fx = o.optString("fx").ifEmpty { null },
             art = o.optJSONObject("art")?.let { a -> Art(a.getString("id"), if (a.has("bg")) fill(a.get("bg"), "art.bg") else null, a.getJSONArray("colors").let { c -> IntArray(c.length()) { i -> color(c.getString(i), "art.colors") } }) },
         )
     }

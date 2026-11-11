@@ -121,6 +121,7 @@
  "font": "sans",
  "weight": 400,
  "size": 18,
+ "bandHeight": 8,
  "band": {
   "linear": {
    "angle": 180.0,
@@ -140,6 +141,28 @@
    ]
   }
  },
- "bandHeight": 8,
- "space": "English \u00b7 Wisp"
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "y2k",
+  "bg": {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      1.0,
+      "#ECE9D8"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#3C9A3C",
+   "#FFFFFF",
+   "#7F9DB9"
+  ]
+ }
 }

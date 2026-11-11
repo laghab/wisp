@@ -1,0 +1,137 @@
+{
+ "id": "sakura-storm",
+ "name": "Sakura Storm",
+ "dark": false,
+ "board": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#FDF2F5"
+    ],
+    [
+     1.0,
+     "#F7DEE6"
+    ]
+   ]
+  }
+ },
+ "key": "rgba(255,255,255,0.88)",
+ "mod": "rgba(246,217,223,0.9)",
+ "accent": "#E58FA6",
+ "fg": "#5B3A44",
+ "modFg": "#5B3A44",
+ "accentFg": "#FFFFFF",
+ "stripFg": "#7A5560",
+ "sep": "#EBC6CF",
+ "radius": 14.0,
+ "shadow": [
+  {
+   "color": "rgba(91,58,68,0.12)",
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(229,143,166,0.35)",
+   "spread": 3.0
+  }
+ ],
+ "font": "zen_maru",
+ "weight": 500,
+ "size": 20,
+ "bandHeight": 10,
+ "space": "English \u00b7 Wisp",
+ "fx": "petals",
+ "art": {
+  "id": "sakura",
+  "bg": "#FFFFFF",
+  "colors": [
+   "#F2A7BB",
+   "#6E4B4F",
+   "#C9566F"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    {
+     "linear": {
+      "angle": 180.0,
+      "stops": [
+       [
+        0.0,
+        "#1F1726"
+       ],
+       [
+        1.0,
+        "#150F1A"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.3,
+      "y": 0.0,
+      "rx": 220.0,
+      "ry": 120.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(242,167,187,0.18)"
+       ],
+       [
+        0.7,
+        "transparent"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": "rgba(42,32,48,0.9)",
+   "mod": "#33263A",
+   "accent": "#F2A7BB",
+   "fg": "#F7E3E8",
+   "modFg": "#F7E3E8",
+   "accentFg": "#1A1420",
+   "stripFg": "#E9CCD4",
+   "sep": "#3B2D42",
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.35)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(242,167,187,0.35)",
+     "spread": 3.0
+    },
+    {
+     "color": "rgba(242,167,187,0.25)",
+     "blur": 14.0
+    }
+   ],
+   "art": {
+    "id": "sakura",
+    "bg": "#221A28",
+    "colors": [
+     "#F2A7BB",
+     "#8C6A6E",
+     "#FFD6E0"
+    ]
+   }
+  }
+ }
+}

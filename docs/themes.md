@@ -15,6 +15,9 @@ A theme can have both a light and a dark look and still be ONE theme: the file h
   "variants": { "dark": { "board": "#111" }, "light": { "board": "#f0f0f0", "fg": "#111" } } }
 ```
 
+## Pictures
+`art` (a theme with a picture on its space bar) is drawn from `assets/art/<theme>-<light|dark>.svg`, and `fx` (`"petals"`: Sakura Storm) from `assets/fx/<theme>-<mode>.svg`, a picture over the whole keyboard that takes no touches. Both are plain SVG files that use shapes, text and a few SMIL animations; `style/SvgArt.kt` draws them natively. Motion is meant to stay ambient (drifting particles, twinkles, blinking cursors), and the user's "Space-bar art" choice (Off, Still, Subtle, Full) governs both. `tools/themes/from-handoff.py` converts a handoff folder into all of these files.
+
 ## Values
 - **Colour:** `#rgb`, `#rrggbb`, `#rrggbbaa`, `rgba(r,g,b,a)` or `transparent`.
 - **Fill** (`board`, `key`, `mod`, `accent`, `band`): a colour, or `{"linear": {"angle", "length", "stops"}}` (180 is top to bottom; `length` in dp makes the gradient repeat, which is how stripes and grids are made), `{"radial": {"x", "y", "rx", "ry", "stops"}}` (a soft blob, `x` and `y` as fractions of the board), or `{"dots": {"step", "radius", "color"}}`. `board` may be a list of fills drawn bottom first.

@@ -11,7 +11,5 @@
 <rect x="116" y="28" width="1.8" height="1.8"></rect>
 <rect x="132" y="31" width="1.8" height="1.8"><animate attributeName="opacity" values="0.2;1;0.2" dur="1.3s" repeatCount="indefinite"></animate></rect>
 </g>
-<text x="6" y="11" font-family="Orbitron, sans-serif" font-weight="700" font-size="7" letter-spacing="0.8" fill="#FF2A6D" opacity="0.8"><animate attributeName="x" values="6;7.5;6;6;6" dur="2.2s" repeatCount="indefinite"></animate>NET//LINK</text>
-<text x="6" y="11" font-family="Orbitron, sans-serif" font-weight="700" font-size="7" letter-spacing="0.8" fill="#00F0FF">NET//LINK</text>
-<rect x="0" y="0" width="154" height="1" fill="#00F0FF" opacity="0.5"><animate attributeName="y" values="0;48" dur="2.6s" repeatCount="indefinite"></animate></rect>
-</svg>
+<text x="7" y="11" font-family="Orbitron, sans-serif" font-weight="700" font-size="7" letter-spacing="0.8" fill="#FF2A6D" opacity="0.8">NET//LINK</text>
+<text x="6" y="11" font-family="Orbitron, sans-serif" font-weight="700" font-size="7" letter-spacing="0.8" fill="#00F0FF">NET//LINK</text></svg>

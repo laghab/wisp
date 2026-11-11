@@ -123,6 +123,7 @@
  "weight": 600,
  "size": 18,
  "upper": true,
+ "bandHeight": 5,
  "band": {
   "linear": {
    "angle": 45.0,
@@ -147,7 +148,6 @@
    "length": 20.0
   }
  },
- "bandHeight": 5,
  "textShadow": {
   "color": "rgba(0,0,0,0.6)",
   "dy": 1.0

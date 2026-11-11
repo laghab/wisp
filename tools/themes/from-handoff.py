@@ -10,10 +10,13 @@ import json, os, re, sys
 NAMES = {
     "wisp": "Wisp", "moon": "Moon Phase", "dandelion": "Dandelion", "sakura": "Sakura", "factory": "Factory", "cyberpunk": "Cyberpunk",
     "terminal": "Terminal", "y2k": "Y2K Desktop", "material": "Material You", "glass": "Liquid Glass", "modern": "Modern",
-    "retro": "Retro", "brutalist": "Brutalist", "comic": "Comic", "manga": "Manga",
+    "sakuraStorm": "Sakura Storm", "retro": "Retro", "brutalist": "Brutalist", "comic": "Comic", "manga": "Manga",
 }
 FONTS = {"inter": "inter", "space grotesk": "space_grotesk", "chakra petch": "chakra_petch", "orbitron": "orbitron", "vt323": "vt323",
          "bangers": "bangers", "zen maru gothic": "zen_maru", "jetbrains mono": "jetbrains_mono", "roboto": "sans", "tahoma": "sans"}
+
+def kebab(s):
+    return re.sub(r"([a-z0-9])([A-Z])", r"\1-\2", s).lower()
 
 def split_top(s, sep=","):
     out, depth, cur = [], 0, ""
@@ -134,7 +137,7 @@ def radius(css):
     v = [num(t) for t in str(css).split()]
     return v[0] if len(v) == 1 else v
 
-def mode_tokens(t, skip_art=False):
+def mode_tokens(t):
     o = {}
     o["dark"] = None  # set by the caller
     o["board"] = fill(t["board"]); o["key"] = fill(t["key"]); o["mod"] = fill(t["mod"]); o["accent"] = fill(t["accent"])
@@ -152,31 +155,38 @@ def mode_tokens(t, skip_art=False):
     if tr not in ("0", ""): o["track"] = float(tr)
     if t["clip"] != "none": o["cut"] = 8.0
     if t["blur"] != "none": o["blur"] = num(re.match(r"blur\(([0-9.]+px)", t["blur"]).group(1))
-    if t["band"] != "transparent" and t["bandH"]:
-        o["band"] = layer(t["band"]) if not t["band"].startswith("repeating") else layer(t["band"]); o["bandHeight"] = t["bandH"]
+    if t["bandH"]:
+        o["bandHeight"] = t["bandH"]                                   # room at the top (Sakura Storm keeps it for its branch)
+        if t["band"] != "transparent": o["band"] = layer(t["band"])
     ms = one_shadow(t["micShadow"])
     if ms: o["micGlow"] = ms
     ts = one_shadow(t["textShadow"])
     if ts: o["textShadow"] = ts
     if t.get("tilt"): o["tilt"] = True
     o["space"] = t["space"]
-    if t.get("art") and not skip_art:
+    if t.get("fx"): o["fx"] = t["fx"]
+    if t.get("art"):
         o["art"] = {"id": t["art"], "bg": fill(t["artBg"]) if t["artBg"] else None, "colors": [t["a1"], t["a2"], t["a3"]]}
         if o["art"]["bg"] is None: del o["art"]["bg"]
     return o
 
-# Pictures that were designed but are not wanted (the Y2K loading bar was judged out of taste).
-NO_ART = {"y2k"}
-
 def main(src):
     d = json.load(open(src))
     out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../app/src/main/assets/themes")
+    # the pictures: one SVG per theme and look, copied next to the themes (names in kebab-case, like the theme ids)
+    src_dir = os.path.dirname(os.path.abspath(src))
+    for sub, dest in (("space-bar-art", "art"), ("full-board-fx", "fx")):
+        dd = os.path.join(out, "..", dest)
+        os.makedirs(dd, exist_ok=True)
+        for f in os.listdir(dd): os.remove(os.path.join(dd, f))
+        for f in sorted(os.listdir(os.path.join(src_dir, sub))) if os.path.isdir(os.path.join(src_dir, sub)) else []:
+            open(os.path.join(dd, kebab(f[:-4]) + ".svg"), "w").write(open(os.path.join(src_dir, sub, f)).read())
     for tid, v in d.items():
         modes = v["modes"]
-        toks = {m: mode_tokens(v[m], tid in NO_ART) for m in modes}
+        toks = {m: mode_tokens(v[m]) for m in modes}
         for m in modes: toks[m]["dark"] = (m == "dark")
         base_mode = modes[0]
-        base = dict(toks[base_mode]); base["id"] = tid; base["name"] = NAMES[tid]
+        base = dict(toks[base_mode]); base["id"] = kebab(tid); base["name"] = NAMES[tid]
         if tid == "material": base["dynamic"] = True
         if len(modes) == 2:
             base["variants"] = {m: {k: val for k, val in toks[m].items() if base.get(k) != val or k == "dark"} for m in modes}
@@ -184,7 +194,7 @@ def main(src):
                 if k != "dark": del base["variants"][base_mode][k]
         order = ["id", "name", "dark", "dynamic"]
         data = {k: base[k] for k in order if k in base}; data.update({k: x for k, x in base.items() if k not in data})
-        with open(os.path.join(out, tid + ".json"), "w") as f: json.dump(data, f, indent=1); f.write("\n")
+        with open(os.path.join(out, kebab(tid) + ".json"), "w") as f: json.dump(data, f, indent=1); f.write("\n")
         print("wrote", tid, modes)
 
 if __name__ == "__main__":

@@ -36,11 +36,14 @@ class SvgArt private constructor(private val root: Node, private val vw: Float, 
      * Draws the picture into [into] (a rectangle on [canvas]) at time [seconds]. [slice] fills the rectangle and crops what overhangs;
      * otherwise the whole picture fits inside it.
      */
-    fun draw(canvas: Canvas, into: RectF, seconds: Float, slice: Boolean, fonts: (String, Int) -> android.graphics.Typeface) {
+    fun draw(canvas: Canvas, into: RectF, seconds: Float, slice: Boolean, fonts: (String, Int) -> android.graphics.Typeface, overlay: Boolean = false) {
+        skipBackground = overlay
         val sx = into.width() / vw; val sy = into.height() / vh
-        val s = if (slice) maxOf(sx, sy) else minOf(sx, sy)
+        // An overlay is as wide as the keyboard and starts at its top (the branch is there); the space bar's picture is centred.
+        val s = if (overlay) sx else if (slice) maxOf(sx, sy) else minOf(sx, sy)
         canvas.save()
-        canvas.translate(into.left + (into.width() - vw * s) / 2f, into.top + (into.height() - vh * s) / 2f)
+        canvas.translate(into.left + (into.width() - vw * s) / 2f, if (overlay) into.top else into.top + (into.height() - vh * s) / 2f)
+        if (overlay) canvas.clipRect(0f, 0f, vw, into.height() / s)
         canvas.scale(s, s)
         canvas.clipRect(0f, 0f, vw, vh)
         drawNode(canvas, root, Style(0xFF000000.toInt(), null, 1f, Paint.Cap.BUTT, Paint.Join.MITER, 1f, null), seconds, fonts)
@@ -49,7 +52,12 @@ class SvgArt private constructor(private val root: Node, private val vw: Float, 
 
     // ---- drawing
 
+    private var skipBackground = false
+    /** The full-size backdrop rectangle of the file, which an overlay leaves out so only the branch and petals are painted. */
+    private val backdrop: Node? = root.children.firstOrNull { it.tag == "rect" && it.attrs["width"]?.toFloatOrNull() == vw && it.attrs["height"]?.toFloatOrNull() == vh }
+
     private fun drawNode(c: Canvas, n: Node, parent: Style, t: Float, fonts: (String, Int) -> android.graphics.Typeface) {
+        if (skipBackground && n === backdrop) return
         fun attr(name: String): String? = animated(n, name, t) ?: n.attrs[name]
         val st = Style(parent.fill, parent.stroke, parent.strokeWidth, parent.cap, parent.join, parent.opacity, parent.dash)
         attr("fill")?.let { st.fill = colour(it) }
@@ -169,11 +177,16 @@ class SvgArt private constructor(private val root: Node, private val vw: Float, 
     companion object {
         private val cache = HashMap<String, SvgArt?>()
 
-        /** The art for [themeId] in the light or dark look, or null when the theme has none. */
-        fun load(context: Context, themeId: String, dark: Boolean): SvgArt? = cache.getOrPut("$themeId-$dark") {
+        /** The space-bar art for [themeId] in the light or dark look, or null when the theme has none. */
+        fun load(context: Context, themeId: String, dark: Boolean): SvgArt? = find(context, "art", themeId, dark)
+
+        /** The full-keyboard overlay for [themeId] (Sakura Storm's petals), or null. */
+        fun loadOverlay(context: Context, themeId: String, dark: Boolean): SvgArt? = find(context, "fx", themeId, dark)
+
+        private fun find(context: Context, dir: String, themeId: String, dark: Boolean): SvgArt? = cache.getOrPut("$dir/$themeId-$dark") {
             val names = listOf("$themeId-${if (dark) "dark" else "light"}.svg", "$themeId-${if (dark) "light" else "dark"}.svg")      // a one-look theme has one file
-            val name = names.firstOrNull { f -> runCatching { context.assets.open("art/$f").close(); true }.getOrDefault(false) } ?: return@getOrPut null
-            runCatching { parse(context.assets.open("art/$name").bufferedReader().use { it.readText() }) }.getOrNull()
+            val name = names.firstOrNull { f -> runCatching { context.assets.open("$dir/$f").close(); true }.getOrDefault(false) } ?: return@getOrPut null
+            runCatching { parse(context.assets.open("$dir/$name").bufferedReader().use { it.readText() }) }.getOrNull()
         }
 
         fun parse(svg: String): SvgArt {

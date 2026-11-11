@@ -14,12 +14,12 @@ class ThemeTest {
         if (ThemeParser.hasVariants(text)) listOf(ThemeParser.parse(text, dark = false), ThemeParser.parse(text, dark = true)) else listOf(ThemeParser.parse(text))
     }
 
-    @Test fun allFifteenBuiltInThemesParse() {
+    @Test fun allSixteenBuiltInThemesParse() {
         assertEquals(
-            setOf("wisp", "moon", "dandelion", "sakura", "factory", "cyberpunk", "terminal", "y2k", "material", "glass", "modern", "retro", "brutalist", "comic", "manga"),
+            setOf("wisp", "moon", "dandelion", "sakura", "sakura-storm", "factory", "cyberpunk", "terminal", "y2k", "material", "glass", "modern", "retro", "brutalist", "comic", "manga"),
             themes.map { it.id }.toSet(),
         )
-        assertEquals(15, themes.map { it.id }.toSet().size)
+        assertEquals(16, themes.map { it.id }.toSet().size)
     }
 
     @Test fun oneThemeCanHaveALightAndADarkLook() {
@@ -78,7 +78,7 @@ class ThemeTest {
             assertTrue("${t.id}: letters ${Brand.contrast(t.fg, over(t.key))}", Brand.contrast(t.fg, over(t.key)) >= 3.0)
             assertTrue("${t.id}: modifiers ${Brand.contrast(t.modFg, over(t.mod))}", Brand.contrast(t.modFg, over(t.mod)) >= 3.0)
             // Two light looks in the design have soft enter keys under 3:1 (Dandelion 2.8, Sakura 2.4: pastel with white or cream); kept as designed.
-            val accentMin = if (!t.dark && t.id == "dandelion") 2.7 else if (!t.dark && t.id == "sakura") 2.3 else 3.0
+            val accentMin = if (!t.dark && t.id == "dandelion") 2.7 else if (!t.dark && (t.id == "sakura" || t.id == "sakura-storm")) 2.3 else 3.0
             assertTrue("${t.id}: accent ${Brand.contrast(t.accentFg, over(t.accent))}", Brand.contrast(t.accentFg, over(t.accent)) >= accentMin)
         }
     }

@@ -136,7 +136,11 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         return if (artMode == "off") null else art
     }
 
-    private val QUIET_ART = setOf("sakura", "dandelion", "moon")
+    private val QUIET_ART = setOf("sakura", "sakura-storm", "dandelion", "moon")
+    private var fxArt: app.wisp.keyboard.style.SvgArt? = null
+    private var fxFor: Theme? = null
+    private val fxRect = RectF()
+    private val fxTick = Runnable { invalidate() }
     private var tintedTheme: Theme? = null
     private var tintedBigSize = 0f
     private val box = RectF()
@@ -223,7 +227,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     }
 
     /** Frees everything for a view that was never attached (an off-screen render for a thumbnail). */
-    fun dispose() { removeCallbacks(artTick); release(); renderer.release() }
+    fun dispose() { removeCallbacks(artTick); removeCallbacks(fxTick); release(); renderer.release() }
 
     /** Stops any touch in progress and frees the Rust layout. */
     private fun release() {
@@ -339,6 +343,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
             if (tilted) canvas.restore()
         }
         if (fading) postInvalidateOnAnimation()
+        drawOverlay(canvas, now)
         drawTrail(canvas)
         if (BuildConfig.DEBUG) drawTime.record(System.nanoTime() - d0)
     }
@@ -351,6 +356,16 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         if (artMode == "still") return 0f
         val s = (now - artSince) / 1000f
         return if (artMode == "subtle" && theme.id !in QUIET_ART) s * 0.3f else s
+    }
+
+    /** A picture over the whole board (Sakura Storm's petals). It takes no touches: nothing here reads them. Off with the space-bar art. */
+    private fun drawOverlay(c: Canvas, now: Long) {
+        if (fxFor !== theme) { fxFor = theme; fxArt = if (theme.fx != null) app.wisp.keyboard.style.SvgArt.loadOverlay(context, theme.id, theme.dark) else null }
+        val fx = fxArt ?: return
+        if (artMode == "off") return
+        fxRect.set(0f, 0f, width.toFloat(), height.toFloat())
+        fx.draw(c, fxRect, artSeconds(now), slice = true, fonts = artFonts, overlay = true)
+        if (fx.animated && artMode != "still" && android.animation.ValueAnimator.areAnimatorsEnabled() && isShown) postDelayed(fxTick, 66)
     }
 
     private fun drawArt(c: Canvas, picture: app.wisp.keyboard.style.SvgArt, l: CompiledLayout, i: Int, lit: Boolean, now: Long) {
@@ -581,7 +596,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         }
     }
 
-    override fun onDetachedFromWindow() { removeCallbacks(artTick); release(); renderer.release(); super.onDetachedFromWindow() }
+    override fun onDetachedFromWindow() { removeCallbacks(artTick); removeCallbacks(fxTick); release(); renderer.release(); super.onDetachedFromWindow() }
 
     private fun blend(a: Int, b: Int, t: Float): Int {
         val u = 1f - t
