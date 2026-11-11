@@ -15,11 +15,11 @@ expect "second symbols page and back" "12@q~1"
 tap $SYM
 a input keyevent KEYCODE_MOVE_END >/dev/null
 
-# number pad: the "123" key on the symbols page opens a phone-style pad (digits in a 3x3 grid, 0 below); ABC returns
+# number pad: the "123" key on the symbols page opens a pad with operators on the left and symbols on the right of the digits; ABC returns
 launch_field
 tap $SYM; tap $NUMPAD_KEY; sleep 0.4; adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/panel_numpad.png"
-tap 357 $R2; tap 593 $R3; tap 357 $R4; tap 120 $R4; tap $(K q)               # 5 9 0 then ABC, q
-expect "number pad types digits and ABC returns to letters" "590q"
+tap 475 813; tap 665 891; tap 475 969; tap 96 735; tap 96 1047; tap $(K q)    # 5 9 0 +  then ABC, q
+expect "number pad types digits and operators and ABC returns to letters" "590+q"
 
 # emoji panel: open from letters, pick the first emoji, close via ABC
 launch_field

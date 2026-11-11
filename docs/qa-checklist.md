@@ -17,13 +17,14 @@ Use at least two different apps for the typing sections (a messaging app and a b
 ## 2. Basic typing
 - [ ] 2.1 **(!)** Tap through the whole alphabet, digits and punctuation: every key types the right character.
 - [ ] 2.2 Typing fast with two thumbs: no missed or doubled keys, no visible lag.
-- [ ] 2.3 Shift once capitalises one letter; double-tap shift is caps lock; tapping shift again turns it off. The shift icon shows the state.
+- [ ] 2.3 **(!)** Shift once capitalises one letter; double-tap shift is caps lock; tapping shift again turns it off. The key labels show it in every theme: small letters when shift is off, capitals when it is on.
+- [ ] 2.3b **(!)** The shift icon tells the three states apart: an outline arrow (off), a filled arrow (one letter), a filled arrow with a bar under it (caps lock).
 - [ ] 2.4 After ". " or "? " the next letter is capitalised automatically; at the start of a field too.
 - [ ] 2.5 Double space gives ". " (after a word).
 - [ ] 2.6 Long-press a letter (e, a, o, u, c, n): the popup lists accents; sliding to one and releasing types it; releasing without sliding types the first extra.
 - [ ] 2.7 Long-pressed hint characters (the small glyph on each key) match what the popup gives first.
 - [ ] 2.8 Enter key: new line in a notes app; the right action (Send, Search, Go, Done) shows on the key in apps that set one, and does that action.
-- [ ] 2.9 The key under your finger lights up on touch, and the highlight goes away when you slide off it.
+- [ ] 2.9 **(!)** The key under your finger lights up on touch with the same rounded shape as the key (no square box around it), and the highlight goes away when you slide off it. Check a few themes (Midnight, Factory, Retro, Comic, Cyberpunk).
 - [ ] 2.10 Haptic feedback is felt on key press (Feedback settings: off / light / strong all change it). Key sound toggles on and off.
 
 ## 3. Space bar and bottom row
@@ -67,7 +68,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 6.6 A swipe that is not a word inserts nothing and offers letters in the strip.
 - [ ] 6.7 Swipe, delete it, then type the word by hand: the next swipes of that word improve over time (practice mode below speeds this up).
 - [ ] 6.8 Settings > Typing: glide off stops swiping; the trail colour and thickness settings change the trail.
-- [ ] 6.9 Practice swiping (Home tile): a session of words runs; "words glided this week" on Home goes up.
+- [ ] 6.9 Practice swiping (Home tile): a session of words runs on the same keyboard you type with (your letter layout, number row and theme); "words glided this week" on Home goes up.
 - [ ] 6.10 Swiping works in portrait, landscape, one-handed and split modes.
 
 ## 7. Layouts, number row and number pad
@@ -76,8 +77,8 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 7.3 With the number row on, long-press hints no longer show digits that are now on their own row (or are harmless duplicates).
 - [ ] 7.4 **(!)** ?123 opens symbols page 1: digits row, then @ # $ _ & - + ( ) /, then * " ' : ; ! ?
 - [ ] 7.5 "=\<" opens symbols page 2; tapping it again returns to page 1; ABC returns to letters.
-- [ ] 7.6 **(!)** The "123" key on the symbols page opens a phone-style number pad: 1 2 3 / 4 5 6 / 7 8 9 / ABC 0 . with backspace, space, globe and enter in the right-hand column.
-- [ ] 7.7 Number pad: every digit types; long-press the period key for , - + * / = % #; ABC returns to letters.
+- [ ] 7.6 **(!)** The "123" key on the symbols page opens a number pad with digits in the middle three columns (1 2 3 / 4 5 6 / 7 8 9 / , 0 .), operators + - * / down the left, and backspace, = , % and # down the right; the bottom row is ABC, globe, space, enter.
+- [ ] 7.7 Number pad: every digit and symbol types; long-press an operator for its variants (for example * gives × and ·); ABC returns to letters.
 - [ ] 7.8 Number-only fields (phone dialer, a field that asks for numbers) open the number pad directly, with a Done/Next key.
 - [ ] 7.9 Email fields have an @ key where the comma sits; URL fields have a / key.
 - [ ] 7.10 Editing a layout (Layouts and toolbar): a bad layout file is refused with a line and reason; the globe key can never be removed.
@@ -97,22 +98,21 @@ Use at least two different apps for the typing sections (a messaging app and a b
 
 ## 9. Voice typing
 - [ ] 9.1 Models screen: a speech model can be installed from a file you choose; the first-run advice names a model that fits the phone.
-- [ ] 9.2 Tap the mic: the voice panel opens, asks for the microphone permission once, and listens.
-- [ ] 9.3 **(!)** Speaking shows words live: confirmed words solid, the last few grey. The waveform moves with your voice.
-- [ ] 9.4 The arrow at the top right inserts what was said and returns to the keyboard; the text appears in the field.
-- [ ] 9.5 Tapping the big button pauses; tapping again resumes.
-- [ ] 9.6 Hold the mic to talk and let go to insert.
-- [ ] 9.7 X cancels and inserts nothing.
-- [ ] 9.8 "Undo phrase" removes the last phrase; "Auto-punctuation" toggles punctuation.
-- [ ] 9.9 After inserting, "Undo dictation" in the strip removes exactly what was inserted.
-- [ ] 9.10 Speak while the model is still loading: the first words are not lost.
-- [ ] 9.11 With no model installed, the mic explains and offers to open Models. Typing keeps working.
-- [ ] 9.12 Close the keyboard and wait for the idle time: the voice process goes away (Developer options > Running services, or the memory graph drops).
-- [ ] 9.13 Voice in a quiet room, a noisy room and with a Bluetooth headset: it records, and stops cleanly.
-- [ ] 9.14 A phone call or another app taking the microphone during dictation does not crash Wisp.
+- [ ] 9.2 **(!)** Tap the mic once: the voice panel opens, asks for the microphone permission the first time, and starts listening straight away.
+- [ ] 9.3 **(!)** Speaking shows the transcript live: confirmed words solid, the last few grey. The waveform moves with your voice.
+- [ ] 9.4 **(!)** Tap the same mic button again (the big button in the panel, or the mic in the toolbar): listening stops and the text is inserted into the field. There is no pause button and no hold-to-talk.
+- [ ] 9.5 While listening the big button shows a stop square; when idle it shows a mic.
+- [ ] 9.6 X cancels and inserts nothing; the arrow at the top right inserts what was said and returns to the keyboard.
+- [ ] 9.7 "Undo phrase" removes the last phrase; "Auto-punctuation" toggles punctuation.
+- [ ] 9.8 After inserting, "Undo dictation" in the strip removes exactly what was inserted.
+- [ ] 9.9 Speak while the model is still loading: the first words are not lost.
+- [ ] 9.10 With no model installed, the mic explains and offers to open the model screen. Typing keeps working.
+- [ ] 9.11 Close the keyboard and wait for the idle time: the voice process goes away.
+- [ ] 9.12 Voice in a quiet room, a noisy room and with a Bluetooth headset: it records, and stops cleanly.
+- [ ] 9.13 A phone call or another app taking the microphone during dictation does not crash Wisp.
 
 ## 10. Rewrite (AI)
-- [ ] 10.1 With no writing model installed, the rewrite button explains and offers Models.
+- [ ] 10.1 **(!)** With no writing model installed, the rewrite panel explains and offers Open Models; tapping Open Models opens Wisp's Models screen (also when Wisp's settings are already open in the background) and the keyboard does not crash.
 - [ ] 10.2 With a model installed: select a sentence, tap the sparkle icon, choose Polish; the result streams into the card with a shimmer first.
 - [ ] 10.3 **(!)** The field is not changed until you press Replace. Closing the panel leaves the text untouched.
 - [ ] 10.4 Friendly, Formal, Shorter, Bullets and Translate to Hindi each do what they say.
@@ -134,7 +134,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 11.10 The app behind the keyboard scrolls so the field you are typing in stays visible when the keyboard is raised or resized.
 
 ## 12. Themes and the settings app
-- [ ] 12.1 Settings > Themes: all eleven themes apply live to the preview and the keyboard (Midnight, Factory, Cyberpunk, Material You, Liquid Glass, Modern, Y2K Desktop, Retro, Brutalist, Comic, Manga).
+- [ ] 12.1 Settings > Themes: the theme cards fill the card edge to edge with no gap on the right; all eleven themes apply live to the preview and the keyboard (Midnight, Factory, Cyberpunk, Material You, Liquid Glass, Modern, Y2K Desktop, Retro, Brutalist, Comic, Manga).
 - [ ] 12.2 Every theme is legible: key letters, hints, suggestions, toolbar icons, the mic button, the enter key.
 - [ ] 12.3 Material You picks up wallpaper colours when "Colour from wallpaper" is on (Android 12+).
 - [ ] 12.4 Liquid Glass shows a blurred, translucent keyboard (Android 12+) and falls back to plain translucent keys on older phones.

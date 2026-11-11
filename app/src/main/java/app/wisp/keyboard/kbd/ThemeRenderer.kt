@@ -185,7 +185,8 @@ class ThemeRenderer(val theme: Theme, private val density: Float) {
     /** The key outline: a rounded rectangle with per-corner radii, or a chamfered one for angular themes. */
     private fun shape(out: Path, l: Float, t: Float, r: Float, b: Float, shrink: Float = 0f) {
         out.reset()
-        val cut = dp(theme.cut) - shrink
+        // Only angular themes cut corners; a spread shadow (negative shrink) must not turn a rounded key into a chamfered box.
+        val cut = if (theme.cut > 0f) maxOf(0f, dp(theme.cut) - shrink) else 0f
         if (cut > 0f) {
             out.moveTo(l, t); out.lineTo(r - cut, t); out.lineTo(r, t + cut); out.lineTo(r, b); out.lineTo(l + cut, b); out.lineTo(l, b - cut); out.close()
             return
