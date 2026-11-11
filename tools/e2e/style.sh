@@ -41,7 +41,7 @@ check "$([ "$(field_text)" = "q" ] && echo ok)" "one-handed (left): taps in the 
 tap 855 762; sleep 0.8   # the swap button beside the keys moves them to the right
 tap 910 812; sleep 0.4
 check "$([ "$(field_text)" = "qp" ] && echo ok)" "one-handed: the swap button moves the keyboard to the other side"
-reset placement_p_gap=140
+reset placement_p_gap=140 style_colors=dark
 dark "$(pixel 475 1040)" && check ok "raised keyboard: the area below it is filled, not a gap" || check no "raised keyboard: the area below it is filled, not a gap"
 as_app "rm -f files/wisp-settings.properties" >/dev/null 2>&1
 exit $FAILED
