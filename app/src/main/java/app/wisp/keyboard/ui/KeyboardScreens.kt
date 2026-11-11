@@ -52,9 +52,9 @@ fun LookScreen(modifier: Modifier = Modifier) {
         Section("Theme", Icons.Icon.THEME) {
             ChoiceRow("Keyboard colours", listOf("system" to "System", "light" to "Light", "dark" to "Dark"), style.colors) { v -> edit { it.copy(colors = v) } }
             Text("Themes that come with both a light and a dark look switch between them here; the other themes keep their one look.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            // Equal-width columns that fill the card, as many as fit at about 100 dp each.
+            // Equal-width columns that fill the card, as many as fit at about 150 dp each.
             BoxWithConstraints(Modifier.fillMaxWidth()) {
-                val columns = maxOf(2, (maxWidth / 100.dp).toInt())
+                val columns = maxOf(2, (maxWidth / 150.dp).toInt())
                 Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     for (row in Themes.all(context, style.wantsDark(context)).chunked(columns)) Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         for (t in row) ThemeCard(t, selected = t.id == style.theme, Modifier.weight(1f)) { edit { it.copy(theme = t.id) } }
@@ -91,23 +91,12 @@ fun LookScreen(modifier: Modifier = Modifier) {
     }
 }
 
-/** A small preview of a theme: its board, three keys and its accent. */
+/** A theme's real look (see [ThemeThumbnail]), with the name under it and a ring when it is the one in use. */
 @Composable
 private fun ThemeCard(t: Theme, selected: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    val c = { v: Int -> Color(v) }
-    Column(
-        modifier.clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Canvas(
-            Modifier.fillMaxWidth().height(60.dp).clip(RoundedCornerShape(10.dp))
-                .border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp)),
-        ) {
-            drawRect(c(t.board.first().base() or (0xFF shl 24)))
-            val key = c(t.key.base()); val mod = c(t.mod.base()); val acc = c(t.accent.base())
-            val kw = size.width / 6f; val kh = size.height / 4f
-            val r = androidx.compose.ui.geometry.CornerRadius(minOf(t.radius[0], 6f) * density, minOf(t.radius[0], 6f) * density)
-            for (row in 0..2) for (col in 0..4) drawRoundRect(if (row == 2 && col == 0) mod else if (row == 2 && col == 4) acc else key, androidx.compose.ui.geometry.Offset(kw * (col + 0.5f), kh * (row + 0.5f)), androidx.compose.ui.geometry.Size(kw * 0.85f, kh * 0.8f), r)
+    Column(modifier.clickable(onClick = onClick), horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).border(if (selected) 3.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))) {
+            ThemeThumbnail(t.id, t.dark)
         }
         Text(t.name, style = MaterialTheme.typography.labelMedium, modifier = Modifier.padding(top = 4.dp))
     }

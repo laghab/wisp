@@ -222,6 +222,9 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         return (contentHeight() - (PAD_TOP_DP + PAD_BOTTOM_DP + theme.bandHeight) * density - rowGapPx * (n - 1)) / n
     }
 
+    /** Frees everything for a view that was never attached (an off-screen render for a thumbnail). */
+    fun dispose() { removeCallbacks(artTick); release(); renderer.release() }
+
     /** Stops any touch in progress and frees the Rust layout. */
     private fun release() {
         removeCallbacks(tick); dismissPopup(); gesturing = false
@@ -353,13 +356,13 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private fun drawArt(c: Canvas, picture: app.wisp.keyboard.style.SvgArt, l: CompiledLayout, i: Int, lit: Boolean, now: Long) {
         val o = i * 4
         artRect.set(l.rects[o], l.rects[o + 1], l.rects[o + 2], l.rects[o + 3])
-        val rad = theme.radius[0] * density
-        artClip.rewind(); artClip.addRoundRect(artRect, rad, rad, android.graphics.Path.Direction.CW)
+        renderer.keyShape(artClip, artRect.left, artRect.top, artRect.right, artRect.bottom)       // the key's own shape: its corner radii, or Cyberpunk's cut corners
         c.save(); c.clipPath(artClip)
         theme.art?.bg?.let { bg -> bitmapPaint.color = bg.base(); c.drawRect(artRect, bitmapPaint); bitmapPaint.color = 0xFFFFFFFF.toInt() }      // behind a picture that does not reach the edges
         picture.draw(c, artRect, artSeconds(now), slice = theme.art?.id != "moon", fonts = artFonts)
         if (lit) { bitmapPaint.alpha = 70; bitmapPaint.color = theme.accent.base(); c.drawRect(artRect, bitmapPaint); bitmapPaint.alpha = 255 }
         c.restore()
+        renderer.drawBorder(c, artRect.left, artRect.top, artRect.right, artRect.bottom)        // the picture covered the key's border: put it back
         // The language is still named, small, in the corner.
         if (languageName.isNotEmpty()) { smallText.color = theme.fg; smallText.alpha = 130; smallText.textSize = 10f * density; c.drawText(languageNow.ifEmpty { languageName }, artRect.left + 6f * density, artRect.bottom - 5f * density, smallText); smallText.alpha = 255; smallText.textSize = minOf(theme.size, 15f) * density }
         if (picture.animated && artMode != "still" && android.animation.ValueAnimator.areAnimatorsEnabled() && isShown) postDelayed(artTick, if (artMode == "subtle") 66L else 33L)

@@ -178,6 +178,18 @@ class ThemeRenderer(val theme: Theme, private val density: Float) {
         return bmp
     }
 
+    /** The key's real outline (rounded with its own corner radii, or chamfered) in [out], for pictures that must stay inside the key. */
+    fun keyShape(out: Path, l: Float, t: Float, r: Float, b: Float) = shape(out, l, t, r, b)
+
+    /** The key's border, drawn over whatever was painted on the key (a space-bar picture covers the border the key itself drew). */
+    fun drawBorder(c: Canvas, l: Float, t: Float, r: Float, b: Float) {
+        val bd = theme.border ?: return
+        val bw = dp(bd.width); if (bw <= 0f) return
+        shape(inner, l + bw / 2, t + bw / 2, r - bw / 2, b - bw / 2, shrink = bw / 2)
+        paint.reset(); paint.isAntiAlias = true; paint.style = Paint.Style.STROKE; paint.strokeWidth = bw; paint.color = bd.color
+        c.drawPath(inner, paint)
+    }
+
     /** The key outline: a rounded rectangle with per-corner radii, or a chamfered one for angular themes. */
     private fun shape(out: Path, l: Float, t: Float, r: Float, b: Float, shrink: Float = 0f) {
         out.reset()
