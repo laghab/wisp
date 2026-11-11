@@ -95,7 +95,6 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
 
     override fun onDraw(c: Canvas) {
         val t = theme
-        c.drawColor(palette.background)
         line.color = t?.sep ?: palette.key
         drawMic(c)
         val d = density

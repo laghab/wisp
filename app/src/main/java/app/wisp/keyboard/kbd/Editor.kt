@@ -11,6 +11,9 @@ interface Editor {
     fun backspace()
     fun deleteBefore(count: Int)
     fun textBefore(count: Int): CharSequence?
+    fun textAfter(count: Int): CharSequence?
+    /** Makes [word], the text just before the cursor, the underlined word being edited (as if it had been typed). */
+    fun markComposing(word: CharSequence)
     fun moveCursor(steps: Int)
     /** Selects [count] characters before the cursor (the selection's end stays put); 0 collapses to the cursor. */
     fun selectBefore(count: Int)

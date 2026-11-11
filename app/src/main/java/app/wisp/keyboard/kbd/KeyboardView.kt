@@ -315,13 +315,18 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         invalidate()
     }
 
+    /** True when the host draws the board behind this view (and the strip above it), so the whole keyboard is one surface. */
+    var boardFromHost = false
+    /** The theme's board (colours, patterns or photo) over [w] by [h] px, for the host to paint behind everything. */
+    fun drawBoard(canvas: Canvas, w: Int, h: Int) = renderer.drawBoard(canvas, w, h)
+
     override fun onDraw(canvas: Canvas) {
         val l = layout ?: return
         val d0 = if (BuildConfig.DEBUG) System.nanoTime() else 0L
         Probe.first("first_draw")
         if (bigText.typeface == null || tintedBigSize != theme.size || tintedTheme !== theme) { setThemePaints(); tintedBigSize = theme.size; tintedTheme = theme }
         renderer.prepareBackdrop(width, height)
-        renderer.drawBoard(canvas, width, height)
+        if (!boardFromHost) renderer.drawBoard(canvas, width, height)
         renderer.drawBand(canvas, width)
         val r = l.rects
         val now = SystemClock.uptimeMillis()

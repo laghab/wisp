@@ -47,7 +47,8 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     private var lastShiftTapAt = 0L
     private var editing = 0
-    private inline fun <T> edit(block: () -> T): T { editing++; try { return block() } finally { editing-- } }
+    private var lastEditAt = 0L
+    private inline fun <T> edit(block: () -> T): T { editing++; lastEditAt = clock(); try { return block() } finally { editing-- } }
     private val composer = WordComposer()
     private var previousWord: String? = null
     private var result: SuggestionResult? = null
@@ -80,6 +81,31 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
             shift = Shift.OFF
         }
         autoShift()
+        publishBar()
+    }
+
+    private var adoptedAs: String? = null    // the word taken from the text as it was; learning it only happens once the user changes it
+
+    /**
+     * The cursor was put somewhere new (a tap in the text, a field gaining focus). If it sits at the end of a word, that word becomes the one
+     * being edited, so the strip shows it with its corrections like a word just typed. Skipped in the middle of a word, while typing, and right
+     * after the keyboard's own edits (a paste, a sliding cursor), which are not the user choosing a word.
+     */
+    fun adoptWordBeforeCursor() {
+        if (!suggestionsEnabled || composer.isNotEmpty || editing > 0 || dictation != null || clock() - lastEditAt < ADOPT_QUIET_MS) return
+        if (editor.selectedText() != null) return
+        if (editor.textAfter(1)?.firstOrNull()?.let { Character.isLetter(it) } == true) return
+        val before = editor.textBefore(WORD_SCAN)?.toString() ?: return
+        var start = before.length
+        while (start > 0) { val cp = before.codePointBefore(start); if (!isWordChar(cp, start < before.length)) break; start -= Character.charCount(cp) }
+        while (start < before.length && before[start] == '\'') start++
+        val word = before.substring(start)
+        if (word.codePointCount(0, word.length) !in 2..WordComposer.MAX) return
+        editor.markComposing(word)
+        clearGesture(); correction = null; keepAsTyped = null
+        previousWord = before.substring(0, start).trimEnd().takeLastWhile { isWordChar(it.code, true) }.lowercase().ifEmpty { null }
+        composer.set(word); result = null; adoptedAs = word
+        suggester?.request(word, composer.xs, composer.ys, composer.size, previousWord)
         publishBar()
     }
 
@@ -187,7 +213,9 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         val typed = composer.text
         editor.setComposing(item.text)
         editor.finishComposing()
-        editor.commit(" ")
+        val next = editor.textAfter(1)?.firstOrNull()
+        val alreadySpaced = adoptedAs != null && next != null && (next.isWhitespace() || !next.isLetterOrDigit())      // correcting a word in the middle of text: its space is already there
+        if (!alreadySpaced) editor.commit(" ")
         val before = previousWord
         val retyped = completeRetype(item.text)
         learn(item.text, before, strong = retyped || index != 0 || item.text == typed)
@@ -280,7 +308,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         // Taking a correction back with backspace is a hint, not a decision: it needs a second use before the word becomes the user's own.
         // Typing a word right after deleting a swiped one is a decision, though: they meant exactly this.
         val retyped = completeRetype(finalWord)
-        learn(finalWord, before, strong = retyped)
+        if (adoptedAs != finalWord) learn(finalWord, before, strong = retyped)
         previousWord = finalWord.lowercase()
         correction = if (target != null && separator != null) Correction(typed, finalWord, separator, before) else null
         resetWord(clearCorrection = false)
@@ -292,7 +320,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     private fun resetWord(clearCorrection: Boolean = true) {
         if (composer.isNotEmpty) editor.finishComposing()
-        composer.clear(); result = null; suggester?.cancel()
+        composer.clear(); result = null; adoptedAs = null; suggester?.cancel()
         if (clearCorrection) correction = null
     }
 
@@ -474,6 +502,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     companion object {
         private const val WORD_SCAN = 400
+        private const val ADOPT_QUIET_MS = 350L
         const val DOUBLE_SPACE_MS = 450L
         const val DOUBLE_TAP_MS = 350L
 

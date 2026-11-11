@@ -57,6 +57,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 5.6 After a space, next-word suggestions appear ("how", then "are", "you" ...).
 - [ ] 5.7 Autocorrect off in Home: nothing is replaced automatically, suggestions still show.
 - [ ] 5.8 With the field empty, the strip shows the toolbar icons (apps, clipboard, emoji, rewrite, crop, palette, settings) and the mic on the right.
+- [ ] 5.8b Tap at the end of a word that is already in a text box (or open a box that has text): that word shows in the strip with corrections, and tapping one replaces it without an extra space. Tapping in the middle of a word offers nothing.
 - [ ] 5.9 Password fields: no suggestions, nothing learned, mic does nothing.
 - [ ] 5.10 Text shortcuts (Settings > Typing): add "omw" as "on my way"; typing "omw " expands it. Undo with backspace.
 
@@ -90,7 +91,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 8.2 Emoji search finds results ("smile", "heart", "fire").
 - [ ] 8.3 Kaomoji and Symbols tabs insert correctly. ABC returns to the letters; backspace works in the panel.
 - [ ] 8.4 Recent emoji are remembered.
-- [ ] 8.5 Clipboard icon opens history; copy something in another app and it appears.
+- [ ] 8.5 Clipboard icon opens history; copy something in another app and it appears. With Incognito on, the panel says copies are not kept.
 - [ ] 8.6 Tapping a clip inserts it; pinning keeps it; filters (All, Pinned, Links, Codes) work.
 - [ ] 8.7 **(!)** Copy a password from a password manager: it is not stored in history.
 - [ ] 8.8 A copied one-time code appears under Codes and disappears sooner than other clips; unpinned clips clear after about an hour.
@@ -136,6 +137,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 
 ## 12. Themes and the settings app
 - [ ] 12.1 Settings > Themes: the theme cards fill the card edge to edge with no gap on the right; all thirty themes apply live to the preview and the keyboard (Wisp, Moon Phase, Dandelion, Sakura, Factory, Cyberpunk, Terminal, Y2K Desktop, Material You, Liquid Glass, Modern, Retro, Brutalist, Comic, Manga).
+- [ ] 12.1b The strip above the keys, the keys and the gap or navigation bar below them read as one surface in every theme (patterns and photos continue across the strip).
 - [ ] 12.2 Every theme is legible: key letters, hints, suggestions, toolbar icons, the mic button, the enter key.
 - [ ] 12.3 Material You picks up wallpaper colours when "Colour from wallpaper" is on (Android 12+).
 - [ ] 12.4 Liquid Glass shows a blurred, translucent keyboard (Android 12+) and falls back to plain translucent keys on older phones.

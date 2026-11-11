@@ -28,6 +28,7 @@ import app.wisp.keyboard.personal.LearningPolicy
 import app.wisp.keyboard.settings.WispSettings
 import app.wisp.keyboard.kbd.Palette
 import app.wisp.keyboard.clipboard.ClipItem
+import app.wisp.keyboard.style.bottomColor
 import app.wisp.keyboard.clipboard.ClipboardHistory
 import app.wisp.keyboard.clipboard.ClipboardPanelView
 import app.wisp.keyboard.clipboard.Kind
@@ -84,6 +85,9 @@ class WispIme : InputMethodService() {
     }
 
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    private val adopt = Runnable { controller.adoptWordBeforeCursor() }
+    /** After the cursor settles, the word it sits at the end of becomes the one the strip checks. */
+    private fun scheduleAdopt() { main.removeCallbacks(adopt); main.postDelayed(adopt, 400) }
 
     override fun onDestroy() {
         getSystemService(android.content.ClipboardManager::class.java).removePrimaryClipChangedListener(clipListener)
@@ -190,6 +194,7 @@ class WispIme : InputMethodService() {
         root.addView(stripBox, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         root.addView(stack, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
         keys = k; bar = b; emojiPanel = panel; emojiBar = eb
+        k.boardFromHost = true
         applyStyleIfChanged(force = true)
         b.incognito = incognito
 
@@ -493,6 +498,22 @@ class WispIme : InputMethodService() {
     override fun onEvaluateFullscreenMode(): Boolean = if (placement.mode == Placement.Mode.FLOATING) false else super.onEvaluateFullscreenMode()
 
     private val palette = Palette()
+
+    /** The theme's board across the strip, the keys and the gap below them, so no part of the keyboard is a flat colour the design does not have. */
+    private val boardBackground = object : android.graphics.drawable.Drawable() {
+        override fun draw(canvas: android.graphics.Canvas) { keys?.drawBoard(canvas, bounds.width(), bounds.height()) ?: canvas.drawColor(palette.background) }
+        override fun setAlpha(alpha: Int) {}
+        override fun setColorFilter(cf: android.graphics.ColorFilter?) {}
+        @Deprecated("Required by Drawable") override fun getOpacity() = android.graphics.PixelFormat.OPAQUE
+    }
+
+    /** The bar the phone draws under the keyboard takes the board's bottom colour, with dark or light buttons to suit. */
+    private fun paintNavigationBar(t: app.wisp.keyboard.style.Theme) {
+        val w = window?.window ?: return
+        val c = t.bottomColor()
+        w.navigationBarColor = c
+        androidx.core.view.WindowCompat.getInsetsController(w, w.decorView).isAppearanceLightNavigationBars = androidx.core.graphics.ColorUtils.calculateLuminance(c) > 0.5
+    }
     private var style = KeyboardStyle()
     private var styleKey = ""
 
@@ -508,7 +529,8 @@ class WispIme : InputMethodService() {
         keys?.applyStyle(next); emojiBar?.applyStyle(next)
         bar?.invalidate()
         if (numberRowChanged && !force) setMode(mode)
-        floatRoot?.setBackgroundColor(palette.background)
+        floatRoot?.let { it.background = boardBackground; it.invalidate() }
+        paintNavigationBar(next.themeFor(this))
         rail?.setTheme(next.themeFor(this))
         loadPlacement()
     }
@@ -658,7 +680,8 @@ class WispIme : InputMethodService() {
         val clip = try {
             getSystemService(android.content.ClipboardManager::class.java).primaryClip.also { clipProblem = null }
         } catch (e: Exception) { clipProblem = "Android refused: ${e.javaClass.simpleName}. Make sure Wisp is the active keyboard."; null }
-        if (clip == null && clipProblem == null && lastClipAt == 0L) clipProblem = "The phone returned an empty clipboard. Some phones hide it from keyboards."
+        if (incognito) clipProblem = "Incognito is on, so copies are not kept. Turn it off with the mask in the toolbar."
+        else if (clip == null && clipProblem == null && lastClipAt == 0L) clipProblem = "The phone returned an empty clipboard. Some phones hide it from keyboards."
         clipPanel?.let { it.problem = clipProblem; it.refresh() }
         if (clip == null || clip.itemCount == 0) return
         val at = clip.description.timestamp
@@ -742,10 +765,12 @@ class WispIme : InputMethodService() {
         if (!restarting) mode = Mode.LETTERS
         setMode(mode)
         controller.onFieldStarted(restarting)
+        if (!restarting) scheduleAdopt()
         keys?.shifted = mode == Mode.LETTERS && controller.shift != Shift.OFF; keys?.capsLock = mode == Mode.LETTERS && controller.shift == Shift.CAPS
     }
 
     override fun onFinishInput() {
+        main.removeCallbacks(adopt)
         inlineScroll?.let { it.removeAllViews(); it.visibility = View.GONE }
         voice?.cancel()                              // the field this was meant for is gone
         controller.onExternalCursorMove()
@@ -763,6 +788,7 @@ class WispIme : InputMethodService() {
         if (controller.isComposing && (candidatesStart == -1 || newSelStart != candidatesEnd || newSelEnd != candidatesEnd)) {
             controller.onExternalCursorMove()
         }
+        if (newSelStart == newSelEnd && kotlin.math.abs(newSelStart - oldSelStart) > 1) scheduleAdopt()      // the cursor jumped: a tap in the text
     }
 
     private companion object { const val PANEL_FADE_MS = 120L }

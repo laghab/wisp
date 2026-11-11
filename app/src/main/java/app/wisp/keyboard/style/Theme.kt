@@ -204,6 +204,9 @@ object ThemeParser {
     }
 }
 
+/** The colour the board ends in along its bottom edge, for the bar the phone paints under the keyboard. */
+fun Theme.bottomColor(): Int = board.first().let { if (it is Fill.Linear) it.colors.last() else it.base() } or (0xFF shl 24)
+
 /** The flat colours the strip, panels and voice ribbon draw with, taken from a theme. */
 fun Theme.toPalette(): app.wisp.keyboard.kbd.Palette {
     val bg = board.first().base() or (0xFF shl 24)

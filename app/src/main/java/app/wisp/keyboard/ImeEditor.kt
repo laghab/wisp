@@ -23,6 +23,14 @@ class ImeEditor(private val ime: InputMethodService) : Editor {
 
     override fun deleteBefore(count: Int) { ic?.deleteSurroundingText(count, 0) }
     override fun textBefore(count: Int): CharSequence? = ic?.getTextBeforeCursor(count, 0)
+    override fun textAfter(count: Int): CharSequence? = ic?.getTextAfterCursor(count, 0)
+
+    override fun markComposing(word: CharSequence) {
+        val c = ic ?: return
+        val et = c.getExtractedText(android.view.inputmethod.ExtractedTextRequest().apply { hintMaxChars = 0 }, 0)
+        if (et != null) { val end = maxOf(et.selectionStart, et.selectionEnd) + et.startOffset; c.setComposingRegion(end - word.length, end) }
+        else { c.deleteSurroundingText(word.length, 0); c.setComposingText(word, 1) }      // an app that will not say where the cursor is: put the word back as composing text
+    }
 
     override fun moveCursor(steps: Int) {
         val key = if (steps < 0) KeyEvent.KEYCODE_DPAD_LEFT else KeyEvent.KEYCODE_DPAD_RIGHT

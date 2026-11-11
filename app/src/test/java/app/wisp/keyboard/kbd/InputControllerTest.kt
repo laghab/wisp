@@ -25,6 +25,9 @@ class InputControllerTest {
         override fun backspace() { if (selected > 0) { committed.setLength(committed.length - selected); selected = 0 } else if (composing.isNotEmpty()) composing = composing.dropLast(1) else if (committed.isNotEmpty()) committed.setLength(committed.length - 1) }
         override fun deleteBefore(count: Int) { finishComposing(); committed.setLength((committed.length - count).coerceAtLeast(0)) }
         override fun textBefore(count: Int): CharSequence = shown.takeLast(count)
+        var after = ""
+        override fun textAfter(count: Int): CharSequence = after.take(count)
+        override fun markComposing(word: CharSequence) { composing = word.toString(); committed.setLength(committed.length - word.length) }
         override fun moveCursor(steps: Int) { cursorMoves += steps }
         var selected = 0
         override fun selectBefore(count: Int) { selected = count }
@@ -446,5 +449,31 @@ class InputControllerTest {
         c.type("teh"); c.onSuggestions(SuggestionResult("teh", listOf(cand("the", 477_893)), false))
         c.onCursorSteps(-1)
         assertEquals("teh", e.shown); assertEquals("", e.composing)
+    }
+
+    // ---- tapping into existing text
+
+    @Test fun cursorAtTheEndOfAWordMakesItTheWordBeingChecked() {
+        val e = FakeEditor(); e.committed.append("see teh"); val s = FakeSuggester(); val c = controller(e, s)
+        now += 1_000; c.adoptWordBeforeCursor()
+        assertEquals("teh", e.composing); assertEquals(listOf("teh"), s.requests); assertEquals("see", s.previous.last())
+        assertTrue(c.isComposing)
+    }
+
+    @Test fun nothingIsAdoptedInTheMiddleOfAWordAfterASpaceOrRightAfterTyping() {
+        val mid = FakeEditor(); mid.committed.append("see teh"); mid.after = "ing"; val c1 = controller(mid, FakeSuggester()); now += 1_000; c1.adoptWordBeforeCursor()
+        assertFalse(c1.isComposing)
+        val spaced = FakeEditor(); spaced.committed.append("see teh "); val c2 = controller(spaced, FakeSuggester()); now += 1_000; c2.adoptWordBeforeCursor()
+        assertFalse(c2.isComposing)
+        val typing = FakeEditor(); val c3 = controller(typing, FakeSuggester()); c3.type("hi "); c3.adoptWordBeforeCursor()
+        assertFalse(c3.isComposing)
+    }
+
+    @Test fun correctingAWordInTheMiddleOfTextKeepsItsSpaceAndDoesNotLearnTheWordAsTyped() {
+        val e = FakeEditor(); e.committed.append("see teh"); e.after = " cat"; val c = controller(e, FakeSuggester())
+        now += 1_000; c.adoptWordBeforeCursor()
+        c.onSuggestions(SuggestionResult("teh", listOf(cand("the", 477_893)), false))
+        c.onSuggestionTapped(1)
+        assertEquals("see the", e.shown)
     }
 }
