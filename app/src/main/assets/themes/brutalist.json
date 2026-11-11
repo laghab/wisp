@@ -4,35 +4,84 @@
  "dark": false,
  "board": "#F2EFE8",
  "key": "#FFFFFF",
- "mod": "#FFFFFF",
+ "mod": "#FFD400",
+ "accent": "#FF4A1C",
  "fg": "#000000",
  "modFg": "#000000",
- "accent": "#FF4A1C",
  "accentFg": "#000000",
- "radius": 0,
+ "stripFg": "#000000",
+ "sep": "#000000",
+ "radius": 0.0,
  "border": {
-  "width": 2,
+  "width": 2.0,
   "color": "#000000"
  },
  "shadow": [
   {
-   "dx": 3,
-   "dy": 3,
-   "color": "#000000"
+   "color": "#000000",
+   "dx": 3.0,
+   "dy": 3.0
   }
  ],
  "lit": [
   {
-   "dx": 3,
-   "dy": 3,
-   "color": "#000000"
+   "color": "#000000",
+   "dx": 3.0,
+   "dy": 3.0
   }
  ],
- "font": "space-grotesk",
+ "font": "space_grotesk",
  "weight": 700,
  "size": 18,
  "upper": true,
- "stripFg": "#000000",
- "sep": "#000000",
- "space": "SPACE"
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "brutal",
+  "bg": "#FFFFFF",
+  "colors": [
+   "#000000",
+   "#FF4A1C",
+   "#000"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": "#0E0E0E",
+   "key": "#161616",
+   "fg": "#F2EFE8",
+   "stripFg": "#F2EFE8",
+   "sep": "#F2EFE8",
+   "border": {
+    "width": 2.0,
+    "color": "#F2EFE8"
+   },
+   "shadow": [
+    {
+     "color": "#F2EFE8",
+     "dx": 3.0,
+     "dy": 3.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#F2EFE8",
+     "dx": 3.0,
+     "dy": 3.0
+    }
+   ],
+   "art": {
+    "id": "brutal",
+    "bg": "#161616",
+    "colors": [
+     "#F2EFE8",
+     "#FF4A1C",
+     "#000"
+    ]
+   }
+  }
+ }
 }

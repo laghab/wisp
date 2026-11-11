@@ -1,0 +1,157 @@
+{
+ "id": "moon",
+ "name": "Moon Phase",
+ "dark": false,
+ "board": "#F4D7DD",
+ "key": "#FBE9EC",
+ "mod": "#EBC3CC",
+ "accent": "#8F8590",
+ "fg": "#6E6670",
+ "modFg": "#6E6670",
+ "accentFg": "#FBE9EC",
+ "stripFg": "#6E6670",
+ "sep": "#E2B9C2",
+ "radius": 14.0,
+ "shadow": [
+  {
+   "color": "rgba(110,102,112,0.18)",
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(143,133,144,0.35)",
+   "spread": 3.0
+  }
+ ],
+ "font": "zen_maru",
+ "weight": 500,
+ "size": 20,
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "moon",
+  "bg": "#F4D7DD",
+  "colors": [
+   "#958B96",
+   "#FFFFFF",
+   "#000"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    "#1B1524",
+    {
+     "radial": {
+      "x": 0.88,
+      "y": 0.18,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(255,255,255,0.8)"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.45,
+      "y": 0.85,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "rgba(255,255,255,0.7)"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.7,
+      "y": 0.6,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "#FFFFFF"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    },
+    {
+     "radial": {
+      "x": 0.2,
+      "y": 0.3,
+      "rx": 1.0,
+      "ry": 1.0,
+      "stops": [
+       [
+        0.0,
+        "#FFFFFF"
+       ],
+       [
+        1.0,
+        "transparent"
+       ]
+      ]
+     }
+    }
+   ],
+   "key": "#2A2234",
+   "mod": "#221B2B",
+   "accent": "#E6B8C6",
+   "fg": "#EADFEA",
+   "modFg": "#EADFEA",
+   "accentFg": "#1B1524",
+   "stripFg": "#CFC2D3",
+   "sep": "#3A2F45",
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.4)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(230,184,198,0.35)",
+     "spread": 3.0
+    },
+    {
+     "color": "rgba(230,184,198,0.3)",
+     "blur": 16.0
+    }
+   ],
+   "art": {
+    "id": "moon",
+    "bg": "#160F1E",
+    "colors": [
+     "#ECE3EC",
+     "#E6B8C6",
+     "#000"
+    ]
+   }
+  }
+ }
+}

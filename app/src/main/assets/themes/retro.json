@@ -3,42 +3,66 @@
  "name": "Retro",
  "dark": false,
  "board": "#CFC3A6",
- "key": "#EFE6D0",
+ "key": {
+  "radial": {
+   "x": 0.5,
+   "y": 0.4,
+   "rx": 0.7,
+   "ry": 0.6,
+   "stops": [
+    [
+     0.0,
+     "#F8F1E0"
+    ],
+    [
+     0.75,
+     "#E8DDC4"
+    ],
+    [
+     1.0,
+     "#E8DDC4"
+    ]
+   ],
+   "rel": true
+  }
+ },
  "mod": "#B3A687",
+ "accent": "#D9542B",
  "fg": "#3A3226",
  "modFg": "#2B241A",
- "accent": "#D9542B",
  "accentFg": "#FFF6E6",
- "radius": 5,
+ "stripFg": "#3A3226",
+ "sep": "#A89B7D",
+ "radius": 5.0,
  "border": {
-  "width": 1,
+  "width": 1.0,
   "color": "#9E9073"
  },
  "shadow": [
   {
+   "color": "rgba(0,0,0,0.14)",
    "inset": true,
-   "dy": -4,
-   "color": "rgba(0,0,0,0.14)"
+   "dy": -4.0
   },
   {
+   "color": "rgba(255,255,255,0.6)",
    "inset": true,
-   "dy": 1,
-   "color": "rgba(255,255,255,0.6)"
+   "dy": 1.0
   },
   {
-   "dy": 2,
-   "color": "#8E8166"
+   "color": "#8E8166",
+   "dy": 2.0
   }
  ],
  "lit": [
   {
-   "spread": 2,
-   "color": "#D9542B"
+   "color": "#D9542B",
+   "spread": 2.0
   },
   {
+   "color": "rgba(0,0,0,0.2)",
    "inset": true,
-   "dy": -4,
-   "color": "rgba(0,0,0,0.2)"
+   "dy": -4.0
   }
  ],
  "font": "vt323",
@@ -47,10 +71,10 @@
  "upper": true,
  "band": {
   "linear": {
-   "angle": 90,
+   "angle": 90.0,
    "stops": [
     [
-     0,
+     0.0,
      "#D9542B"
     ],
     [
@@ -78,14 +102,137 @@
      "#3C7FB0"
     ],
     [
-     1,
+     1.0,
      "#3C7FB0"
     ]
    ]
   }
  },
  "bandHeight": 4,
- "stripFg": "#3A3226",
- "sep": "#A89B7D",
- "space": "READY."
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "retro",
+  "bg": {
+   "radial": {
+    "x": 0.5,
+    "y": 0.4,
+    "rx": 0.7,
+    "ry": 0.6,
+    "stops": [
+     [
+      0.0,
+      "#F8F1E0"
+     ],
+     [
+      0.75,
+      "#E8DDC4"
+     ],
+     [
+      1.0,
+      "#E8DDC4"
+     ]
+    ],
+    "rel": true
+   }
+  },
+  "colors": [
+   "#3A3226",
+   "#fff",
+   "#000"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": "#24211D",
+   "key": {
+    "radial": {
+     "x": 0.5,
+     "y": 0.4,
+     "rx": 0.7,
+     "ry": 0.6,
+     "stops": [
+      [
+       0.0,
+       "#47423A"
+      ],
+      [
+       0.75,
+       "#37332D"
+      ],
+      [
+       1.0,
+       "#37332D"
+      ]
+     ],
+     "rel": true
+    }
+   },
+   "mod": "#2E2A25",
+   "fg": "#E9DCC0",
+   "modFg": "#E9A23B",
+   "stripFg": "#E9DCC0",
+   "sep": "#47423A",
+   "border": {
+    "width": 1.0,
+    "color": "#151310"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.3)",
+     "inset": true,
+     "dy": -4.0
+    },
+    {
+     "color": "rgba(255,255,255,0.08)",
+     "inset": true,
+     "dy": 1.0
+    },
+    {
+     "color": "#0E0D0B",
+     "dy": 2.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#D9542B",
+     "spread": 2.0
+    }
+   ],
+   "art": {
+    "id": "retro",
+    "bg": {
+     "radial": {
+      "x": 0.5,
+      "y": 0.4,
+      "rx": 0.7,
+      "ry": 0.6,
+      "stops": [
+       [
+        0.0,
+        "#47423A"
+       ],
+       [
+        0.75,
+        "#37332D"
+       ],
+       [
+        1.0,
+        "#37332D"
+       ]
+      ],
+      "rel": true
+     }
+    },
+    "colors": [
+     "#E9DCC0",
+     "#fff",
+     "#000"
+    ]
+   }
+  }
+ }
 }

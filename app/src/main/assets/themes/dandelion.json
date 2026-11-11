@@ -1,0 +1,101 @@
+{
+ "id": "dandelion",
+ "name": "Dandelion",
+ "dark": false,
+ "board": "#F3EEDC",
+ "key": "#FBF8EE",
+ "mod": "#E3DCC2",
+ "accent": "#8E9C5E",
+ "fg": "#4A4B3A",
+ "modFg": "#4A4B3A",
+ "accentFg": "#FBF8EE",
+ "stripFg": "#5A5B48",
+ "sep": "#D8D0B4",
+ "radius": 12.0,
+ "border": {
+  "width": 1.0,
+  "color": "#E0D8BC"
+ },
+ "shadow": [
+  {
+   "color": "rgba(74,75,58,0.12)",
+   "dy": 1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(142,156,94,0.35)",
+   "spread": 3.0
+  }
+ ],
+ "font": "zen_maru",
+ "weight": 500,
+ "size": 20,
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "dandelion",
+  "bg": "#FBF8EE",
+  "colors": [
+   "#7B7D63",
+   "#ADAB8E",
+   "#8E9C5E"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": {
+    "linear": {
+     "angle": 180.0,
+     "stops": [
+      [
+       0.0,
+       "#1D2233"
+      ],
+      [
+       1.0,
+       "#26243A"
+      ]
+     ]
+    }
+   },
+   "key": "#2E3046",
+   "mod": "#25273A",
+   "accent": "#F1D58A",
+   "fg": "#F1EBD8",
+   "modFg": "#F1EBD8",
+   "accentFg": "#1D2233",
+   "stripFg": "#D8D2C0",
+   "sep": "#3A3D58",
+   "border": {
+    "width": 1.0,
+    "color": "#383B55"
+   },
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.35)",
+     "inset": true,
+     "dy": -1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(241,213,138,0.35)",
+     "spread": 3.0
+    }
+   ],
+   "art": {
+    "id": "dandelion",
+    "bg": "#2A2C42",
+    "colors": [
+     "#F1EBD8",
+     "#CFC9B4",
+     "#8E9A6A"
+    ]
+   }
+  }
+ }
+}

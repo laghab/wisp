@@ -9,8 +9,12 @@ sealed class Fill {
     /** CSS-style angle: 180 runs top to bottom, 90 left to right. [length] in dp makes the gradient repeat. */
     class Linear(val angle: Float, val length: Float, val positions: FloatArray, val colors: IntArray) : Fill()
     /** An ellipse of [rx] by [ry] dp centred at ([x], [y]) as fractions of the board. */
-    class Radial(val x: Float, val y: Float, val rx: Float, val ry: Float, val positions: FloatArray, val colors: IntArray) : Fill()
+    class Radial(val x: Float, val y: Float, val rx: Float, val ry: Float, val positions: FloatArray, val colors: IntArray, val relative: Boolean = false) : Fill()
     class Dots(val step: Float, val radius: Float, val color: Int) : Fill()
+    /** Four small studs [inset] dp in from the corners (Factory's rivets). */
+    class Rivets(val inset: Float, val radius: Float, val color: Int) : Fill()
+    /** Several fills painted one over the other, the first at the bottom. */
+    class Layers(val layers: List<Fill>) : Fill()
 
     /** A single representative colour, for the views that draw plain colours (the strip, panels). */
     fun base(): Int = when (this) {
@@ -18,6 +22,8 @@ sealed class Fill {
         is Linear -> colors[colors.size / 2]
         is Radial -> colors[0]
         is Dots -> color
+        is Rivets -> color
+        is Layers -> layers.first().base()
     }
 }
 
@@ -28,6 +34,9 @@ class Shadow(val inset: Boolean, val dx: Float, val dy: Float, val blur: Float, 
 }
 
 class Border(val width: Float, val color: Int)
+
+/** The space bar's animated picture: which one, what is painted behind it, and its three colours. */
+class Art(val id: String, val bg: Fill?, val colors: IntArray)
 
 /**
  * A full keyboard skin, described by data (see docs/themes.md). Lengths are dp. A theme is immutable; the renderer
@@ -60,6 +69,12 @@ data class Theme(
     val dynamic: Boolean,
     /** True when the theme has both a light and a dark look, so the keyboard-colours setting applies to it. */
     val hasVariants: Boolean = false,
+    /** A glow or shadow behind the key labels. */
+    val textShadow: Shadow? = null,
+    /** Each key is turned a little, differently (Comic). */
+    val tilt: Boolean = false,
+    /** The space bar's animated art, where the theme has one. */
+    val art: Art? = null,
 ) {
     /** The reach of the largest outside shadow, so a cached key bitmap has room for it. */
     val shadowReach: Float get() = (shadow + lit + listOfNotNull(micGlow)).maxOfOrNull { it.reach } ?: 0f
@@ -122,6 +137,9 @@ object ThemeParser {
             blur = o.optDouble("blur", 0.0).toFloat(),
             dynamic = o.optBoolean("dynamic", false),
             hasVariants = root.optJSONObject("variants")?.let { it.has("light") && it.has("dark") } == true,
+            textShadow = o.optJSONObject("textShadow")?.let { shadow(it, "textShadow") },
+            tilt = o.optBoolean("tilt", false),
+            art = o.optJSONObject("art")?.let { a -> Art(a.getString("id"), if (a.has("bg")) fill(a.get("bg"), "art.bg") else null, a.getJSONArray("colors").let { c -> IntArray(c.length()) { i -> color(c.getString(i), "art.colors") } }) },
         )
     }
 
@@ -129,6 +147,8 @@ object ThemeParser {
 
     private fun fill(v: Any, what: String): Fill {
         if (v is String) return Fill.Solid(color(v, what))
+        if (v is JSONArray) return Fill.Layers((0 until v.length()).map { fill(v.get(it), what) })
+        (v as? JSONObject)?.optJSONObject("rivets")?.let { r -> return Fill.Rivets(r.optDouble("inset", 4.0).toFloat(), r.optDouble("radius", 1.2).toFloat(), color(r.getString("color"), what)) }
         val o = v as? JSONObject ?: throw ThemeException("\"$what\" must be a colour or a fill object")
         o.optJSONObject("linear")?.let { l ->
             val (pos, cols) = stops(l.getJSONArray("stops"), what)
@@ -137,7 +157,7 @@ object ThemeParser {
         o.optJSONObject("radial")?.let { r ->
             val (pos, cols) = stops(r.getJSONArray("stops"), what)
             val rx = r.getDouble("rx").toFloat()
-            return Fill.Radial(r.getDouble("x").toFloat(), r.getDouble("y").toFloat(), rx, r.optDouble("ry", rx.toDouble()).toFloat(), pos, cols)
+            return Fill.Radial(r.getDouble("x").toFloat(), r.getDouble("y").toFloat(), rx, r.optDouble("ry", rx.toDouble()).toFloat(), pos, cols, r.optBoolean("rel", false))
         }
         o.optJSONObject("dots")?.let { d -> return Fill.Dots(d.getDouble("step").toFloat(), d.getDouble("radius").toFloat(), color(d.getString("color"), what)) }
         throw ThemeException("\"$what\": a fill object needs \"linear\", \"radial\" or \"dots\"")

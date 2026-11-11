@@ -5,32 +5,61 @@
  "board": "#F3F3F5",
  "key": "#FFFFFF",
  "mod": "#E2E4EA",
+ "accent": "#3B5BFF",
  "fg": "#111216",
  "modFg": "#111216",
- "accent": "#3B5BFF",
  "accentFg": "#FFFFFF",
- "radius": 12,
+ "stripFg": "#4A4D57",
+ "sep": "#D5D7DE",
+ "radius": 12.0,
  "shadow": [
   {
-   "dy": 1,
-   "color": "rgba(0,0,0,0.12)"
+   "color": "rgba(0,0,0,0.12)",
+   "dy": 1.0
   },
   {
-   "dy": 1,
-   "blur": 3,
-   "color": "rgba(0,0,0,0.06)"
+   "color": "rgba(0,0,0,0.06)",
+   "dy": 1.0,
+   "blur": 3.0
   }
  ],
  "lit": [
   {
-   "spread": 3,
-   "color": "rgba(59,91,255,0.3)"
+   "color": "rgba(59,91,255,0.3)",
+   "spread": 3.0
   }
  ],
  "font": "inter",
  "weight": 400,
  "size": 21,
- "stripFg": "#4A4D57",
- "sep": "#D5D7DE",
- "space": "English"
+ "space": "English",
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": "#151518",
+   "key": "#2A2A2F",
+   "mod": "#1F1F24",
+   "accent": "#6B86FF",
+   "fg": "#F2F2F5",
+   "modFg": "#F2F2F5",
+   "accentFg": "#0B0C10",
+   "stripFg": "#B8BAC4",
+   "sep": "#2E2E34",
+   "shadow": [
+    {
+     "color": "rgba(0,0,0,0.5)",
+     "dy": 1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(107,134,255,0.35)",
+     "spread": 3.0
+    }
+   ]
+  }
+ }
 }

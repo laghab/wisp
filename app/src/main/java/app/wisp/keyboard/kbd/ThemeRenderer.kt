@@ -160,11 +160,7 @@ class ThemeRenderer(val theme: Theme, private val density: Float) {
             c.drawBitmap(bd, 0f, 0f, frostPaint)
             c.restore()
         }
-        paint.reset(); paint.isAntiAlias = true
-        val fill = fillOf(role, lit)
-        val sh = shader(fill, m, m, m + w, m + h)
-        if (sh != null) paint.shader = sh else paint.color = (fill as Fill.Solid).color
-        c.drawPath(path, paint)
+        drawFill(c, fillOf(role, lit), m, m, m + w, m + h)
 
         c.save()
         c.clipPath(path)
@@ -197,6 +193,24 @@ class ThemeRenderer(val theme: Theme, private val density: Float) {
         out.addRoundRect(rect, radii, Path.Direction.CW)
     }
 
+    /** Paints [f] over the key shape: a flat colour, a gradient or pattern, studs, or several of those one over the other. */
+    private fun drawFill(c: Canvas, f: Fill, l: Float, t: Float, r: Float, b: Float) {
+        when (f) {
+            is Fill.Layers -> for (x in f.layers) drawFill(c, x, l, t, r, b)
+            is Fill.Rivets -> {
+                paint.reset(); paint.isAntiAlias = true; paint.color = f.color
+                val i = dp(f.inset); val rad = dp(f.radius)
+                for (x in floatArrayOf(l + i, r - i)) for (y in floatArrayOf(t + i, b - i)) c.drawCircle(x, y, rad, paint)
+            }
+            else -> {
+                paint.reset(); paint.isAntiAlias = true
+                val sh = shader(f, l, t, r, b)
+                if (sh != null) paint.shader = sh else paint.color = (f as Fill.Solid).color
+                c.drawPath(path, paint)
+            }
+        }
+    }
+
     private fun drawOutside(c: Canvas, s: Shadow, l: Float, t: Float, r: Float, b: Float) {
         val sp = dp(s.spread)
         shape(inner, l - sp + dp(s.dx), t - sp + dp(s.dy), r + sp + dp(s.dx), b + sp + dp(s.dy), shrink = -sp)
@@ -224,10 +238,13 @@ class ThemeRenderer(val theme: Theme, private val density: Float) {
         is Fill.Linear -> linear(f, l, t, r, b)
         is Fill.Radial -> {
             val cx = l + f.x * (r - l); val cy = t + f.y * (b - t)
-            RadialGradient(cx, cy, dp(f.rx), f.colors, f.positions, Shader.TileMode.CLAMP).also {
-                matrix.setScale(1f, f.ry / f.rx, cx, cy); it.setLocalMatrix(matrix)
+            val rxPx = if (f.relative) f.rx * (r - l) else dp(f.rx)
+            val ryPx = if (f.relative) f.ry * (b - t) else dp(f.ry)
+            RadialGradient(cx, cy, maxOf(rxPx, 0.5f), f.colors, f.positions, Shader.TileMode.CLAMP).also {
+                matrix.setScale(1f, ryPx / maxOf(rxPx, 0.5f), cx, cy); it.setLocalMatrix(matrix)
             }
         }
+        is Fill.Rivets, is Fill.Layers -> null
         is Fill.Dots -> {
             val step = maxOf(2, dp(f.step).toInt())
             val tile = Bitmap.createBitmap(step, step, Bitmap.Config.ARGB_8888)

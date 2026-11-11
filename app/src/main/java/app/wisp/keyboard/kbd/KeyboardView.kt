@@ -118,6 +118,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
     private val hintText = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.RIGHT; typeface = Typeface.MONOSPACE; textSize = 9f * density }
     private val bitmapPaint = Paint()
     private val glideLit = java.util.BitSet()
+    private var tintedTheme: Theme? = null
     private var tintedBigSize = 0f
     private val box = RectF()
 
@@ -283,7 +284,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         val l = layout ?: return
         val d0 = if (BuildConfig.DEBUG) System.nanoTime() else 0L
         Probe.first("first_draw")
-        if (bigText.typeface == null || tintedBigSize != theme.size) { setThemePaints(); tintedBigSize = theme.size }
+        if (bigText.typeface == null || tintedBigSize != theme.size || tintedTheme !== theme) { setThemePaints(); tintedBigSize = theme.size; tintedTheme = theme }
         renderer.prepareBackdrop(width, height)
         renderer.drawBoard(canvas, width, height)
         renderer.drawBand(canvas, width)
@@ -297,6 +298,9 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
             val role = when (l.kinds[i]) { KeyKind.ACCENT -> ThemeRenderer.Role.ACCENT; KeyKind.SPECIAL -> ThemeRenderer.Role.MOD; else -> ThemeRenderer.Role.KEY }
             val lit = pressed[i] || glideLit.get(i)
             val x = r[o] - m; val y = r[o + 1] - m
+            // Comic's hand-set keys: each one is turned a little, the same way every time.
+            val tilted = theme.tilt && l.kinds[i] != KeyKind.SPACE
+            if (tilted) { canvas.save(); canvas.rotate((((i + 1) * 37 % 5) - 2) * 0.6f, (r[o] + r[o + 2]) / 2f, (r[o + 1] + r[o + 3]) / 2f) }
             if (lit) canvas.drawBitmap(renderer.key(role, true, w, h, r[o], r[o + 1]), x, y, null)
             else {
                 canvas.drawBitmap(renderer.key(role, false, w, h, r[o], r[o + 1]), x, y, null)
@@ -308,6 +312,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
             }
             val ink = if (lit || role == ThemeRenderer.Role.ACCENT) theme.accentFg else if (role == ThemeRenderer.Role.MOD) theme.modFg else theme.fg
             drawKeyFace(canvas, l, i, ink)
+            if (tilted) canvas.restore()
         }
         if (fading) postInvalidateOnAnimation()
         drawTrail(canvas)
@@ -319,6 +324,8 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         for (p in arrayOf(bigText, smallText)) { p.typeface = face; p.letterSpacing = theme.track }
         bigText.textSize = theme.size * density
         smallText.textSize = minOf(theme.size, 15f) * density
+        val ts = theme.textShadow
+        for (p in arrayOf(bigText, smallText)) if (ts != null) p.setShadowLayer(maxOf(ts.blur, 0.01f) * density, ts.dx * density, ts.dy * density, ts.color) else p.clearShadowLayer()
     }
 
     private fun drawKeyFace(c: Canvas, l: CompiledLayout, i: Int, ink: Int) {

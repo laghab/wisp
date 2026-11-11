@@ -1,0 +1,66 @@
+{
+ "id": "wisp",
+ "name": "Wisp",
+ "dark": true,
+ "board": "#12151B",
+ "key": "#262B35",
+ "mod": "#1B1F27",
+ "accent": "#8FA8FF",
+ "fg": "#E9EDF4",
+ "modFg": "#E9EDF4",
+ "accentFg": "#0E1116",
+ "stripFg": "#AEB6C4",
+ "sep": "#2A303B",
+ "radius": 10.0,
+ "shadow": [
+  {
+   "color": "rgba(0,0,0,0.35)",
+   "inset": true,
+   "dy": -1.0
+  }
+ ],
+ "lit": [
+  {
+   "color": "rgba(143,168,255,0.3)",
+   "spread": 3.0
+  },
+  {
+   "color": "rgba(143,168,255,0.25)",
+   "dy": 6.0,
+   "blur": 16.0
+  }
+ ],
+ "font": "inter",
+ "weight": 400,
+ "size": 21,
+ "space": "English \u00b7 Wisp",
+ "variants": {
+  "dark": {
+   "dark": true
+  },
+  "light": {
+   "dark": false,
+   "board": "#ECEEF3",
+   "key": "#FFFFFF",
+   "mod": "#DCE0E8",
+   "accent": "#4F6BED",
+   "fg": "#141821",
+   "modFg": "#141821",
+   "accentFg": "#FFFFFF",
+   "stripFg": "#4A5160",
+   "sep": "#CDD2DC",
+   "shadow": [
+    {
+     "color": "rgba(20,24,33,0.16)",
+     "dy": 1.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "rgba(79,107,237,0.3)",
+     "spread": 3.0
+    }
+   ]
+  }
+ }
+}

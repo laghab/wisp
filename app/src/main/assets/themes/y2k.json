@@ -4,14 +4,14 @@
  "dark": false,
  "board": {
   "linear": {
-   "angle": 180,
+   "angle": 180.0,
    "stops": [
     [
-     0,
+     0.0,
      "#ECE9D8"
     ],
     [
-     1,
+     1.0,
      "#D8D2BD"
     ]
    ]
@@ -19,89 +19,103 @@
  },
  "key": {
   "linear": {
-   "angle": 180,
+   "angle": 180.0,
    "stops": [
     [
-     0,
+     0.0,
      "#FFFFFF"
     ],
     [
-     0.45,
-     "#F4F3EE"
+     0.48,
+     "#F5F3EC"
     ],
     [
-     1,
-     "#E3E0D2"
+     0.52,
+     "#E6E2D4"
+    ],
+    [
+     1.0,
+     "#EEEBE1"
     ]
    ]
   }
  },
  "mod": {
   "linear": {
-   "angle": 180,
+   "angle": 180.0,
    "stops": [
     [
-     0,
-     "#DCE8FC"
+     0.0,
+     "#E4EEFD"
     ],
     [
-     0.5,
-     "#AFC8F1"
+     0.48,
+     "#B6CEF3"
     ],
     [
-     1,
-     "#84A7E4"
+     0.52,
+     "#93B3EA"
+    ],
+    [
+     1.0,
+     "#A9C3EE"
+    ]
+   ]
+  }
+ },
+ "accent": {
+  "linear": {
+   "angle": 180.0,
+   "stops": [
+    [
+     0.0,
+     "#72D172"
+    ],
+    [
+     0.48,
+     "#45A845"
+    ],
+    [
+     0.52,
+     "#2F8A2F"
+    ],
+    [
+     1.0,
+     "#3C9A3C"
     ]
    ]
   }
  },
  "fg": "#1B1B1B",
  "modFg": "#0A246A",
- "accent": {
-  "linear": {
-   "angle": 180,
-   "stops": [
-    [
-     0,
-     "#63C963"
-    ],
-    [
-     0.5,
-     "#3C9A3C"
-    ],
-    [
-     1,
-     "#2E7D2E"
-    ]
-   ]
-  }
- },
  "accentFg": "#FFFFFF",
- "radius": 4,
+ "stripFg": "#0A246A",
+ "sep": "#B8B2A0",
+ "radius": 4.0,
  "border": {
-  "width": 1,
+  "width": 1.0,
   "color": "#7F9DB9"
  },
  "shadow": [
   {
+   "color": "#FFFFFF",
    "inset": true,
-   "dy": 1,
-   "color": "#FFFFFF"
+   "dy": 1.0
   },
   {
-   "dy": 1,
-   "blur": 1,
-   "color": "rgba(0,0,0,0.2)"
+   "color": "rgba(0,0,0,0.2)",
+   "dy": 1.0,
+   "blur": 1.0
   }
  ],
  "lit": [
   {
-   "spread": 2,
-   "color": "#F9B233"
+   "color": "#F9B233",
+   "spread": 2.0
   },
   {
-   "blur": 8,
-   "color": "rgba(249,178,51,0.7)"
+   "color": "rgba(249,178,51,0.7)",
+   "blur": 8.0
   }
  ],
  "font": "sans",
@@ -109,10 +123,10 @@
  "size": 18,
  "band": {
   "linear": {
-   "angle": 180,
+   "angle": 180.0,
    "stops": [
     [
-     0,
+     0.0,
      "#3A81F3"
     ],
     [
@@ -120,14 +134,35 @@
      "#245EDC"
     ],
     [
-     1,
+     1.0,
      "#1C4FC4"
     ]
    ]
   }
  },
  "bandHeight": 8,
- "stripFg": "#0A246A",
- "sep": "#B8B2A0",
- "space": "English (United States)"
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "y2k",
+  "bg": {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "#FFFFFF"
+     ],
+     [
+      1.0,
+      "#ECE9D8"
+     ]
+    ]
+   }
+  },
+  "colors": [
+   "#3C9A3C",
+   "#FFFFFF",
+   "#7F9DB9"
+  ]
+ }
 }

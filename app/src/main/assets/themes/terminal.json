@@ -1,0 +1,68 @@
+{
+ "id": "terminal",
+ "name": "Terminal",
+ "dark": true,
+ "board": [
+  "#0C100C",
+  {
+   "linear": {
+    "angle": 180.0,
+    "stops": [
+     [
+      0.0,
+      "rgba(124,252,154,0.04)"
+     ],
+     [
+      0.333333,
+      "rgba(124,252,154,0.04)"
+     ],
+     [
+      0.333333,
+      "transparent"
+     ],
+     [
+      1.0,
+      "transparent"
+     ]
+    ],
+    "length": 3.0
+   }
+  }
+ ],
+ "key": "#111811",
+ "mod": "#0E140E",
+ "accent": "#7CFC9A",
+ "fg": "#7CFC9A",
+ "modFg": "#7CFC9A",
+ "accentFg": "#0C100C",
+ "stripFg": "#7CFC9A",
+ "sep": "#1F3A24",
+ "radius": 2.0,
+ "border": {
+  "width": 1.0,
+  "color": "#1F3A24"
+ },
+ "lit": [
+  {
+   "color": "rgba(124,252,154,0.6)",
+   "blur": 10.0
+  }
+ ],
+ "font": "jetbrains_mono",
+ "weight": 500,
+ "size": 18,
+ "textShadow": {
+  "color": "rgba(124,252,154,0.55)",
+  "blur": 6.0
+ },
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "term",
+  "bg": "#0E140E",
+  "colors": [
+   "#7CFC9A",
+   "#3B6B45",
+   "#000"
+  ]
+ }
+}

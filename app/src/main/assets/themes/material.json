@@ -6,21 +6,44 @@
  "board": "#EEF2E6",
  "key": "#FDFEF7",
  "mod": "#D7E3C8",
+ "accent": "#4C6A2E",
  "fg": "#1A1C17",
  "modFg": "#2E4A1A",
- "accent": "#4C6A2E",
  "accentFg": "#FFFFFF",
- "radius": 14,
+ "stripFg": "#44483E",
+ "sep": "#C5CBB9",
+ "radius": 14.0,
  "lit": [
   {
-   "spread": 3,
-   "color": "rgba(76,106,46,0.35)"
+   "color": "rgba(76,106,46,0.35)",
+   "spread": 3.0
   }
  ],
  "font": "sans",
  "weight": 500,
  "size": 21,
- "stripFg": "#44483E",
- "sep": "#C5CBB9",
- "space": "English"
+ "space": "English",
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": "#12140F",
+   "key": "#22261D",
+   "mod": "#344130",
+   "accent": "#B1D18A",
+   "fg": "#E2E4D8",
+   "modFg": "#CDEBA9",
+   "accentFg": "#1F3701",
+   "stripFg": "#C4C8BA",
+   "sep": "#3A4034",
+   "lit": [
+    {
+     "color": "rgba(177,209,138,0.35)",
+     "spread": 3.0
+    }
+   ]
+  }
+ }
 }

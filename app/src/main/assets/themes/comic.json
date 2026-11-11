@@ -6,23 +6,25 @@
   "#FFD93B",
   {
    "dots": {
-    "step": 9,
-    "radius": 1.5,
+    "step": 9.0,
+    "radius": 1.55,
     "color": "rgba(230,60,60,0.38)"
    }
   }
  ],
  "key": "#FFFFFF",
  "mod": "#5BC0F8",
+ "accent": "#FF3D3D",
  "fg": "#111111",
  "modFg": "#111111",
- "accent": "#FF3D3D",
  "accentFg": "#FFFFFF",
+ "stripFg": "#111111",
+ "sep": "#111111",
  "radius": [
-  12,
-  9,
-  13,
-  8
+  12.0,
+  9.0,
+  13.0,
+  8.0
  ],
  "border": {
   "width": 2.5,
@@ -30,20 +32,20 @@
  },
  "shadow": [
   {
-   "dx": 3,
-   "dy": 3,
-   "color": "#111111"
+   "color": "#111111",
+   "dx": 3.0,
+   "dy": 3.0
   }
  ],
  "lit": [
   {
-   "dx": 3,
-   "dy": 3,
-   "color": "#111111"
+   "color": "#111111",
+   "dx": 3.0,
+   "dy": 3.0
   },
   {
-   "spread": 4,
-   "color": "#FFFFFF"
+   "color": "#FFFFFF",
+   "spread": 4.0
   }
  ],
  "font": "bangers",
@@ -51,12 +53,80 @@
  "size": 23,
  "upper": true,
  "track": 0.04,
- "stripFg": "#111111",
- "sep": "#111111",
  "micGlow": {
-  "dx": 2,
-  "dy": 2,
-  "color": "#111111"
+  "color": "#111111",
+  "dx": 2.0,
+  "dy": 2.0
  },
- "space": "KA-CHUNK!"
+ "tilt": true,
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "comic",
+  "bg": "#FFFFFF",
+  "colors": [
+   "#111111",
+   "#FFD93B",
+   "#FF3D3D"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    "#1C1F4A",
+    {
+     "dots": {
+      "step": 9.0,
+      "radius": 1.55,
+      "color": "rgba(120,140,255,0.35)"
+     }
+    }
+   ],
+   "key": "#2C3170",
+   "mod": "#7A3CF0",
+   "fg": "#FFFFFF",
+   "modFg": "#FFFFFF",
+   "stripFg": "#FFFFFF",
+   "sep": "#FFFFFF",
+   "border": {
+    "width": 2.5,
+    "color": "#05061A"
+   },
+   "shadow": [
+    {
+     "color": "#05061A",
+     "dx": 3.0,
+     "dy": 3.0
+    }
+   ],
+   "lit": [
+    {
+     "color": "#05061A",
+     "dx": 3.0,
+     "dy": 3.0
+    },
+    {
+     "color": "#FFD93B",
+     "spread": 4.0
+    }
+   ],
+   "micGlow": {
+    "color": "#05061A",
+    "dx": 2.0,
+    "dy": 2.0
+   },
+   "art": {
+    "id": "comic",
+    "bg": "#2C3170",
+    "colors": [
+     "#05061A",
+     "#FFD93B",
+     "#FF3D3D"
+    ]
+   }
+  }
+ }
 }

@@ -6,7 +6,7 @@
   "#FFFFFF",
   {
    "dots": {
-    "step": 6,
+    "step": 6.0,
     "radius": 1.15,
     "color": "rgba(0,0,0,0.22)"
    }
@@ -14,29 +14,92 @@
  ],
  "key": "#FFFFFF",
  "mod": "#111111",
+ "accent": "#111111",
  "fg": "#111111",
  "modFg": "#FFFFFF",
- "accent": "#111111",
  "accentFg": "#FFFFFF",
- "radius": 2,
+ "stripFg": "#111111",
+ "sep": "#111111",
+ "radius": [
+  3.0,
+  2.0,
+  4.0,
+  2.0
+ ],
  "border": {
-  "width": 2,
+  "width": 2.5,
   "color": "#111111"
  },
  "lit": [
   {
-   "spread": 5,
-   "color": "#111111"
+   "color": "#FFFFFF",
+   "spread": 3.0
   },
   {
-   "spread": 3,
-   "color": "#FFFFFF"
+   "color": "#111111",
+   "spread": 5.0
   }
  ],
- "font": "zen-maru",
+ "font": "zen_maru",
  "weight": 700,
  "size": 20,
- "stripFg": "#111111",
- "sep": "#111111",
- "space": "スペース"
+ "space": "English \u00b7 Wisp",
+ "art": {
+  "id": "manga",
+  "bg": "#FFFFFF",
+  "colors": [
+   "#111111",
+   "#FFFFFF",
+   "#000"
+  ]
+ },
+ "variants": {
+  "light": {
+   "dark": false
+  },
+  "dark": {
+   "dark": true,
+   "board": [
+    "#0D0D0D",
+    {
+     "dots": {
+      "step": 6.0,
+      "radius": 1.15,
+      "color": "rgba(255,255,255,0.18)"
+     }
+    }
+   ],
+   "key": "#111111",
+   "mod": "#F2F2F2",
+   "accent": "#F2F2F2",
+   "fg": "#F2F2F2",
+   "modFg": "#111111",
+   "accentFg": "#111111",
+   "stripFg": "#F2F2F2",
+   "sep": "#F2F2F2",
+   "border": {
+    "width": 2.5,
+    "color": "#F2F2F2"
+   },
+   "lit": [
+    {
+     "color": "#0D0D0D",
+     "spread": 3.0
+    },
+    {
+     "color": "#F2F2F2",
+     "spread": 5.0
+    }
+   ],
+   "art": {
+    "id": "manga",
+    "bg": "#111111",
+    "colors": [
+     "#F2F2F2",
+     "#111111",
+     "#000"
+    ]
+   }
+  }
+ }
 }

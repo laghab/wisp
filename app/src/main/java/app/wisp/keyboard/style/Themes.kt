@@ -5,7 +5,7 @@ import java.io.File
 
 /** The built-in themes (assets/themes) and the ones the user imported (files/themes). */
 object Themes {
-    const val DEFAULT = "midnight"
+    const val DEFAULT = "wisp"
 
     // One list per look; themes with a light and a dark look appear in both, as the same theme.
     private val cache = HashMap<Boolean, List<Theme>>()
@@ -19,7 +19,7 @@ object Themes {
         val builtIn = (context.assets.list("themes") ?: emptyArray()).sorted().mapNotNull { f ->
             runCatching { ThemeParser.parse(context.assets.open("themes/$f").bufferedReader().use { it.readText() }, dark) }.getOrNull()
         }
-        val order = listOf("midnight", "factory", "cyberpunk", "material", "glass", "modern", "y2k", "retro", "brutalist", "comic", "manga")
+        val order = listOf("wisp", "moon", "dandelion", "sakura", "factory", "cyberpunk", "terminal", "y2k", "material", "glass", "modern", "retro", "brutalist", "comic", "manga")
         val sorted = builtIn.sortedBy { order.indexOf(it.id).let { i -> if (i < 0) order.size else i } }
         val mine = (File(context.filesDir, "themes").listFiles() ?: emptyArray()).sortedBy { it.name }.mapNotNull { f ->
             runCatching { ThemeParser.parse(f.readText(), dark) }.getOrNull()?.takeIf { t -> sorted.none { it.id == t.id } }
