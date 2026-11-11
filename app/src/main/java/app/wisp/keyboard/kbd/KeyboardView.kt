@@ -182,8 +182,24 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
 
     override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) = rebuild(w, h)
 
-    private fun contentHeight() =
-        ((PAD_TOP_DP + PAD_BOTTOM_DP + theme.bandHeight) * density + rowHeightPx * spec.rows.size + rowGapPx * (spec.rows.size - 1)).toInt()
+    /**
+     * When set, the keyboard is as tall as a layout with this many rows would be, whatever layout it shows: symbols, the number pad or a layout
+     * with fewer rows share that height instead of changing it, so the keyboard never jumps in size when you switch pages or open a panel.
+     */
+    var heightRows = 0
+        set(v) { if (field != v) { field = v; release(); requestLayout(); if (width > 0) rebuild(width, contentHeight()) } }
+
+    private fun heightFor(rows: Int) =
+        ((PAD_TOP_DP + PAD_BOTTOM_DP + theme.bandHeight) * density + rowHeightPx * rows + rowGapPx * (rows - 1)).toInt()
+
+    private fun contentHeight() = heightFor(if (heightRows > 0) heightRows else spec.rows.size)
+
+    /** The height of one row: its share of the keyboard's height when [heightRows] fixes it, otherwise the plain row height. */
+    private fun effectiveRowHeight(): Float {
+        if (heightRows <= 0 || heightRows == spec.rows.size) return rowHeightPx
+        val n = spec.rows.size
+        return (contentHeight() - (PAD_TOP_DP + PAD_BOTTOM_DP + theme.bandHeight) * density - rowGapPx * (n - 1)) / n
+    }
 
     /** Stops any touch in progress and frees the Rust layout. */
     private fun release() {
@@ -200,7 +216,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         val left = padX; val right = padX
         val slots = LayoutSlots(spec) { k -> gesturesEnabled && k.kind == KeyKind.LETTER && Character.isLetter(k.code) }
         val metrics = floatArrayOf(
-            rowHeightPx, rowGapPx, keyGapPx, left, right, (PAD_TOP_DP + theme.bandHeight) * density, PAD_BOTTOM_DP * density,
+            effectiveRowHeight(), rowGapPx, keyGapPx, left, right, (PAD_TOP_DP + theme.bandHeight) * density, PAD_BOTTOM_DP * density,
             PAD_UNIT_DP * density, splitGapPx,
         )
         val rowW = (w - left - right) / 10f

@@ -11,10 +11,15 @@ drag() { a input swipe "$1" "$2" "$3" "$4" "${5:-400}"; sleep 0.3; }
 # Letter keys come from swipe.py (K <letter> prints "x y"); the bottom row is y 1047 and the suggestion strip y 737.
 read -r R1 R2 R3 <<< "$(python3 "$E2E/swipe.py" --rows)"; R4=1047; STRIP=737
 K() { python3 "$E2E/swipe.py" --key "$1"; }
-SHIFT="70 $R3"; BKSP="878 $R3"; SYM="63 $R4"; SWITCH="168 $R4"; COMMA="255 $R4"; LANG_KEY="340 $R4"; SPACE="560 $R4"; PERIOD="780 $R4"; ENTER="885 $R4"
-TOOL_EMOJI="270 $STRIP"; NUMPAD_KEY="235 $R4"   # the emoji panel opens from the toolbar; the number pad from the symbols page (the "123" key beside the globe)
+SHIFT="70 $R3"; BKSP="878 $R3"; SYM="63 $R4"; COMMA="170 $R4"; SPACE="475 $R4"; PERIOD="780 $R4"; ENTER="885 $R4"
+TOOL_EMOJI="270 $STRIP"; NUMPAD_KEY="157 $R4"   # the emoji panel opens from the toolbar; the number pad from the symbols page (the "123" key beside the globe)
 MIC="917 $STRIP"; SLOT_L="150 $STRIP"; SLOT_M="445 $STRIP"; SLOT_R="730 $STRIP"
 UNDO_CELL="$SLOT_L"                                                  # "Undo dictation" takes the first strip slot after an insert
+# Long-press menus: press a key, wait for its menu, slide to an item and let go.  menu_pick "<key x y>" "<item x y>"
+menu_pick() { local kx ky ix iy; read -r kx ky <<< "$1"; read -r ix iy <<< "$2"
+  a input motionevent DOWN "$kx" "$ky"; sleep 0.8; a input motionevent MOVE "$ix" "$iy"; sleep 0.2; a input motionevent UP "$ix" "$iy"; sleep 0.6; }
+GLOBE_ITEM="178 978"; LANG_ITEM="265 978"                         # the first item of the comma's menu (the globe) and of the space bar's (the next language)
+lang_next() { menu_pick "$SPACE" "$LANG_ITEM"; }
 # type <word>: taps each letter in turn, then gives the dictionary thread a moment to answer
 type_word() { local c; for c in $(echo "$1" | sed 's/./& /g'); do tap $(K "$c"); done; sleep 0.9; }
 

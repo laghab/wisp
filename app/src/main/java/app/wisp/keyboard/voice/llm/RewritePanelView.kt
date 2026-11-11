@@ -59,7 +59,6 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         invalidate()
     }
 
-    override fun onMeasure(w: Int, h: Int) = setMeasuredDimension(MeasureSpec.getSize(w), (HEIGHT_DP * d).toInt())
 
     private fun surface() = theme.key.base() or (0xFF shl 24)
     private fun raised() = theme.mod.base() or (0xFF shl 24)
@@ -67,33 +66,36 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
     override fun onDraw(c: Canvas) {
         c.drawColor(theme.board.first().base() or (0xFF shl 24))
         drawHeader(c)
-        if (rewrite.model == null) { drawNotInstalled(c); drawFooter(c); return }
+        if (rewrite.model == null) { drawNotInstalled(c); return }
         drawChips(c)
         drawCard(c)
         drawButtons(c)
-        drawFooter(c)
         if (rewrite.working) postInvalidateOnAnimation()
     }
 
     private fun drawHeader(c: Canvas) {
-        Icons.draw(c, Icons.Icon.SPARKLE, 26f * d, 22f * d, 18f * d, amber, strokeWidth = 1.9f)
+        Icons.draw(c, Icons.Icon.SPARKLE, 24f * d, 17f * d, 16f * d, amber, strokeWidth = 1.9f)
         title.color = theme.fg
-        c.drawText("Rewrite", 44f * d, 22f * d - (title.fontMetrics.ascent + title.fontMetrics.descent) / 2f, title)
-        closeRect.set(width - 52f * d, 0f, width - 8f * d, 44f * d)
+        c.drawText("Rewrite", 42f * d, 17f * d - (title.fontMetrics.ascent + title.fontMetrics.descent) / 2f, title)
+        // Where the text goes: nowhere. (This is the panel's only privacy note; it has to fit in the keyboard's height.)
+        Icons.draw(c, Icons.Icon.SHIELD, 42f * d + title.measureText("Rewrite") + 16f * d, 17f * d, 12f * d, 0xFF6FD3A6.toInt(), strokeWidth = 2f)
+        small.color = theme.stripFg
+        c.drawText("on this phone", 42f * d + title.measureText("Rewrite") + 28f * d, 17f * d - (small.fontMetrics.ascent + small.fontMetrics.descent) / 2f, small)
+        closeRect.set(width - 52f * d, 0f, width - 8f * d, 34f * d)
         Icons.draw(c, Icons.Icon.CLOSE, closeRect.centerX(), closeRect.centerY(), 20f * d, theme.stripFg, strokeWidth = 1.9f)
     }
 
     private fun drawChips(c: Canvas) {
         chipRects.clear()
-        c.save(); c.clipRect(0f, 44f * d, width.toFloat(), 86f * d)
+        c.save(); c.clipRect(0f, 36f * d, width.toFloat(), 72f * d)
         var x = 14f * d - chipScroll
         for (t in Tone.values()) {
             val name = if (t == Tone.HINDI) "Translate to Hindi" else t.label
             val w = label.measureText(name) + 28f * d
-            val r = RectF(x, 48f * d, x + w, 84f * d); chipRects.add(r to t)
+            val r = RectF(x, 38f * d, x + w, 70f * d); chipRects.add(r to t)
             val sel = t == rewrite.tone
-            fill.color = if (sel) 0xFF2A2418.toInt().let { if (theme.dark) it else raised() } else surface(); c.drawRoundRect(r, 18f * d, 18f * d, fill)
-            line.color = if (sel) amber else theme.sep; c.drawRoundRect(r, 18f * d, 18f * d, line)
+            fill.color = if (sel) 0xFF2A2418.toInt().let { if (theme.dark) it else raised() } else surface(); c.drawRoundRect(r, 16f * d, 16f * d, fill)
+            line.color = if (sel) amber else theme.sep; c.drawRoundRect(r, 16f * d, 16f * d, line)
             label.color = if (sel) (if (theme.dark) amberSoft else theme.fg) else theme.stripFg
             c.drawText(name, r.centerX(), r.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
             x += w + 8f * d
@@ -102,16 +104,16 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
     }
 
     private fun drawCard(c: Canvas) {
-        val card = RectF(14f * d, 96f * d, width - 14f * d, 96f * d + 150f * d)
+        val card = RectF(14f * d, 78f * d, width - 14f * d, (height - 52f * d).coerceAtLeast(130f * d))
         fill.color = surface(); c.drawRoundRect(card, 16f * d, 16f * d, fill)
         line.color = theme.sep; c.drawRoundRect(card, 16f * d, 16f * d, line)
         small.color = if (theme.dark) amberSoft else theme.stripFg
-        c.drawText(rewrite.tone.label.uppercase(), card.left + 14f * d, card.top + 22f * d, small)
+        c.drawText(rewrite.tone.label.uppercase(), card.left + 14f * d, card.top + 18f * d, small)
         val meta = when (rewrite.phase) { RewriteController.Phase.DONE -> "%.1f s".format(rewrite.elapsedMs / 1000f); RewriteController.Phase.WORKING -> "writing…"; else -> "" }
         small.color = theme.stripFg; small.textAlign = Paint.Align.RIGHT
-        c.drawText(meta, card.right - 14f * d, card.top + 22f * d, small); small.textAlign = Paint.Align.LEFT
+        c.drawText(meta, card.right - 14f * d, card.top + 18f * d, small); small.textAlign = Paint.Align.LEFT
 
-        val x = card.left + 14f * d; val w = (card.width() - 28f * d).toInt(); val top = card.top + 36f * d; val h = card.height() - 46f * d
+        val x = card.left + 14f * d; val w = (card.width() - 28f * d).toInt(); val top = card.top + 28f * d; val h = card.height() - 36f * d
         when {
             !hasText -> hint(c, "Type or select some text, then choose a tone.", x, top, w)
             rewrite.phase == RewriteController.Phase.FAILED -> hint(c, rewrite.failure ?: "The rewrite failed", x, top, w)
@@ -156,7 +158,7 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
     }
 
     private fun drawButtons(c: Canvas) {
-        val top = 258f * d; val h = 46f * d; val gap = 8f * d; val left = 14f * d
+        val h = 40f * d; val top = height - h - 6f * d; val gap = 8f * d; val left = 14f * d
         val avail = width - 2 * left - 2 * gap - 46f * d
         val w1 = avail * 1.3f / 2.3f; val w2 = avail / 2.3f
         val ready = rewrite.phase == RewriteController.Phase.DONE && rewrite.result.isNotBlank()
@@ -176,7 +178,7 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
     }
 
     private fun drawNotInstalled(c: Canvas) {
-        val card = RectF(14f * d, 56f * d, width - 14f * d, 56f * d + 190f * d)
+        val card = RectF(14f * d, 40f * d, width - 14f * d, height - 8f * d)
         fill.color = surface(); c.drawRoundRect(card, 16f * d, 16f * d, fill)
         line.color = theme.sep; c.drawRoundRect(card, 16f * d, 16f * d, line)
         val msg = if (rewrite.isOff) "Rewrite is turned off. You can turn it on in Wisp's Models screen." else
@@ -184,18 +186,10 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         val tp = TextPaint(body).also { it.color = theme.fg }
         val l = StaticLayout.Builder.obtain(msg, 0, msg.length, tp, (card.width() - 28f * d).toInt()).setAlignment(Layout.Alignment.ALIGN_NORMAL).setLineSpacing(0f, 1.15f).build()
         c.save(); c.translate(card.left + 14f * d, card.top + 14f * d); l.draw(c); c.restore()
-        modelsRect.set(card.left + 14f * d, card.bottom - 62f * d, card.right - 14f * d, card.bottom - 16f * d)
+        modelsRect.set(card.left + 14f * d, card.bottom - 52f * d, card.right - 14f * d, card.bottom - 12f * d)
         fill.color = amber; c.drawRoundRect(modelsRect, 14f * d, 14f * d, fill)
         label.color = 0xFF1A1206.toInt()
         c.drawText("Open Models", modelsRect.centerX(), modelsRect.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
-    }
-
-    private fun drawFooter(c: Canvas) {
-        line.color = theme.sep; c.drawLine(0f, (HEIGHT_DP - 40f) * d, width.toFloat(), (HEIGHT_DP - 40f) * d, line)
-        Icons.draw(c, Icons.Icon.SHIELD, 24f * d, (HEIGHT_DP - 20f) * d, 13f * d, 0xFF6FD3A6.toInt(), strokeWidth = 2f)
-        small.color = theme.stripFg
-        val m = rewrite.model?.name?.let { "Runs on this phone · $it (4-bit) · nothing uploaded" } ?: "Runs on this phone · nothing uploaded"
-        c.drawText(m, 38f * d, (HEIGHT_DP - 20f) * d - (small.fontMetrics.ascent + small.fontMetrics.descent) / 2f, small)
     }
 
     // ---- touch
@@ -206,7 +200,7 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         when (e.actionMasked) {
             MotionEvent.ACTION_DOWN -> { downX = e.x; downY = e.y; lastX = e.x; dragging = false; parent?.requestDisallowInterceptTouchEvent(true) }
             MotionEvent.ACTION_MOVE -> {
-                if (!dragging && downY in (44f * d)..(88f * d) && Math.abs(e.x - downX) > slop) dragging = true
+                if (!dragging && downY in (36f * d)..(72f * d) && Math.abs(e.x - downX) > slop) dragging = true
                 if (dragging) {
                     val total = Tone.values().sumOf { (label.measureText(if (it == Tone.HINDI) "Translate to Hindi" else it.label) + 36f * d).toDouble() }.toFloat() + 14f * d
                     chipScroll = (chipScroll - (e.x - lastX)).coerceIn(0f, maxOf(0f, total - width)); invalidate()
@@ -230,5 +224,4 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         }
     }
 
-    companion object { const val HEIGHT_DP = 352f }
 }

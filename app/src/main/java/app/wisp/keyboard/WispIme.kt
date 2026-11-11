@@ -173,10 +173,10 @@ class WispIme : InputMethodService() {
         Probe.mark("p_panels")
         voice = VoiceController(this, onChange = ::updateVoiceBar, onResult = { text -> controller.onDictation(text); updateVoiceBar() })
         Probe.mark("p_voice")
-        val stack = FrameLayout(this)
+        val stack = app.wisp.keyboard.kbd.PanelStack(this, k)
         panelStack = stack
         stack.addView(k, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         val root = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         val grip = FloatHandle(this, palette).also { it.visibility = View.GONE; it.onMoved = ::onFloatMoved; it.onGrab = { grabbed = frame } }
         root.addView(grip, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT)
@@ -219,7 +219,7 @@ class WispIme : InputMethodService() {
             override fun onSearchTapped() = setEmojiSearching(true)
         }
         emojiView = v
-        panel.addView(v, 0, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (300 * d).toInt()))
+        panel.addView(v, 0, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 0, 1f))
     }
 
     private fun hideEmojiPanel() {
@@ -280,6 +280,7 @@ class WispIme : InputMethodService() {
     private fun setMode(m: Mode) {
         mode = m
         val k = keys ?: return
+        k.heightRows = lettersSpec().rows.size       // every page and panel is as tall as the letters
         when (m) {
             Mode.LETTERS -> k.setSpec(lettersSpec())
             Mode.SYMBOLS -> k.setSpec(LayoutLoader.load(this, R.raw.layout_symbols))
@@ -582,7 +583,7 @@ class WispIme : InputMethodService() {
             override fun onClose() = setMode(Mode.LETTERS)
             override fun onOpenModels() { openSettings("voice") }
         }
-        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, (RewritePanelView.HEIGHT_DP * d).toInt())
+        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         rewritePanel = panel
         if (ctl.model != null && rewriteDraft.isNotBlank()) ctl.start(Tone.POLISH, rewriteDraft)
     }
@@ -630,7 +631,7 @@ class WispIme : InputMethodService() {
             override fun onHistoryToggled(on: Boolean) { WispSettings.get(this@WispIme).putBoolean("clipboard_history", on); saveClipSoon() }
             override fun onChanged() = saveClipSoon()
         }
-        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, maxOf(keys?.height ?: 0, (340 * d).toInt()))
+        stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         panel.refresh()
         clipPanel = panel
     }

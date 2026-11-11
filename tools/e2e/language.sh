@@ -10,7 +10,7 @@ launch_field
 type_word teh; tap $SPACE; sleep 0.4
 expect "English: teh -> the" "the "
 
-tap $LANG_KEY; sleep 0.6                                      # English -> Hinglish
+lang_next                                                     # hold the space bar: English -> Hinglish
 adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/lang_hinglish.png"
 # Hinglish does not auto-correct: the same typo stays as typed
 type_word teh; tap $SPACE; sleep 0.4
@@ -25,7 +25,7 @@ expect "swiping a Hinglish word" "the teh kya kaise "
 swipe meeting 3
 expect "swiping an English word while in Hinglish" "the teh kya kaise meeting "
 
-tap $LANG_KEY; sleep 0.6                                      # Hinglish -> English
+lang_next                                                     # Hinglish -> English
 type_word teh; tap $SPACE; sleep 0.4
 expect "back in English the auto-correct is back" "the teh kya kaise meeting the "
 exit $FAILED

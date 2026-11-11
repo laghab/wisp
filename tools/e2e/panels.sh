@@ -24,7 +24,7 @@ expect "number pad types digits and operators and ABC returns to letters" "590+q
 # emoji panel: open from letters, pick the first emoji, close via ABC
 launch_field
 tap $TOOL_EMOJI; adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/panel_emoji.png"
-tap 30 840                                                               # top-left emoji
+tap 60 890                                                               # top-left emoji
 tap 90 1045                                                              # bottom bar ABC (1.5 weight, left)
 tap $(K q)                                                              # q
 got="$(field_text)"

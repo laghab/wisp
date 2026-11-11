@@ -11,6 +11,6 @@ type_word te   # letters typed with no model installed
 check "$(case "$(field_text)" in te*) echo ok;; esac)" "typing works with no model installed"
 tap $MIC; sleep 1.5
 check "$(a dumpsys activity activities | grep -q 'topResumedActivity.*SettingsActivity' && echo no || echo ok)" "opening the panel does not leave the keyboard by itself"
-tap $PANEL_MIC; sleep 4
+tap $MIC; sleep 4
 check "$(a dumpsys activity activities | grep -q 'topResumedActivity.*SettingsActivity' && echo ok)" "tapping the mic with no model opens the model setup screen"
 exit $FAILED

@@ -90,11 +90,11 @@ class EmojiPanelView(context: Context, private val data: EmojiData, private val 
         scroll = scroll.coerceIn(0f, maxScroll())
     }
 
-    private val tabsTop get() = if (compact) 0f else 8f * d
-    private val tabsH get() = if (compact) 0f else 36f * d + 8f * d
-    private val searchTop get() = tabsTop + tabsH
-    private val searchH get() = if (tab == Tab.EMOJI) 40f * d + 8f * d else 0f
-    private val catsH get() = if (tab == Tab.EMOJI && !compact && query.isEmpty()) 38f * d else 0f
+    // One header row, so the grid gets the room: search, the emoji groups, and the Kaomoji and Symbols pages. While searching, the row is the search box.
+    private val searchTop get() = 4f * d
+    private val searching get() = tab == Tab.EMOJI && (compact || query.isNotEmpty())
+    private val searchH get() = if (searching) 44f * d else 0f
+    private val catsH get() = if (!searching) 40f * d else 0f
     private val gridTop get() = searchTop + searchH + catsH
 
     private fun maxScroll() = (contentH - (height - gridTop)).coerceAtLeast(0f)
@@ -103,7 +103,6 @@ class EmojiPanelView(context: Context, private val data: EmojiData, private val 
 
     // ---- drawing
 
-    private val tabRects = ArrayList<RectF>()
     private val catRects = ArrayList<Pair<RectF, Int>>()
     private val searchRect = RectF()
 
@@ -112,9 +111,7 @@ class EmojiPanelView(context: Context, private val data: EmojiData, private val 
 
     override fun onDraw(c: Canvas) {
         c.drawColor(theme.board.first().base() or (0xFF shl 24))
-        if (!compact) drawTabs(c)
-        if (tab == Tab.EMOJI) drawSearch(c)
-        if (catsH > 0f) drawCats(c)
+        if (searching) drawSearch(c) else drawHeader(c)
         // Grid
         c.save(); c.clipRect(0f, gridTop, width.toFloat(), height.toFloat())
         val cw = width.toFloat() / cols
@@ -140,21 +137,8 @@ class EmojiPanelView(context: Context, private val data: EmojiData, private val 
         c.restore()
     }
 
-    private fun drawTabs(c: Canvas) {
-        tabRects.clear()
-        val names = listOf("Emoji", "Kaomoji", "Symbols")
-        val w = (width - 16f * d - 8f * d) / 3f
-        for ((i, n) in names.withIndex()) {
-            val r = RectF(8f * d + i * (w + 4f * d), tabsTop, 8f * d + i * (w + 4f * d) + w, tabsTop + 36f * d); tabRects.add(r)
-            val sel = Tab.values()[i] == tab
-            fill.color = if (sel) accent() else surface(); c.drawRoundRect(r, 18f * d, 18f * d, fill)
-            label.color = if (sel) theme.accentFg else theme.stripFg
-            c.drawText(n, r.centerX(), r.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
-        }
-    }
-
     private fun drawSearch(c: Canvas) {
-        searchRect.set(12f * d, searchTop, width - 12f * d, searchTop + 40f * d)
+        searchRect.set(12f * d, searchTop, width - 12f * d, searchTop + 38f * d)
         fill.color = surface(); c.drawRoundRect(searchRect, 20f * d, 20f * d, fill)
         line.color = if (compact) accent() else theme.sep; c.drawRoundRect(searchRect, 20f * d, 20f * d, line)
         Icons.draw(c, Icons.Icon.SEARCH, searchRect.left + 22f * d, searchRect.centerY(), 16f * d, theme.stripFg, strokeWidth = 2f)
@@ -168,16 +152,32 @@ class EmojiPanelView(context: Context, private val data: EmojiData, private val 
 
     private val catGlyphs = listOf("😀", "🧑", "🐶", "🍔", "✈️", "⚽", "💡", "❤️", "🏁")
 
-    private fun drawCats(c: Canvas) {
+    private companion object { const val SEARCH = -2; const val TAB_EMOJI = -3; const val TAB_KAOMOJI = -4; const val TAB_SYMBOLS = -5 }
+
+    /** The header row: what each cell is (a group, recents, search or a page) is its id in [catRects]. */
+    private fun drawHeader(c: Canvas) {
         catRects.clear()
-        val top = searchTop + searchH
-        val hasRecent = recents.list().isNotEmpty()
-        val entries = (if (hasRecent) listOf(-1) else emptyList()) + EmojiData.GROUPS.indices.toList()
+        val top = searchTop
+        val entries = if (tab == Tab.EMOJI) {
+            val hasRecent = recents.list().isNotEmpty()
+            listOf(SEARCH) + (if (hasRecent) listOf(-1) else emptyList()) + EmojiData.GROUPS.indices.toList() + listOf(TAB_KAOMOJI, TAB_SYMBOLS)
+        } else listOf(TAB_EMOJI, TAB_KAOMOJI, TAB_SYMBOLS)
         val w = width.toFloat() / entries.size
         for ((i, g) in entries.withIndex()) {
-            val r = RectF(i * w, top, (i + 1) * w, top + 38f * d); catRects.add(r to g)
-            if (g == -1) Icons.draw(c, Icons.Icon.CLOCK, r.centerX(), r.centerY(), 18f * d, theme.stripFg)
-            else { glyph.textSize = 19f * d; c.drawText(catGlyphs[g], r.centerX(), r.centerY() - (glyph.fontMetrics.ascent + glyph.fontMetrics.descent) / 2f, glyph); glyph.textSize = 26f * d }
+            val r = RectF(i * w, top, (i + 1) * w, top + 36f * d); catRects.add(r to g)
+            when (g) {
+                SEARCH -> Icons.draw(c, Icons.Icon.SEARCH, r.centerX(), r.centerY(), 18f * d, theme.stripFg, strokeWidth = 2f)
+                -1 -> Icons.draw(c, Icons.Icon.CLOCK, r.centerX(), r.centerY(), 18f * d, theme.stripFg)
+                TAB_EMOJI -> { glyph.textSize = 20f * d; c.drawText("😀", r.centerX(), r.centerY() - (glyph.fontMetrics.ascent + glyph.fontMetrics.descent) / 2f, glyph); glyph.textSize = 26f * d }
+                TAB_KAOMOJI, TAB_SYMBOLS -> {
+                    val on = (g == TAB_KAOMOJI && tab == Tab.KAOMOJI) || (g == TAB_SYMBOLS && tab == Tab.SYMBOLS)
+                    box.set(r.left + 3f * d, r.top + 2f * d, r.right - 3f * d, r.bottom - 2f * d)
+                    fill.color = if (on) accent() else surface(); c.drawRoundRect(box, 16f * d, 16f * d, fill)
+                    label.color = if (on) theme.accentFg else theme.stripFg
+                    c.drawText(if (g == TAB_KAOMOJI) "^_^" else "@#%", box.centerX(), box.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
+                }
+                else -> { glyph.textSize = 19f * d; c.drawText(catGlyphs[g], r.centerX(), r.centerY() - (glyph.fontMetrics.ascent + glyph.fontMetrics.descent) / 2f, glyph); glyph.textSize = 26f * d }
+            }
         }
         line.color = theme.sep; c.drawLine(0f, top + 38f * d, width.toFloat(), top + 38f * d, line)
     }
@@ -200,9 +200,17 @@ class EmojiPanelView(context: Context, private val data: EmojiData, private val 
     }
 
     private fun tap(x: Float, y: Float) {
-        if (!compact) tabRects.indexOfFirst { it.contains(x, y) }.takeIf { it >= 0 }?.let { setTab(Tab.values()[it]); return }
-        if (tab == Tab.EMOJI && searchRect.contains(x, y)) { listener?.onSearchTapped(); return }
-        catRects.firstOrNull { it.first.contains(x, y) }?.let { (_, g) -> sectionTops.firstOrNull { it.first == g }?.let { scroll = it.second.coerceIn(0f, maxScroll()); invalidate() }; return }
+        if (searching && searchRect.contains(x, y)) { listener?.onSearchTapped(); return }
+        catRects.firstOrNull { it.first.contains(x, y) }?.let { (_, g) ->
+            when (g) {
+                SEARCH -> listener?.onSearchTapped()
+                TAB_EMOJI -> setTab(Tab.EMOJI)
+                TAB_KAOMOJI -> setTab(Tab.KAOMOJI)
+                TAB_SYMBOLS -> setTab(Tab.SYMBOLS)
+                else -> sectionTops.firstOrNull { it.first == g }?.let { scroll = it.second.coerceIn(0f, maxScroll()); invalidate() }
+            }
+            return
+        }
         if (y < gridTop) return
         val cw = width.toFloat() / cols
         val row = rows.firstOrNull { it.title == null && y - gridTop + scroll >= it.top && y - gridTop + scroll < it.top + it.height } ?: return

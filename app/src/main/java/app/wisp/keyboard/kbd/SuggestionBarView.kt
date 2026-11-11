@@ -112,7 +112,7 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
                 text.typeface = Typeface.create(text.typeface, if (i == 1) Typeface.BOLD else Typeface.NORMAL)
                 text.color = if (it.highlight) palette.accent else ink
                 text.alpha = if (i == 1) 255 else 204
-                val label = if (it.quoted) "“${it.text}”" else if (t?.upper == true) it.text.uppercase() else it.text
+                val label = if (it.quoted) "“${it.text}”" else it.text      // as the word is: a theme's capitals look never turns suggestions into shouting
                 c.drawText(ellipsize(label, cw - 12f * d), x0 + i * cw + cw / 2f, y, text)
                 if (i > 0) c.drawLine(x0 + i * cw, height / 2f - 10f * d, x0 + i * cw, height / 2f + 10f * d, line)
             }
