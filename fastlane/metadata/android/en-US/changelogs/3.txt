@@ -1,1 +1,0 @@
-Wisp 1.0.1: voice typing, glide typing and AI rewrite on the phone. 30 themes with favourites and shuffle, Gen Z rewrite tone, key sounds and haptic strength, word suggestions when you tap into text, clipboard and emoji fixes, one background behind the whole keyboard.

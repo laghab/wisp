@@ -1,0 +1,1 @@
+Wisp 1.0.2: the microphone now works in search boxes and address bars (Google search, browsers), and rewrite has a new Premium English tone for a richer, more distinguished vocabulary.

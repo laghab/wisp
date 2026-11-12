@@ -552,7 +552,7 @@ class WispIme : InputMethodService() {
     }
 
     private fun openVoice() {
-        if (!field.suggest || field.kind == FieldKind.PASSWORD) return        // never record into a password field
+        if (field.kind == FieldKind.PASSWORD) return        // never record into a password field
         voice?.start()
         updateVoiceBar()
     }
