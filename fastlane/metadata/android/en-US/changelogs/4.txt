@@ -1,1 +1,1 @@
-Wisp 1.0.2: the microphone now works in search boxes and address bars (Google search, browsers), and rewrite has a new Premium English tone for a richer, more distinguished vocabulary.
+Wisp 1.0.2: the microphone now works in search boxes and address bars (Google search, browsers). New Premium English rewrite tone for a richer, more distinguished vocabulary. The Undo dictation offer goes away on the next key, so the other tools are back at once.
