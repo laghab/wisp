@@ -736,6 +736,7 @@ class WispIme : InputMethodService() {
     private fun showPicker() { getSystemService(InputMethodManager::class.java).showInputMethodPicker() }
 
     override fun onFinishInputView(finishingInput: Boolean) {
+        controller.dropDictation()                  // closing the keyboard keeps the dictation; the undo offer is not kept for later
         endPlacementEdit()          // keep whatever was changed if the keyboard goes away mid-edit
         super.onFinishInputView(finishingInput)
     }

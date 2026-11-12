@@ -451,6 +451,20 @@ class InputControllerTest {
         assertEquals("teh", e.shown); assertEquals("", e.composing)
     }
 
+    // ---- dictation
+
+    @Test fun undoDictationOfferGoesAwayOnAKeyOrWhenTheKeyboardCloses() {
+        val e = FakeEditor(); val c = controller(e); var bar = BarState.IDLE; c.onBarChanged = { bar = it }
+        c.onDictation("hello there")
+        assertEquals("Undo dictation", bar.items.single().text)
+        c.onKey(' '.code)
+        assertEquals(BarState.IDLE, bar)
+        c.onDictation("again"); c.dropDictation()
+        assertEquals(BarState.IDLE, bar)
+        val e2 = FakeEditor(); val c2 = controller(e2); c2.onDictation("gone"); c2.onSuggestionTapped(0)
+        assertEquals("", e2.shown)
+    }
+
     // ---- tapping into existing text
 
     @Test fun cursorAtTheEndOfAWordMakesItTheWordBeingChecked() {

@@ -138,6 +138,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     }
 
     fun onKey(code: Int, x: Int = -1, y: Int = -1) = edit {
+        if (code != KeyCodes.SHIFT) dropDictation()      // any key (a space too) means the dictation is kept
         if (code == KeyCodes.SPACE && doubleSpace()) return@edit
         if (code == KeyCodes.SPACE && composer.isNotEmpty) shortcuts[composer.text]?.let { composer.set(it); editor.setComposing(it) }
         when {
@@ -385,6 +386,9 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         autoShift()
         publishBar()
     }
+
+    /** The "Undo dictation" offer goes away: the dictation stays as typed. */
+    fun dropDictation() { if (dictation != null) { dictation = null; publishBar() } }
 
     /** Removes the last dictation if the cursor is still right after it. */
     fun undoDictation() = edit {
