@@ -756,7 +756,7 @@ class WispIme : InputMethodService() {
         controller.doubleSpacePeriod = style.doubleSpacePeriod
         controller.shortcuts = parseShortcuts(style.shortcuts)
         packageName = info.packageName
-        bar?.micEnabled = f.kind != FieldKind.PASSWORD && f.suggest
+        bar?.micEnabled = f.kind != FieldKind.PASSWORD      // search boxes and address bars ask for "no suggestions", but dictation still belongs there
         keys?.soundOff = f.kind == FieldKind.PASSWORD
         onClipChanged()
         engine?.refreshSources(); gestureEngine?.refreshSources()
