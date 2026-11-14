@@ -27,7 +27,7 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 - `tools/bench/typing.sh`, `startup.sh`, `apk-size.sh` run single checks. `Probe` (compiled out of release builds) writes the timeline marks they read.
 - Host (Rust): `cargo test --release -p wisp-core --test touch_perf --test lex_eval --test glide_eval -- --nocapture`.
 - Memory: `adb shell dumpsys meminfo app.wisp.keyboard.debug` (PSS); the voice process has the `:voice` suffix.
-- On-device checks: `tools/e2e/all.sh <serial>`. Key positions for them live in one place (`tools/e2e/swipe.py` for letter keys, `tools/e2e/lib.sh` for the rest).
+- On-device checks: `tools/e2e/all.sh <serial>`. They run on Waydroid and on a phone: the debug build logs where every key and strip part is (tag `WISP_GEOM`) and `tools/e2e/lib.sh` reads it. Only the floating-handle and swap-button checks in `style.sh` are Waydroid-only.
 - Waydroid freezes its container when no window is open: keep `waydroid show-full-ui` running. The soft keyboard shows next to a hardware keyboard only if `show_ime_with_hard_keyboard` is on; Wisp honours it. The first tap after launch is swallowed by window focus, so the scripts spend one tap on the text area.
 
 ## Latest results (Waydroid, debug build, 2026-11-11)

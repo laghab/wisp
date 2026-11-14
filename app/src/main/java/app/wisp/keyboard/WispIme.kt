@@ -85,9 +85,9 @@ class WispIme : InputMethodService() {
     }
 
     private val main = android.os.Handler(android.os.Looper.getMainLooper())
-    private val adopt = Runnable { controller.adoptWordBeforeCursor() }
+    private val adopt = Runnable { controller.adoptWordAtCursor() }
     /** After the cursor settles, the word it sits at the end of becomes the one the strip checks. */
-    private fun scheduleAdopt() { main.removeCallbacks(adopt); main.postDelayed(adopt, 400) }
+    private fun scheduleAdopt() { main.removeCallbacks(adopt); main.postDelayed(adopt, 300) }
 
     override fun onDestroy() {
         getSystemService(android.content.ClipboardManager::class.java).removePrimaryClipChangedListener(clipListener)
@@ -145,23 +145,24 @@ class WispIme : InputMethodService() {
                 val problem = vc?.failure?.problem
                 if (problem != null) fixVoiceProblem(problem) else if (vc?.isActive == true) vc.stop() else openVoice()
             }
-            override fun onSettings() = openSettings(null)
             override fun onSuggestion(index: Int) = controller.onSuggestionTapped(index)
             override fun onTool(tool: SuggestionBarView.Tool) = when (tool) {
                 SuggestionBarView.Tool.SELECT_ALL -> controller.selectAll()
                 SuggestionBarView.Tool.CUT -> controller.cut()
                 SuggestionBarView.Tool.COPY -> controller.copy()
                 SuggestionBarView.Tool.PASTE -> controller.paste()
+                SuggestionBarView.Tool.UNDO -> controller.undo()
+                SuggestionBarView.Tool.REDO -> controller.redo()
                 SuggestionBarView.Tool.CLIPBOARD -> setMode(Mode.CLIPBOARD)
                 SuggestionBarView.Tool.REWRITE -> setMode(Mode.REWRITE)
                 SuggestionBarView.Tool.EMOJI -> setMode(Mode.EMOJI)
                 SuggestionBarView.Tool.RESIZE -> startPlacementEdit()
-                SuggestionBarView.Tool.THEMES -> openSettings("look")
                 SuggestionBarView.Tool.SETTINGS -> openSettings(null)
                 SuggestionBarView.Tool.INCOGNITO -> { incognito = !incognito; b.incognito = incognito; WispSettings.get(this@WispIme).putBoolean("incognito", incognito); updateLearning() }
             }
         }
         controller.onBarChanged = { b.setState(it) }
+        controller.onAdoptLater = { scheduleAdopt() }
         controller.onGestureInserted = { app.wisp.keyboard.gesture.GlideStats.record(this) }
 
         // Emoji panel: the panel view (made when it opens, dropped when it closes) over a one-row bar (ABC, globe, space, backspace).
@@ -475,7 +476,7 @@ class WispIme : InputMethodService() {
         return true
     }
 
-    private var inlineFor: android.view.autofill.AutofillId? = null
+    private var inlineFor: List<Any?>? = null
 
     private fun clearInline() { inlineScroll?.let { if (it.visibility != View.GONE) { it.removeAllViews(); it.visibility = View.GONE } } }
 
@@ -486,7 +487,8 @@ class WispIme : InputMethodService() {
      */
     override fun onStartInput(info: EditorInfo, restarting: Boolean) {
         super.onStartInput(info, restarting)
-        val id = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) info.autofillId else null
+        // Which field this is: the app, the view and the kind of text, and from Android 16 the field's own autofill id (not readable before that).
+        val id = listOf(info.packageName, info.fieldId, info.inputType, if (Build.VERSION.SDK_INT >= 36) info.autofillId else null)
         if (!restarting || id != inlineFor) clearInline()
         inlineFor = id
     }
@@ -802,10 +804,11 @@ class WispIme : InputMethodService() {
         oldSelStart: Int, oldSelEnd: Int, newSelStart: Int, newSelEnd: Int, candidatesStart: Int, candidatesEnd: Int,
     ) {
         super.onUpdateSelection(oldSelStart, oldSelEnd, newSelStart, newSelEnd, candidatesStart, candidatesEnd)
-        if (controller.isComposing && (candidatesStart == -1 || newSelStart != candidatesEnd || newSelEnd != candidatesEnd)) {
-            controller.onExternalCursorMove()
-        }
-        if (newSelStart == newSelEnd && kotlin.math.abs(newSelStart - oldSelStart) > 1) scheduleAdopt()      // the cursor jumped: a tap in the text
+        val collapsed = newSelStart == newSelEnd
+        // A word taken from the text may have the cursor anywhere in it; a word being typed has it at its end.
+        val stillOnWord = collapsed && candidatesStart != -1 && if (controller.isTouching) newSelStart in candidatesStart..candidatesEnd else newSelStart == candidatesEnd
+        if (controller.isComposing && !stillOnWord) controller.onExternalCursorMove()
+        if (collapsed && !controller.isComposing) scheduleAdopt()      // the cursor came to rest: look at the word it touches
     }
 
     private companion object { const val PANEL_FADE_MS = 120L }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # On-device checks for the switch-keyboard key (task 2.4). Usage: tools/e2e/switchkey.sh <adb-serial>
 DEV="${1:?adb serial}"; source "$(dirname "$0")/lib.sh"; FAILED=0
-LATIN=com.android.inputmethod.latin/.LatinIME; WISP="$P/app.wisp.keyboard.WispIme"
+LATIN="$OTHER_IME"; WISP="$P/app.wisp.keyboard.WispIme"
 cur() { a settings get secure default_input_method | tr -d '\r'; }
 
 # tap: back to the keyboard used before Wisp
@@ -14,7 +14,7 @@ menu_pick "$COMMA" "$GLOBE_ITEM"; sleep 1
 # long press: system picker appears and Wisp is still current
 a ime set "$LATIN" >/dev/null; sleep 1
 launch_field
-tap $SYM; tap $NUMPAD_KEY; hold 288 1047 900; sleep 1.5   # the number pad has a visible switch key; holding it opens the picker
+tap $SYM; tap $(now -11); sleep 0.4; hold $(now -5) 900; sleep 1.5   # the number pad has a visible switch key; holding it opens the picker
 a uiautomator dump /sdcard/u.xml >/dev/null 2>&1
 if a cat /sdcard/u.xml | grep -qiE 'Choose input method|Wisp keyboard.*(English|Spike)|select_dialog|input method'; then
   echo "PASS switch key long press opens the keyboard picker"

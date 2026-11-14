@@ -12,8 +12,8 @@ import app.wisp.keyboard.style.ThemeFonts
 
 /**
  * The strip above the keys (48 dp). While a word is being typed it shows three suggestions with the best one bold in
- * the middle; otherwise it shows the tool icons. A grid button on the left swaps between the quick tools and the editing
- * tools, and the voice button is always on the right.
+ * the middle; otherwise it shows the tool icons. A grid button on the left swaps between the everyday tools and the row with
+ * editing, resize and settings; the voice button is always on the right.
  */
 class SuggestionBarView(context: Context, private val palette: Palette = Palette()) : View(context) {
 
@@ -22,14 +22,17 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         fun onTool(tool: Tool)
         /** The mic was tapped: start listening, or, while listening, stop and insert. */
         fun onMic()
-        /** The gear was tapped: open Wisp's settings. */
-        fun onSettings() {}
     }
 
-    /** A tool on the strip. The quick tools are the first row; the [isEdit] ones are on the second row, behind the grid button. [label] names it in the settings list. */
-    enum class Tool(val label: String, val icon: Icons.Icon, val isEdit: Boolean = false) {
-        CLIPBOARD("Clipboard", Icons.Icon.CLIPBOARD), EMOJI("Emoji", Icons.Icon.EMOJI), REWRITE("Rewrite", Icons.Icon.SPARKLE), RESIZE("Resize", Icons.Icon.CROP), THEMES("Themes", Icons.Icon.THEME), SETTINGS("Settings", Icons.Icon.SLIDERS),
-        SELECT_ALL("Select all", Icons.Icon.SELECT_ALL, true), CUT("Cut", Icons.Icon.CUT, true), COPY("Copy", Icons.Icon.COPY, true), PASTE("Paste", Icons.Icon.PASTE, true), INCOGNITO("Private", Icons.Icon.INCOGNITO, true),
+    /**
+     * A tool on the strip. The first row holds the few used all the time; the [more] ones (editing, then resize and settings) are on the second
+     * row, behind the grid button. [label] names it in the settings list. Emoji has its own key beside the space bar, so here it is off unless
+     * the user switches it on.
+     */
+    enum class Tool(val label: String, val icon: Icons.Icon, val more: Boolean = false) {
+        CLIPBOARD("Clipboard", Icons.Icon.CLIPBOARD), REWRITE("Rewrite", Icons.Icon.SPARKLE), INCOGNITO("Private", Icons.Icon.INCOGNITO), EMOJI("Emoji", Icons.Icon.EMOJI),
+        UNDO("Undo", Icons.Icon.UNDO, true), REDO("Redo", Icons.Icon.REDO, true), SELECT_ALL("Select all", Icons.Icon.SELECT_ALL, true), CUT("Cut", Icons.Icon.CUT, true),
+        COPY("Copy", Icons.Icon.COPY, true), PASTE("Paste", Icons.Icon.PASTE, true), RESIZE("Resize", Icons.Icon.CROP, true), SETTINGS("Settings", Icons.Icon.SLIDERS, true),
     }
 
     var listener: Listener? = null
@@ -44,13 +47,13 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
     var incognito = false
         set(v) { if (field != v) { field = v; invalidate() } }
     private var composing = false
-    private var showEdit = false
+    private var showMore = false
     private var theme: Theme? = null
     private val density = resources.displayMetrics.density
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER; textSize = 16f * density }
     private val line = Paint().apply { strokeWidth = 1f * density }
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
-    private var tools: List<Tool> = Tool.values().toList()
+    private var tools: List<Tool> = Toolbar.DEFAULT
 
     /** Which tools the strip shows, in order (the user can reorder and remove them). */
     fun setTools(list: List<Tool>) { if (list != tools) { tools = list; invalidate() } }
@@ -87,18 +90,30 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
     private val micSize get() = 40f * density
     private val micArea get() = 48f * density
     private val ink get() = theme?.stripFg ?: palette.textMuted
-    private val quick get() = tools.filter { !it.isEdit }
-    private val edit get() = tools.filter { it.isEdit }
-    private fun row(): List<Tool> = if (showEdit) edit else quick
+    private fun row(): List<Tool> = tools.filter { it.more == showMore }
+
+    private var loggedAt = -1
+
+    /** Debug builds say where the strip's fixed parts are on the screen (the three word slots, the grid button, the mic), for tools/e2e/lib.sh. */
+    private fun logGeometry() {
+        val at = IntArray(2); getLocationOnScreen(at)
+        if (at[1] * 10000 + width == loggedAt) return
+        loggedAt = at[1] * 10000 + width
+        val y = at[1] + height / 2
+        val x0 = 4f * density; val cw = (width - micArea - x0) / 3f
+        fun x(v: Float) = (at[0] + v).toInt()
+        android.util.Log.i(app.wisp.keyboard.Probe.GEOMETRY, "bar y=$y grid=${x(x0 + cell / 2f)} mic=${x(width - micArea / 2f)} s0=${x(x0 + cw / 2f)} s1=${x(x0 + cw * 1.5f)} s2=${x(x0 + cw * 2.5f)}")
+    }
 
     override fun onDraw(c: Canvas) {
+        if (app.wisp.keyboard.BuildConfig.DEBUG && isShown) logGeometry()
         val t = theme
         line.color = t?.sep ?: palette.key
         drawMic(c)
         val d = density
         if (voiceActive || voiceMessage != null) { drawTranscript(c); return }
         val left = if (composing) 4f * d else 4f * d + cell
-        if (!composing) Icons.draw(c, Icons.Icon.GRID, 4f * d + cell / 2f, height / 2f, 20f * d, if (showEdit) palette.accent else ink)
+        if (!composing) Icons.draw(c, Icons.Icon.GRID, 4f * d + cell / 2f, height / 2f, 20f * d, if (showMore) palette.accent else ink)
         val x0 = left; val x1 = width - micArea
         val fm = text.fontMetrics
         val y = height / 2f - (fm.ascent + fm.descent) / 2f
@@ -196,11 +211,11 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
                 if (items.getOrNull(i)?.text?.isNotEmpty() == true) listener?.onSuggestion(i)
                 return true
             }
-            if (e.x < x0) { showEdit = !showEdit; invalidate(); return true }
+            if (e.x < x0) { showMore = !showMore; invalidate(); return true }
             val r = row()
             if (r.isEmpty()) return true
             val i = ((e.x - x0) / ((width - micArea - x0) / r.size)).toInt().coerceIn(0, r.size - 1)
-            if (r[i] == Tool.SETTINGS) listener?.onSettings() else listener?.onTool(r[i])
+            listener?.onTool(r[i])
         }
         return true
     }

@@ -7,18 +7,37 @@ tap() { a input tap "$1" "$2"; sleep 0.2; }
 hold() { a input swipe "$1" "$2" "$1" "$2" "$3"; sleep 0.3; }   # press and hold for $3 ms
 drag() { a input swipe "$1" "$2" "$3" "$4" "${5:-400}"; sleep 0.3; }
 
-# The one place key positions live: a 950x1158 Waydroid display (density 216), default layout, no number row.
-# Letter keys come from swipe.py (K <letter> prints "x y"); the bottom row is y 1047 and the suggestion strip y 737.
-read -r R1 R2 R3 <<< "$(python3 "$E2E/swipe.py" --rows)"; R4=1047; STRIP=737
-K() { python3 "$E2E/swipe.py" --key "$1"; }
-SHIFT="70 $R3"; BKSP="878 $R3"; SYM="63 $R4"; COMMA="170 $R4"; SPACE="475 $R4"; PERIOD="780 $R4"; ENTER="885 $R4"
-TOOL_EMOJI="270 $STRIP"; NUMPAD_KEY="157 $R4"   # the emoji panel opens from the toolbar; the number pad from the symbols page (the "123" key beside the globe)
-MIC="917 $STRIP"; SLOT_L="150 $STRIP"; SLOT_M="445 $STRIP"; SLOT_R="730 $STRIP"
-UNDO_CELL="$SLOT_L"                                                  # "Undo dictation" takes the first strip slot after an insert
+# Where things are comes from the keyboard itself: the debug build logs every key's rectangle and the strip's parts (tag WISP_GEOM), so
+# the same scripts run on Waydroid and on a phone. launch_field calls read_geometry, which fills the names below.
+KEYS="${TMPDIR:-/tmp}/wisp-keys-$DEV"; export WISP_KEYS="$KEYS"      # "code left top right bottom" per key; swipe.py reads it too
+read -r W H <<< "$(adb -s "$DEV" shell wm size | tail -1 | grep -o '[0-9]*x[0-9]*' | tr x ' ')"
+DPI="$(adb -s "$DEV" shell wm density | tail -1 | grep -o '[0-9]*$')"; px() { echo $(($1 * DPI / 216)); }      # px <n>: a finger distance measured on Waydroid (216 dpi), on this display
+OTHER_IME="$(adb -s "$DEV" shell ime list -s | grep -v "^$P/" | head -1)"      # some other enabled keyboard, to switch away to
+key() { awk -v c="$1" '$1 == c { printf "%d %d", ($2 + $4) / 2, ($3 + $5) / 2; exit }' "${2:-$KEYS}"; }      # key <code>: its centre
+K() { key "$(printf '%d' "'$1")"; }                                                                          # K <letter>
+# pop <code> <n>: item n (from 0) of the menu a held key opens
+pop() { awk -v c="$1" -v n="$2" -v cell="$CELL" '$1 == c { printf "%d %d", $2 + cell * (n + 0.5), $3 - ($5 - $3) / 2; exit }' "$KEYS"; }
+# keys_line [layout]: the newest report of the keys showing (or of one layout by name, e.g. emoji-bar)
+keys_line() { a logcat -d -s WISP_GEOM | grep -o 'keys .*' | { if [ -n "${1:-}" ]; then grep "^keys $1 "; else grep -v '^keys emoji-bar '; fi; } | tail -1 | tr -d '\r'; }
+# now <code> [layout]: a key on the page showing right now (symbols, number pad, the emoji panel's bar), which read_geometry has not stored
+now() { keys_line "${2:-}" | tr ' ' '\n' | sed -n 's/^\(-\{0,1\}[0-9]*\):\([0-9]*\),\([0-9]*\),\([0-9]*\),\([0-9]*\)$/\1 \2 \3 \4 \5/p' > "$KEYS.now"; key "$1" "$KEYS.now"; }
+read_geometry() {
+  local line bar y
+  line="$(keys_line)"; bar="$(a logcat -d -s WISP_GEOM | grep -o 'bar y=.*' | tail -1 | tr -d '\r')"
+  [ -n "$line" ] && [ -n "$bar" ] || { echo "WARN: the keyboard reported no positions (is the debug build installed?)" >&2; return 1; }
+  CELL="$(echo "$line" | sed -n 's/.* cell=\([0-9]*\) .*/\1/p')"
+  echo "$line" | tr ' ' '\n' | sed -n 's/^\(-\{0,1\}[0-9]*\):\([0-9]*\),\([0-9]*\),\([0-9]*\),\([0-9]*\)$/\1 \2 \3 \4 \5/p' > "$KEYS"
+  SHIFT="$(key -1)"; BKSP="$(key -2)"; ENTER="$(key -3)"; SYM="$(key -4)"; EMOJI="$(key -8)"; COMMA="$(key 44)"; SPACE="$(key 32)"; PERIOD="$(key 46)"
+  R1="$(K q | cut -d' ' -f2)"; R2="$(K a | cut -d' ' -f2)"; R3="$(K z | cut -d' ' -f2)"; R4="${SPACE#* }"
+  bar_part() { echo "$bar" | sed -n "s/.* $1=\([0-9]*\).*/\1/p"; }
+  y="$(echo "$bar" | sed -n 's/^bar y=\([0-9]*\).*/\1/p')"; STRIP="$y"
+  GRID="$(bar_part grid) $y"; MIC="$(bar_part mic) $y"; SLOT_L="$(bar_part s0) $y"; SLOT_M="$(bar_part s1) $y"; SLOT_R="$(bar_part s2) $y"
+  UNDO_CELL="$SLOT_L"                                              # "Undo dictation" takes the first strip slot after an insert
+  GLOBE_ITEM="$(pop 44 0)"; LANG_ITEM="$(pop 44 1)"                # the comma's menu: the globe first, the next language second
+}
 # Long-press menus: press a key, wait for its menu, slide to an item and let go.  menu_pick "<key x y>" "<item x y>"
 menu_pick() { local kx ky ix iy; read -r kx ky <<< "$1"; read -r ix iy <<< "$2"
   a input motionevent DOWN "$kx" "$ky"; sleep 0.8; a input motionevent MOVE "$ix" "$iy"; sleep 0.2; a input motionevent UP "$ix" "$iy"; sleep 0.6; }
-GLOBE_ITEM="178 978"; LANG_ITEM="265 978"                         # the comma's menu: the globe first, the next language second
 lang_next() { menu_pick "$COMMA" "$LANG_ITEM"; }
 # type <word>: taps each letter in turn, then gives the dictionary thread a moment to answer
 type_word() { local c; for c in $(echo "$1" | sed 's/./& /g'); do tap $(K "$c"); done; sleep 0.9; }
@@ -28,14 +47,15 @@ launch_field() {
   # Each script starts with nothing learned, so what one script teaches the keyboard cannot change another's result. (learning.sh and training.sh manage state themselves.)
   [ -n "${KEEP_STATE:-}" ] || as_app "rm -rf files/personal files/wisp-settings.properties" >/dev/null 2>&1
   # Select another keyboard first: "ime set" is a no-op when Wisp is already current, and then no fresh start happens.
-  a ime set com.android.inputmethod.latin/.LatinIME >/dev/null
-  a am force-stop "$P"; a ime set "$P/app.wisp.keyboard.WispIme" >/dev/null; a logcat -c
+  a ime set "$OTHER_IME" >/dev/null 2>&1
+  a am force-stop "$P"; a ime enable "$P/app.wisp.keyboard.WispIme" >/dev/null; a ime set "$P/app.wisp.keyboard.WispIme" >/dev/null; a logcat -c
   a am start -n "$P/app.wisp.keyboard.SpikeFieldActivity" "$@" >/dev/null
   local up=0
   for _ in $(seq 1 60); do a logcat -d -s WISP_PROBE | grep -q view_created && { up=1; break; }; sleep 0.25; done
   [ $up = 1 ] || echo "WARN: keyboard did not appear after launch" >&2
   sleep 2.8   # the keyboard window is still animating in for a moment after its view exists
-  a input tap 475 300; sleep 0.5   # the first touch after launch is swallowed by window focus; spend it on the text area
+  a input tap $((W / 2)) $((H / 4)); sleep 0.5   # the first touch after launch is swallowed by window focus; spend it on the text area
+  read_geometry
 }
 
 start_field() {

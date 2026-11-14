@@ -24,4 +24,6 @@ object Probe {
     fun first(name: String) { if (BuildConfig.DEBUG && !firstDrawDone) { firstDrawDone = true; mark(name) } }
 
     const val TAG = "WISP_PROBE"
+    /** The log tag for where the keys and the strip are on the screen. */
+    const val GEOMETRY = "WISP_GEOM"
 }

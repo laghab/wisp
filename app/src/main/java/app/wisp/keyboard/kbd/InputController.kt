@@ -85,28 +85,50 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     }
 
     private var adoptedAs: String? = null    // the word taken from the text as it was; learning it only happens once the user changes it
+    private var touching = false             // the adopted word has letters after the cursor: any key lets go of it and types plainly
+
+    /** The IME asks again for the word at the cursor a moment after this is called (a key was typed inside a word). */
+    var onAdoptLater: (() -> Unit)? = null
 
     /**
-     * The cursor was put somewhere new (a tap in the text, a field gaining focus). If it sits at the end of a word, that word becomes the one
-     * being edited, so the strip shows it with its corrections like a word just typed. Skipped in the middle of a word, while typing, and right
-     * after the keyboard's own edits (a paste, a sliding cursor), which are not the user choosing a word.
+     * The cursor came to rest somewhere (a tap in the text, a field gaining focus, a slide along the space bar). If it touches a word, at its
+     * end or inside it, that word becomes the one being checked: the strip shows it with its corrections, and tapping one replaces the whole
+     * word. Skipped while typing, with a selection, and right after the keyboard's own edits. Returns whether a word was taken.
      */
-    fun adoptWordBeforeCursor() {
-        if (!suggestionsEnabled || composer.isNotEmpty || editing > 0 || dictation != null || clock() - lastEditAt < ADOPT_QUIET_MS) return
-        if (editor.selectedText() != null) return
-        if (editor.textAfter(1)?.firstOrNull()?.let { Character.isLetter(it) } == true) return
-        val before = editor.textBefore(WORD_SCAN)?.toString() ?: return
+    fun adoptWordAtCursor(): Boolean {
+        if (!suggestionsEnabled || composer.isNotEmpty || editing > 0 || dictation != null || clock() - lastEditAt < ADOPT_QUIET_MS) return false
+        return adopt()
+    }
+
+    private fun adopt(): Boolean {
+        if (editor.selectedText() != null) return false
+        val before = editor.textBefore(WORD_SCAN)?.toString() ?: return false
         var start = before.length
         while (start > 0) { val cp = before.codePointBefore(start); if (!isWordChar(cp, start < before.length)) break; start -= Character.charCount(cp) }
         while (start < before.length && before[start] == '\'') start++
-        val word = before.substring(start)
-        if (word.codePointCount(0, word.length) !in 2..WordComposer.MAX) return
-        editor.markComposing(word)
+        val after = editor.textAfter(WordComposer.MAX)?.toString().orEmpty()
+        var end = 0
+        while (end < after.length) { val cp = after.codePointAt(end); if (!isWordChar(cp, start < before.length || end > 0)) break; end += Character.charCount(cp) }
+        while (end > 0 && after[end - 1] == '\'') end--
+        val word = before.substring(start) + after.substring(0, end)
+        if (word.codePointCount(0, word.length) !in 2..WordComposer.MAX) return false
+        if (!editor.markComposing(before.length - start, end)) return false
         clearGesture(); correction = null; keepAsTyped = null
         previousWord = before.substring(0, start).trimEnd().takeLastWhile { isWordChar(it.code, true) }.lowercase().ifEmpty { null }
-        composer.set(word); result = null; adoptedAs = word
+        composer.set(word); result = null; adoptedAs = word; touching = end > 0
         suggester?.request(word, composer.xs, composer.ys, composer.size, previousWord)
         publishBar()
+        return true
+    }
+
+    /** True while the word being checked has the cursor inside it, not at its end. */
+    val isTouching get() = touching
+
+    /** A key is about to act inside a word: the word stops being the one checked, and is looked at again once the typing pauses. */
+    private fun letGo() {
+        if (!touching) return
+        editor.finishComposing(); resetWord(); publishBar()
+        onAdoptLater?.invoke()
     }
 
     /** Ends the word being typed as it is (no correction), e.g. before the language changes. */
@@ -138,7 +160,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     }
 
     fun onKey(code: Int, x: Int = -1, y: Int = -1) = edit {
-        if (code != KeyCodes.SHIFT) dropDictation()      // any key (a space too) means the dictation is kept
+        if (code != KeyCodes.SHIFT) { dropDictation(); letGo() }      // any key (a space too) means the dictation is kept
         if (code == KeyCodes.SPACE && doubleSpace()) return@edit
         if (code == KeyCodes.SPACE && composer.isNotEmpty) shortcuts[composer.text]?.let { composer.set(it); editor.setComposing(it) }
         when {
@@ -152,6 +174,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     /** Held backspace: one character per repeat, or a whole word once the touch machine says the hold has run long. */
     fun onRepeat(word: Boolean) = edit {
+        letGo()
         if (composer.isNotEmpty) { if (word) clearWord() else backspace(); return@edit }
         if (word) editor.deleteBefore(wordChars(1)) else editor.backspace()
         correction = null
@@ -197,6 +220,8 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     fun cut() = edit { endWord(null, false); editor.cut() }
     fun copy() = edit { endWord(null, false); editor.copy() }
     fun paste() = edit { endWord(null, false); editor.paste(); autoShift() }
+    fun undo() = edit { endWord(null, false); clearGesture(); editor.undo(); autoShift() }
+    fun redo() = edit { endWord(null, false); clearGesture(); editor.redo(); autoShift() }
 
     /** The dictionary's answer. Ignored when it is for a word that is no longer being typed. */
     fun onSuggestions(r: SuggestionResult) {
@@ -232,8 +257,14 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     private fun typeCodePoint(code: Int, x: Int, y: Int) {
         val c = if (shift != Shift.OFF) Character.toUpperCase(code) else code
-        if (suggestionsEnabled && isWordChar(c, composer.isNotEmpty)) {
+        if (suggestionsEnabled && composer.isEmpty && isWordChar(c, false) && editor.textAfter(1)?.firstOrNull()?.isLetter() == true) {
+            // In front of or inside a word: the letter goes in as it is, and the whole word is checked once the typing pauses.
+            clearGesture(); correction = null
+            editor.commit(String(Character.toChars(c)))
+            onAdoptLater?.invoke()
+        } else if (suggestionsEnabled && isWordChar(c, composer.isNotEmpty)) {
             clearGesture()
+            if (composer.isEmpty && editor.textBefore(1)?.lastOrNull()?.isLetter() == true) adopt()      // carrying on a word that is already there: it is that word being typed
             composer.add(c, x, y)
             correction = null
             editor.setComposing(composer.text)
@@ -301,7 +332,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         }
         val typed = composer.text
         val r = result
-        val target = if (allowCorrection && autoCorrect && r != null && keepAsTyped != typed) AutoCorrectPolicy.choose(typed, r) else null
+        val target = if (allowCorrection && autoCorrect && r != null && keepAsTyped != typed && adoptedAs != typed) AutoCorrectPolicy.choose(typed, r) else null      // a word that was already there is only changed when the user picks a suggestion
         val finalWord = if (target != null) applyCase(typed, target.word) else typed
         if (target != null) editor.setComposing(finalWord)
         editor.finishComposing()
@@ -321,7 +352,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     private fun resetWord(clearCorrection: Boolean = true) {
         if (composer.isNotEmpty) editor.finishComposing()
-        composer.clear(); result = null; adoptedAs = null; suggester?.cancel()
+        composer.clear(); result = null; adoptedAs = null; touching = false; suggester?.cancel()
         if (clearCorrection) correction = null
     }
 
@@ -332,7 +363,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         if (composer.isEmpty) return emptyList()
         val typed = composer.text
         val r = result
-        val target = if (r != null && autoCorrect && keepAsTyped != typed) AutoCorrectPolicy.choose(typed, r) else null
+        val target = if (r != null && autoCorrect && keepAsTyped != typed && adoptedAs != typed) AutoCorrectPolicy.choose(typed, r) else null
         val words = ArrayList<BarItem>(3)
         if (r != null) for (cand in r.candidates) {
             if (words.size >= 3) break
@@ -506,7 +537,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     companion object {
         private const val WORD_SCAN = 400
-        private const val ADOPT_QUIET_MS = 350L
+        private const val ADOPT_QUIET_MS = 250L
         const val DOUBLE_SPACE_MS = 450L
         const val DOUBLE_TAP_MS = 350L
 

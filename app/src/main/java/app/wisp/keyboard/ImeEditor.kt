@@ -25,11 +25,14 @@ class ImeEditor(private val ime: InputMethodService) : Editor {
     override fun textBefore(count: Int): CharSequence? = ic?.getTextBeforeCursor(count, 0)
     override fun textAfter(count: Int): CharSequence? = ic?.getTextAfterCursor(count, 0)
 
-    override fun markComposing(word: CharSequence) {
-        val c = ic ?: return
+    override fun markComposing(before: Int, after: Int): Boolean {
+        val c = ic ?: return false
         val et = c.getExtractedText(android.view.inputmethod.ExtractedTextRequest().apply { hintMaxChars = 0 }, 0)
-        if (et != null) { val end = maxOf(et.selectionStart, et.selectionEnd) + et.startOffset; c.setComposingRegion(end - word.length, end) }
-        else { c.deleteSurroundingText(word.length, 0); c.setComposingText(word, 1) }      // an app that will not say where the cursor is: put the word back as composing text
+        if (et != null) { val at = maxOf(et.selectionStart, et.selectionEnd) + et.startOffset; return c.setComposingRegion(at - before, at + after) }
+        if (after > 0) return false                                      // an app that will not say where the cursor is: only a word that ends at the cursor can be taken
+        val word = c.getTextBeforeCursor(before, 0) ?: return false
+        c.deleteSurroundingText(before, 0); c.setComposingText(word, 1)   // put the word back as composing text
+        return true
     }
 
     override fun moveCursor(steps: Int) {
@@ -56,4 +59,11 @@ class ImeEditor(private val ime: InputMethodService) : Editor {
     override fun cut() { ic?.performContextMenuAction(android.R.id.cut) }
     override fun copy() { ic?.performContextMenuAction(android.R.id.copy) }
     override fun paste() { ic?.performContextMenuAction(android.R.id.paste) }
+    // Fields take undo and redo as the hardware shortcuts, Ctrl+Z and Ctrl+Shift+Z (what HeliBoard sends too).
+    override fun undo() = chord(KeyEvent.META_CTRL_ON)
+    override fun redo() = chord(KeyEvent.META_CTRL_ON or KeyEvent.META_SHIFT_ON)
+    private fun chord(meta: Int) {
+        val c = ic ?: return; val t = android.os.SystemClock.uptimeMillis()
+        for (action in intArrayOf(KeyEvent.ACTION_DOWN, KeyEvent.ACTION_UP)) c.sendKeyEvent(KeyEvent(t, t, action, KeyEvent.KEYCODE_Z, 0, meta))
+    }
 }

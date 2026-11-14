@@ -10,7 +10,7 @@ prompt_word() {
 style() { as_app "cat files/personal/gesture_style.txt" 2>/dev/null; }
 
 a am force-stop "$P"; as_app "rm -f files/personal/gesture_style.txt files/personal/training_en_US.tsv" >/dev/null 2>&1
-a ime set com.android.inputmethod.latin/.LatinIME >/dev/null
+a ime set "$OTHER_IME" >/dev/null 2>&1
 a am start -n "$P/app.wisp.keyboard.PracticeForTests" >/dev/null; sleep 7
 
 done_n=0; ok=0

@@ -4,9 +4,9 @@ DEV="${1:?adb serial}"; source "$(dirname "$0")/lib.sh"; FAILED=0
 field() { launch_field --ei inputType "$1" --ei imeOptions "${2:-0}"; }   # field <inputType> [imeOptions]
 shot() { adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/$1.png"; }
 
-# number pad: 4 columns (x 120 357 593 830), four rows like the letter rows
+# number pad
 field 8194   # TYPE_CLASS_NUMBER | TYPE_NUMBER_FLAG_DECIMAL
-tap 120 $R1; tap 357 $R1; tap 593 $R4; tap 357 $R2                 # 1 2 . 5
+tap $(key 49); tap $(key 50); tap $(key 46); tap $(key 53)                 # 1 2 . 5
 expect "number field uses the number pad" "12.5"; shot field_number
 
 # email: bottom row has '@' where comma normally is

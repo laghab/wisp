@@ -30,7 +30,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 
 ## 3. Space bar and bottom row
 - [ ] 3.1 **(!)** The space bar is wide (roughly 40% of the row) and easy to hit with either thumb.
-- [ ] 3.2 Bottom row reads: ?123, comma, space, period, enter. There is no emoji key; emoji opens from the toolbar. Holding the space bar only slides the cursor.
+- [ ] 3.2 Bottom row reads: ?123, emoji, comma, space, period, enter. Holding the space bar only slides the cursor.
 - [ ] 3.3 Tapping the right and left ends of the space bar both insert a space.
 - [ ] 3.4 Sliding a finger left and right along the space bar moves the cursor; it follows the finger and stops cleanly when you lift.
 - [ ] 3.5 Long-press the comma key: the globe (switch keyboard), the language and extra punctuation appear. Long-press the period key: the punctuation list appears.
@@ -56,8 +56,10 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 5.5 Typing a new word, then tapping the "keep as typed" entry on the left of the strip, teaches it; it is offered next time.
 - [ ] 5.6 After a space, next-word suggestions appear ("how", then "are", "you" ...).
 - [ ] 5.7 Autocorrect off in Home: nothing is replaced automatically, suggestions still show.
-- [ ] 5.8 With the field empty, the strip shows the toolbar icons (apps, clipboard, emoji, rewrite, crop, palette, settings) and the mic on the right.
+- [ ] 5.8 With the field empty, the strip shows the grid button, then clipboard, rewrite and private typing, and the mic on the right. The grid button swaps to undo, redo, select all, cut, copy, paste, resize and settings.
 - [ ] 5.8b Tap at the end of a word that is already in a text box (or open a box that has text): that word shows in the strip with corrections, and tapping one replaces it without an extra space. Tapping in the middle of a word offers nothing.
+- [ ] 5.11 **(!)** Tap into text so the cursor is at the end of a word or inside one: after a moment the strip offers that word's corrections (a misspelt word shows its fixes). Tapping one replaces the whole word. Typing or deleting inside the word works letter by letter, and the strip catches up when you pause. Space after a word that was already there never changes it.
+- [ ] 5.12 Undo and redo on the toolbar's second row take back and restore the last change in the field (apps that support Ctrl+Z).
 - [ ] 5.9 Password fields: no suggestions, nothing learned, mic does nothing.
 - [ ] 5.10 Text shortcuts (Settings > Typing): add "omw" as "on my way"; typing "omw " expands it. Undo with backspace.
 
@@ -87,7 +89,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 7.11 Toolbar editing: reorder or hide tools; the strip follows.
 
 ## 8. Emoji, clipboard
-- [ ] 8.1 The smiley icon in the toolbar opens the emoji panel; categories scroll; tapping an emoji inserts it.
+- [ ] 8.1 The smiley key beside the space bar opens the emoji panel; categories scroll; tapping an emoji inserts it.
 - [ ] 8.2 Emoji search finds results ("smile", "heart", "fire").
 - [ ] 8.3 Kaomoji and Symbols tabs insert correctly. ABC returns to the letters; backspace works in the panel.
 - [ ] 8.4 Recent emoji are remembered.
@@ -124,7 +126,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 10.8 32-bit phones only: the panel says rewrite is unavailable instead of failing.
 
 ## 11. Edit mode, size and position
-- [ ] 11.1 The crop icon in the toolbar opens edit mode on the keyboard itself.
+- [ ] 11.1 The crop icon on the toolbar's second row (behind the grid button) opens edit mode on the keyboard itself.
 - [ ] 11.2 Dragging the keyboard up and down moves it; **(!)** the area below a raised keyboard is filled with the keyboard background down to the bottom of the screen, never a see-through gap. While you type the gap stays (the keys stay raised for your thumbs); when you open the emoji, clipboard or rewrite panel it grows into the gap for more room, and goes back when you return to the keys.
 - [ ] 11.3 Resizing from the edges and corners changes width and height like cropping; keys rescale cleanly with no overlap.
 - [ ] 11.4 Mode chips: Full, One-handed left, One-handed right, Floating, Split each work; Reset restores the default; Done keeps your choice.

@@ -275,6 +275,17 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         applyOverrides()
         invalidate()
         onLayoutBuilt?.invoke(l)
+        geometryLogged = false
+    }
+
+    private var geometryLogged = false
+
+    /** Debug builds say where every key is on the screen, so the on-device checks (tools/e2e/lib.sh) tap the right place on any phone. */
+    private fun logGeometry(l: CompiledLayout) {
+        geometryLogged = true
+        val at = IntArray(2); getLocationOnScreen(at)
+        val keys = (0 until l.count).joinToString(" ") { i -> "${l.codes[i]}:${(at[0] + l.rects[i * 4]).toInt()},${(at[1] + l.rects[i * 4 + 1]).toInt()},${(at[0] + l.rects[i * 4 + 2]).toInt()},${(at[1] + l.rects[i * 4 + 3]).toInt()}" }
+        android.util.Log.i(Probe.GEOMETRY, "keys ${spec.name} cell=${popupCell.toInt()} $keys")
     }
 
     private fun touchConfig() = floatArrayOf(
@@ -324,6 +335,7 @@ class KeyboardView(context: Context, private var spec: LayoutSpec, val palette: 
         val l = layout ?: return
         val d0 = if (BuildConfig.DEBUG) System.nanoTime() else 0L
         Probe.first("first_draw")
+        if (BuildConfig.DEBUG && !geometryLogged && isShown) logGeometry(l)
         if (bigText.typeface == null || tintedBigSize != theme.size || tintedTheme !== theme) { setThemePaints(); tintedBigSize = theme.size; tintedTheme = theme }
         renderer.prepareBackdrop(width, height)
         if (!boardFromHost) renderer.drawBoard(canvas, width, height)

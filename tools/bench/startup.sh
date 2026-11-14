@@ -8,11 +8,12 @@ P=app.wisp.keyboard.debug
 a() { adb -s "$DEV" shell "$@"; }
 
 a ime enable "$P/app.wisp.keyboard.WispIme" >/dev/null
+OTHER="$(a ime list -s | grep -v "^$P/" | head -1)"      # some other enabled keyboard, to switch away to
 a ime set "$P/app.wisp.keyboard.WispIme" >/dev/null
 
 vals=()
 for i in $(seq 1 "$RUNS"); do
-  a ime set com.android.inputmethod.latin/.LatinIME >/dev/null
+  a ime set "$OTHER" >/dev/null 2>&1 || true
   a am force-stop "$P"; a ime set "$P/app.wisp.keyboard.WispIme" >/dev/null; a logcat -c
   a am start -n "$P/app.wisp.keyboard.SpikeFieldActivity" >/dev/null
   for _ in $(seq 1 100); do

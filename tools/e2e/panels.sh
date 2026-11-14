@@ -17,15 +17,15 @@ a input keyevent KEYCODE_MOVE_END >/dev/null
 
 # number pad: the "123" key on the symbols page opens a pad with operators on the left and symbols on the right of the digits; ABC returns
 launch_field
-tap $SYM; tap $NUMPAD_KEY; sleep 0.4; adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/panel_numpad.png"
-tap 475 867; tap 665 930; tap 475 993; tap 96 805; tap 96 1055; tap $(K q)    # 5 9 0 + then ABC, q
+tap $SYM; tap $(now -11); sleep 0.4; adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/panel_numpad.png"
+tap $(now 53); tap $(now 57); tap $(now 48); tap $(now 43); tap $(now -9); tap $(K q)    # 5 9 0 + then ABC, q
 expect "number pad types digits and operators and ABC returns to letters" "590+q"
 
-# emoji panel: open from letters, pick the first emoji, close via ABC
+# emoji panel: open with the key beside the space bar, pick the first emoji, close via ABC
 launch_field
-tap $TOOL_EMOJI; adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/panel_emoji.png"
-tap 60 890                                                               # top-left emoji
-tap 90 1045                                                              # bottom bar ABC (1.5 weight, left)
+tap $EMOJI; sleep 0.6; adb -s "$DEV" exec-out screencap -p > "${SHOTS:-/tmp}/panel_emoji.png"
+tap $((W * 6 / 100)) $R2                                                  # top-left emoji
+tap $(now -9 emoji-bar)                                                  # the bar under the panel: ABC
 tap $(K q)                                                              # q
 got="$(field_text)"
 case "$got" in "&#128512;q") echo "PASS emoji panel inserts an emoji and ABC returns: '$got'";; *) echo "FAIL emoji: '$got'"; FAILED=1;; esac
