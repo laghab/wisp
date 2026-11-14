@@ -66,9 +66,11 @@ fn generate(geo: &Geometry, rng: &mut Rng, letters: &[u8], noise: f32) -> (Vec<f
         }
     }
     let (kw, kh) = (geo.key_w, geo.key_h);
-    let (bx, by) = (rng.gauss() * 0.5 * noise * kw, rng.gauss() * 0.5 * noise * kh);
+    let (bx, by) = (rng.gauss() * 0.5 * noise * kw, rng.gauss() * 0.5 * 0.45 * noise * kh);
     let px: Vec<f32> = v.iter().map(|&l| geo.x[l as usize] + bx + rng.gauss() * noise * kw).collect();
-    let py: Vec<f32> = v.iter().map(|&l| geo.y[l as usize] + by + rng.gauss() * noise * kh).collect();
+    // People miss sideways far more than up or down: a person's recorded swipes (eval/traces_en_US.jsonl) start 0.38 key widths off sideways but
+    // only 0.16 key heights off vertically.
+    let py: Vec<f32> = v.iter().map(|&l| geo.y[l as usize] + by + rng.gauss() * 0.45 * noise * kh).collect();
     let n = v.len();
     let mut dense: Vec<(f32, f32)> = vec![(px[0], py[0])];
     let (mut cx, mut cy) = (px[0], py[0]);
@@ -174,7 +176,7 @@ fn gate() {
     let (mut g, words) = load();
     // WISP_PRIOR: try another weight for how much a common word is favoured.
     if let Some(w) = std::env::var("WISP_PRIOR").ok().and_then(|v| v.parse().ok()) { g.params.prior_weight = w }
-    let levels = [(0.15, 0.91, 0.98), (0.30, 0.785, 0.91), (0.45, 0.52, 0.67)];
+    let levels = [(0.15, 0.92, 0.985), (0.30, 0.88, 0.97), (0.45, 0.735, 0.89)];
     let reports: Vec<Report> = levels.iter().map(|&(noise, _, _)| run(&mut g, &words, noise, 2000, 42)).collect();
     for ((noise, _, _), r) in levels.iter().zip(&reports) {
         println!("GATE noise={noise:.2} top1={:.1}% top3={:.1}% decode p50={}us p95={}us", r.top1 * 100.0, r.top3 * 100.0, r.p50, r.p95);
@@ -274,7 +276,8 @@ fn the_word_before_helps() {
 }
 
 /// Swipes a person really made (recorded on a phone with the debug build's TraceRecorderActivity into eval/traces_en_US.jsonl, each with
-/// the key positions it was made on). Prints how many the decoder reads right; fails only if the file is there and most are wrong.
+/// the key positions it was made on). Prints how many the decoder reads right; fails if the file is there and fewer than 88% are read right
+/// first time (92.4% when the gate was set).
 #[test]
 fn real_swipes() {
     let Ok(text) = std::fs::read_to_string(format!("{}/../../eval/traces_en_US.jsonl", env!("CARGO_MANIFEST_DIR"))) else { return };
@@ -287,6 +290,7 @@ fn real_swipes() {
         line[from..].split(|c| c == ',' || c == '}').next().and_then(|v| v.trim().parse().ok()).unwrap_or(0.0)
     };
     let (mut g, _) = load();
+    if let Some(w) = std::env::var("WISP_PRIOR").ok().and_then(|v| v.parse().ok()) { g.params.prior_weight = w }
     let (mut first, mut top3, mut n) = (0, 0, 0);
     for line in text.lines().filter(|l| l.contains("\"kx\"")) {
         let word = line.split("\"word\":\"").nth(1).and_then(|r| r.split('"').next()).unwrap_or("");
@@ -303,5 +307,5 @@ fn real_swipes() {
     }
     if n == 0 { return }
     println!("GATE real swipes: {n}, first guess {:.1}%, in the top three {:.1}%", 100.0 * first as f32 / n as f32, 100.0 * top3 as f32 / n as f32);
-    assert!(top3 * 2 >= n, "most real swipes are read wrong");
+    assert!(first as f32 >= 0.88 * n as f32, "real swipes read right first time: {first} of {n}");
 }

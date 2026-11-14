@@ -54,7 +54,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 5.3 **(!)** "teh " becomes "the ", and one backspace right after puts "teh" back. It is not corrected again after that.
 - [ ] 5.4 A correct word ("hello") is never changed. Names and unknown words are left alone.
 - [ ] 5.5 Typing a new word, then tapping the "keep as typed" entry on the left of the strip, teaches it; it is offered next time.
-- [ ] 5.6 After a space, next-word suggestions appear ("how", then "are", "you" ...).
+- [ ] 5.6 After a word and a space, the strip offers up to three words that usually come next ("how", then "are", "you" ...), the best in the middle; a tap types it with a space and offers the next. Pairs you write yourself come first over time. The grid button stays on the left: a tap on it brings the tools back.
 - [ ] 5.7 Autocorrect off in Home: nothing is replaced automatically, suggestions still show.
 - [ ] 5.8 With the field empty, the strip shows the grid button, then clipboard, rewrite and private typing, and the mic on the right. The grid button swaps to undo, redo, select all, cut, copy, paste, resize and settings.
 - [ ] 5.8b Tap at the end of a word that is already in a text box (or open a box that has text): that word shows in the strip with corrections, and tapping one replaces it without an extra space. Tapping in the middle of a word offers nothing.

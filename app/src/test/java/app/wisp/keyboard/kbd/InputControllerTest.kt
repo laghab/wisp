@@ -529,4 +529,31 @@ class InputControllerTest {
         c.onSuggestionTapped(1)
         assertEquals("see the", e.shown)
     }
+
+    // ---- what comes next
+
+    @Test fun afterAWordAndASpaceTheStripOffersTheNextWordAndATapTypesIt() {
+        val e = FakeEditor(); val s = FakeSuggester(); val c = controller(e, s)
+        var bar: BarState = BarState.IDLE; c.onBarChanged = { bar = it }
+        c.type("how ")
+        assertEquals("", s.requests.last()); assertEquals("how", s.previous.last())
+        c.onSuggestions(SuggestionResult("", listOf(cand("are", 400_000), cand("do", 390_000), cand("much", 380_000)), false))
+        assertTrue(bar.predicting); assertEquals(listOf("do", "are", "much"), bar.items.map { it.text })
+        c.onSuggestionTapped(1)
+        assertEquals("how are ", e.shown); assertEquals("are", s.previous.last())
+    }
+
+    @Test fun nextWordGuessesGoAwayOnBackspaceAndNeverLandSomewhereElse() {
+        val e = FakeEditor(); val s = FakeSuggester(); val c = controller(e, s)
+        var bar: BarState = BarState.IDLE; c.onBarChanged = { bar = it }
+        c.type("how ")
+        c.onSuggestions(SuggestionResult("", listOf(cand("are", 400_000)), false))
+        c.onKey(KeyCodes.BACKSPACE)
+        assertFalse(bar.predicting)
+        c.type(" ")
+        c.onSuggestions(SuggestionResult("", listOf(cand("are", 400_000)), false))      // an answer that comes late, for a word no longer in front of the cursor
+        e.committed.setLength(0); e.committed.append("somewhere else ")
+        c.onSuggestionTapped(1)
+        assertEquals("somewhere else ", e.shown)
+    }
 }

@@ -89,6 +89,10 @@ class SuggestionEngine(
         for (w in pd.wordsWithPrefix(lower, 3)) {
             if (list.none { it.word.equals(w, true) }) list.add(Candidate(w, PERSONAL_BASE_SCORE + pd.bonus(w) + pd.pairBonus(prev, w), Candidate.KIND_COMPLETION))
         }
+        // After a space: what this person usually writes next comes before what people in general do.
+        if (lower.isEmpty() && prev != null) for (w in pd.after(prev, 3)) {
+            if (list.none { it.word.equals(w, true) }) list.add(Candidate(w, NEXT_WORD_SCORE + pd.pairBonus(prev, w), Candidate.KIND_COMPLETION))
+        }
         list.sortByDescending { it.score }
         return SuggestionResult(word, list.take(Lexicon.MAX), known || pd.isKnown(lower))
     }
@@ -157,6 +161,7 @@ class SuggestionEngine(
     }
 
     private companion object {
+        const val NEXT_WORD_SCORE = 420_000       // a pair the person has written themselves, above the word list's own next words (400,000 down)
         const val PERSONAL_BASE_SCORE = 330_000   // where a learned word that completes the typed prefix ranks before its use bonus
         const val SAVE_DELAY_MS = 8_000L
         const val OWN_WORDS_BONUS = 25_000       // a language's own words edge out the English ones mixed in

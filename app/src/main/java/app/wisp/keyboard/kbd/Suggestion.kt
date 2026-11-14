@@ -20,7 +20,8 @@ class SuggestionResult(val word: String, val candidates: List<Candidate>, val ty
 /** What the suggestion strip shows: up to three words; [highlight] marks the one an auto-correct would apply. */
 /** [quoted]: the word exactly as typed, shown in quotation marks (it is not in the dictionary). An empty [text] is an empty slot. */
 class BarItem(val text: String, val highlight: Boolean, val quoted: Boolean = false)
-class BarState(val items: List<BarItem>, val composing: Boolean) {
+/** [predicting]: the words are guesses at the next word, not about a word being typed, so the tools stay one tap away. */
+class BarState(val items: List<BarItem>, val composing: Boolean, val predicting: Boolean = false) {
     companion object { val IDLE = BarState(emptyList(), false) }
 }
 

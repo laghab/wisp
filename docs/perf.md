@@ -56,7 +56,8 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 | 3,000 generated typos of common words (neighbour key, swap, dropped or doubled letter) | top-1 92.4%, top-3 98.0% | top-3 above 80% |
 | Valid words offered as automatic fixes | 0 of 2,000 | 0 |
 | Suggestion latency, 160k words | p50 1.0 ms, p99 1.5 ms | p99 under 8 ms |
-| Glide, careful / normal / sloppy noise, top-1 / top-3 (everyday-word draw, `docs/gesture-eval.md`) | 92.2/99.0, 79.9/92.3, 53.6/68.8 % | 91/98, 78.5/91, 52/67 % |
+| Glide, careful / normal / sloppy noise, top-1 / top-3 (everyday-word draw, `docs/gesture-eval.md`) | 93.2/99.4, 89.4/98.2, 75.1/90.2 % | 92/98.5, 88/97, 73.5/89 % |
+| A person's 66 recorded swipes of everyday words, right first time / in the top three | 92.4 / 97.0 % | 88% first time |
 | Glide decode, 143k swipeable words | p50 0.9 ms, p95 4.0 ms; 12+ letters p95 5.3 ms | p95 50 ms; 150 ms for 30+ letters |
 | Lexicon file / open / first build | 1.3 MB / 6 ms / about 200 ms once, then cached | informational |
 

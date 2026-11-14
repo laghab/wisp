@@ -1,7 +1,7 @@
 # Gesture typing: evaluation and the gate
 
 ## How it is measured
-- **Synthetic swipes.** `SyntheticGestures` draws a finger path for a word through its letters' key centres. Each letter is hit off-centre by a random miss (Gaussian, `noise` in key widths), the whole swipe is shifted a little, corners are rounded over 0.1-0.5 key widths, and the points are sampled unevenly with jitter. Noise levels: **0.15** careful, **0.30** normal, **0.45** sloppy.
+- **Synthetic swipes.** `SyntheticGestures` draws a finger path for a word through its letters' key centres. Each letter is hit off-centre by a random miss (Gaussian, `noise` in key widths sideways and 0.45 of that in key heights up and down, the proportion measured on a person's swipes: 0.38 key widths against 0.16 key heights), the whole swipe is shifted a little, corners are rounded over 0.1-0.5 key widths, and the points are sampled unevenly with jitter. Noise levels: **0.15** careful, **0.30** normal, **0.45** sloppy.
 - **Words** are drawn the way people use them: weight grows with the dictionary probability (`exp(0.06 * p)`), words of 3+ letters only (shorter ones are usually tapped). The probabilities come from real use (below), so the draw is close to everyday text: mostly common words, a rare one now and then.
 - **Dictionary:** the shipped English (US) list, 160,715 entries, 143,749 swipeable after folding and de-duplication (`app/src/main/assets/wordlists/en_US.tsv`). Its probabilities are set by `tools/english_wordlist.py` from how often each word is used in film and TV subtitles: 255 for the most used word, 35 less for every ten times further down the ranking; words the subtitles lack are capped at 85. The upstream numbers were too coarse to tell an everyday word from a rare one ("ADHD" 91, "hello" 120).
 - **Run it:** `cd core && cargo test --release -p wisp-core --test glide_eval -- --nocapture`. The generator and the gate live in `core/wisp-core/tests/glide_eval.rs`; the decoder is `core/wisp-core/src/glide.rs`. `WISP_WORDS=<list>` decodes against another word list on the same swipes, and `WISP_PRIOR=<weight>` tries another weight for common words.
@@ -10,11 +10,13 @@
 ## The gate
 Thresholds were set from the first baseline of the final algorithm and are enforced by `glide_eval.rs` (results from the Rust decoder, seed 42, 2000 swipes):
 
-| Noise | Top-1 | Top-3 | Result (seed 42, 2000 swipes) | Same swipes, upstream probabilities |
-|---|---|---|---|---|
-| 0.15 careful | at least 91% | at least 98% | **92.2% / 99.0%** | 87.7% / 96.8% |
-| 0.30 normal | at least 78.5% | at least 91% | **79.9% / 92.3%** | 74.7% / 89.0% |
-| 0.45 sloppy | at least 52% | at least 67% | **53.6% / 68.8%** | 48.1% / 63.8% |
+| Noise | Top-1 | Top-3 | Result (seed 42, 2000 swipes) |
+|---|---|---|---|
+| 0.15 careful | at least 92% | at least 98.5% | **93.2% / 99.4%** |
+| 0.30 normal | at least 88% | at least 97% | **89.4% / 98.2%** |
+| 0.45 sloppy | at least 73.5% | at least 89% | **75.1% / 90.2%** |
+
+A person's 66 recorded swipes of everyday words (vivo I2202i): **92.4%** right first time, **97.0%** in the top three; gate 88% (`real_swipes`). With the upstream probabilities the same swipes read 90.9%.
 
 With the word before known, on the word list's own pairs at normal noise: 84.8% alone, **93.2%** in context (`the_word_before_helps`).
 
@@ -43,5 +45,6 @@ Otherwise nothing is inserted; the strip offers the literal letters the path cro
 - Leaving rare words out of the index, or charging them a flat penalty, was measured and dropped: both read fewer swipes right than the frequency bonus alone.
 
 ## Open
-- Real swipes from a person on the phone, then re-check the weights above and the confidence thresholds.
+- More real swipes (longer words, other people). On the 66 recorded, a stronger bonus for common words reads more right (0.8: 97.0%) but reads fewer simulated swipes right, where rare words are also drawn; it stays at 0.4 until there is more to go on. The misses are ends that stop a key short ("out" read as "our", "all" as "ask"); the word before settles most of those in real text.
+- Weighting a miss up or down more than a miss sideways, and comparing paths at 36 points in place of 24, were measured and dropped: neither read more of the real swipes right.
 - The pair table is thin (about three followers for each of 7,400 words). A fuller one needs a text corpus with a clear licence.

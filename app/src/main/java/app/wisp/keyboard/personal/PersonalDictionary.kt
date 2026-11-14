@@ -85,6 +85,13 @@ class PersonalDictionary(
         words.values.filter { it.promoted }.map { it.display to bonus(it.display) }
 
     /** Words (promoted or not) with a ranking bonus, lower-case, so the gesture decoder can boost dictionary words the user favours. */
+    /** The words this person most often writes after [previous], most used first. */
+    fun after(previous: String, limit: Int): List<String> {
+        val head = previous.lowercase() + SEP
+        return pairs.entries.filter { it.key.startsWith(head) }.sortedByDescending { effective(it.value.count, it.value.lastUsed) }.take(limit)
+            .map { e -> val k = e.key.substring(head.length); words[k]?.display ?: k }
+    }
+
     /** Every learned pair as (word before, word, strength 0 to 1), for the swipe decoder. */
     fun pairStrengths(): List<Triple<String, String, Float>> =
         pairs.map { (k, p) -> Triple(k.substringBefore(SEP), k.substringAfter(SEP), (1.0 - exp(-effective(p.count, p.lastUsed) / 2.0)).toFloat()) }

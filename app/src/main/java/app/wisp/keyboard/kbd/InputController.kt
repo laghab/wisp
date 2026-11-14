@@ -86,6 +86,26 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         publishBar()
     }
 
+    // After a word and its space, the strip offers what usually comes next. Only for the word still right before the cursor.
+    private var predictions: List<String> = emptyList()
+    private var predictingAfter: String? = null
+
+    private fun predict() {
+        predictions = emptyList(); predictingAfter = null
+        val prev = previousWord ?: return
+        if (!suggestionsEnabled || composer.isNotEmpty) return
+        predictingAfter = prev
+        suggester?.request("", composer.xs, composer.ys, 0, prev)
+    }
+
+    private fun dropPredictions() { predictingAfter = null; if (predictions.isNotEmpty()) { predictions = emptyList(); publishBar() } }
+
+    /** Whether the word the predictions were made for is still what stands before the cursor. */
+    private fun predictionsFit(): Boolean {
+        val prev = predictingAfter ?: return false
+        return editor.textBefore(prev.length + 1)?.toString().equals("$prev ", ignoreCase = true)
+    }
+
     private var adoptedAs: String? = null    // the word taken from the text as it was; learning it only happens once the user changes it
     private var touching = false             // the adopted word has letters after the cursor: any key lets go of it and types plainly
 
@@ -98,6 +118,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
      * word. Skipped while typing, with a selection, and right after the keyboard's own edits. Returns whether a word was taken.
      */
     fun adoptWordAtCursor(): Boolean {
+        if (predictions.isNotEmpty() && !predictionsFit()) dropPredictions()      // the cursor went somewhere else
         if (!suggestionsEnabled || composer.isNotEmpty || editing > 0 || dictation != null || clock() - lastEditAt < ADOPT_QUIET_MS) return false
         return adopt()
     }
@@ -227,7 +248,11 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     /** The dictionary's answer. Ignored when it is for a word that is no longer being typed. */
     fun onSuggestions(r: SuggestionResult) {
-        if (composer.isEmpty || r.word != composer.text) return
+        if (composer.isEmpty) {
+            if (r.word.isEmpty() && predictingAfter != null && gestureItems == null && dictation == null) { predictions = r.candidates.take(3).map { it.word }; publishBar() }
+            return
+        }
+        if (r.word != composer.text) return
         result = r
         publishBar()
     }
@@ -236,7 +261,15 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     fun onSuggestionTapped(index: Int) = edit {
         if (composer.isEmpty && dictation != null) { undoDictation(); return@edit }
         if (composer.isEmpty && gestureItems != null) { onGestureItemTapped(index); return@edit }
-        if (composer.isEmpty) return@edit
+        if (composer.isEmpty) {
+            val word = predictions.getOrNull(intArrayOf(1, 0, 2).getOrElse(index) { -1 }) ?: return@edit      // the best one is in the middle slot
+            if (!predictionsFit()) { dropPredictions(); return@edit }
+            editor.commit("$word ")
+            learn(word, previousWord, strong = false)
+            previousWord = word.lowercase(); correction = null
+            predict(); publishBar(); autoShift()
+            return@edit
+        }
         val item = currentItems().getOrNull(index)?.takeIf { it.text.isNotEmpty() } ?: return
         val typed = composer.text
         editor.setComposing(item.text)
@@ -251,6 +284,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         correction = if (item.text != typed) Correction(typed, item.text, " ", before) else null
         if (item.text == typed) keepAsTyped = typed
         resetWord(clearCorrection = false)
+        predict()
         publishBar()
         autoShift()
     }
@@ -285,6 +319,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     }
 
     private fun backspace() {
+        dropPredictions()
         if (composer.isNotEmpty) {
             composer.backspace()
             result = null
@@ -347,6 +382,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
         correction = if (target != null && separator != null) Correction(typed, finalWord, separator, before) else null
         resetWord(clearCorrection = false)
         if (separator != null) editor.commit(separator)
+        if (separator == " ") predict()
         publishBar()
     }
 
@@ -388,6 +424,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
                 composer.isNotEmpty -> BarState(currentItems(), true)
                 dictation != null -> BarState(listOf(BarItem("Undo dictation", true)), true)
                 offered != null -> BarState(offered.mapIndexed { i, w -> BarItem(w, gestureInserted && i == gestureSelected) }, true)
+                predictions.isNotEmpty() -> BarState(listOf(predictions.getOrNull(1), predictions[0], predictions.getOrNull(2)).map { BarItem(it.orEmpty(), false) }, true, predicting = true)
                 else -> BarState.IDLE
             },
         )
@@ -497,7 +534,7 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
 
     private fun forgetRejection() { rejectedSwipe = null }
 
-    private fun clearGesture() { dictation = null; lastGesture = null; gestureItems = null; gestureInserted = false; gestureSelected = 0 }
+    private fun clearGesture() { predictions = emptyList(); predictingAfter = null; dictation = null; lastGesture = null; gestureItems = null; gestureInserted = false; gestureSelected = 0 }
 
     // ------------------------------------------------------------------ shift
 

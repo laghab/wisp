@@ -47,6 +47,8 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
     var incognito = false
         set(v) { if (field != v) { field = v; invalidate() } }
     private var composing = false
+    private var predicting = false       // next-word guesses: the grid button stays, and a tap on it brings the tools back
+    private var toolsOverGuesses = false
     private var showMore = false
     private var theme: Theme? = null
     private val density = resources.displayMetrics.density
@@ -80,7 +82,8 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
 
     fun setState(s: BarState) {
         if (items === s.items && composing == s.composing) return
-        items = s.items; composing = s.composing
+        items = s.items; predicting = s.predicting; toolsOverGuesses = false
+        composing = s.composing
         invalidate()
     }
 
@@ -112,12 +115,13 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         drawMic(c)
         val d = density
         if (voiceActive || voiceMessage != null) { drawTranscript(c); return }
-        val left = if (composing) 4f * d else 4f * d + cell
-        if (!composing) Icons.draw(c, Icons.Icon.GRID, 4f * d + cell / 2f, height / 2f, 20f * d, if (showMore) palette.accent else ink)
+        val words = composing && !toolsOverGuesses
+        val left = if (words && !predicting) 4f * d else 4f * d + cell
+        if (!words || predicting) Icons.draw(c, Icons.Icon.GRID, 4f * d + cell / 2f, height / 2f, 20f * d, if (showMore && !words) palette.accent else ink)
         val x0 = left; val x1 = width - micArea
         val fm = text.fontMetrics
         val y = height / 2f - (fm.ascent + fm.descent) / 2f
-        if (composing) {
+        if (words) {
             val cw = (x1 - x0) / 3f
             for (i in 0 until 3) {
                 val it = items.getOrNull(i)?.takeIf { s -> s.text.isNotEmpty() } ?: continue
@@ -205,8 +209,10 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         if (micPressed) return true
         if (e.actionMasked == MotionEvent.ACTION_UP) {
             if (e.x >= width - micArea) return true
-            val x0 = if (composing) 4f * density else 4f * density + cell
-            if (composing) {
+            val words = composing && !toolsOverGuesses
+            val x0 = if (words && !predicting) 4f * density else 4f * density + cell
+            if (words && e.x < x0) { toolsOverGuesses = true; showMore = false; invalidate(); return true }      // the grid button beside the guesses: back to the tools
+            if (words) {
                 val i = ((e.x - x0) / ((width - micArea - x0) / 3f)).toInt().coerceIn(0, 2)
                 if (items.getOrNull(i)?.text?.isNotEmpty() == true) listener?.onSuggestion(i)
                 return true
