@@ -4,6 +4,7 @@ import android.os.SystemClock
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.view.MotionEvent
 import android.view.View
@@ -22,6 +23,9 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         fun onTool(tool: Tool)
         /** The mic was tapped: start listening, or, while listening, stop and insert. */
         fun onMic()
+        /** The offer to paste what was just copied was tapped, or closed with its cross. */
+        fun onPaste()
+        fun onPasteDismissed()
     }
 
     /**
@@ -42,6 +46,11 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         set(v) { if (field != v) { field = v; invalidate() } }
 
     private var items: List<BarItem> = emptyList()
+
+    /** Something was copied a moment ago: its text is offered on the strip, one tap to paste, in place of the everyday tools. Null: no offer. */
+    var pasteOffer: String? = null
+        set(v) { if (field != v) { field = v; invalidate() } }
+    private val pasteShown get() = pasteOffer != null && !showMore && !(composing && !toolsOverGuesses) && !voiceActive && voiceMessage == null
 
     /** While on, nothing typed is learned; the toggle is shown in the accent colour. */
     var incognito = false
@@ -135,6 +144,17 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
             text.alpha = 255
             return
         }
+        val offer = pasteOffer
+        if (offer != null && pasteShown) {
+            val box = RectF(x0 + 4f * d, height / 2f - 17f * d, x1 - 6f * d, height / 2f + 17f * d)
+            fill.color = palette.key; c.drawRoundRect(box, 17f * d, 17f * d, fill)
+            Icons.draw(c, Icons.Icon.CLIPBOARD, box.left + 20f * d, height / 2f, 17f * d, palette.accent)
+            Icons.draw(c, Icons.Icon.CLOSE, box.right - 18f * d, height / 2f, 14f * d, ink)
+            text.textAlign = Paint.Align.LEFT; text.typeface = Typeface.create(text.typeface, Typeface.NORMAL); text.color = palette.text
+            c.drawText(ellipsize(offer.replace('\n', ' '), box.width() - 76f * d), box.left + 36f * d, y, text)
+            text.textAlign = Paint.Align.CENTER
+            return
+        }
         val r = row()
         if (r.isEmpty()) return
         val cw = (x1 - x0) / r.size
@@ -218,6 +238,7 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
                 return true
             }
             if (e.x < x0) { showMore = !showMore; invalidate(); return true }
+            if (pasteShown) { if (e.x > width - micArea - 42f * density) listener?.onPasteDismissed() else listener?.onPaste(); return true }
             val r = row()
             if (r.isEmpty()) return true
             val i = ((e.x - x0) / ((width - micArea - x0) / r.size)).toInt().coerceIn(0, r.size - 1)

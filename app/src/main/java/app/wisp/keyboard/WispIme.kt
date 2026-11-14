@@ -145,6 +145,8 @@ class WispIme : InputMethodService() {
                 val problem = vc?.failure?.problem
                 if (problem != null) fixVoiceProblem(problem) else if (vc?.isActive == true) vc.stop() else openVoice()
             }
+            override fun onPaste() { val item = pasteOffer; dropPasteOffer(); if (item != null) insertClip(item) }
+            override fun onPasteDismissed() = dropPasteOffer()
             override fun onSuggestion(index: Int) = controller.onSuggestionTapped(index)
             override fun onTool(tool: SuggestionBarView.Tool) = when (tool) {
                 SuggestionBarView.Tool.SELECT_ALL -> controller.selectAll()
@@ -280,6 +282,7 @@ class WispIme : InputMethodService() {
         if (voice?.isActive == true) { voice?.stop(); return }      // touching the keys while listening ends the dictation (its text arrives a moment later)
         if (searchKey(code)) return
         clearInline()        // typing by hand: the logins were not wanted, and the toolbar comes back
+        dropPasteOffer()
         when (code) {
             KeyCodes.SWITCH -> switchKeyboard()
             KeyCodes.SYMBOLS -> setMode(Mode.SYMBOLS)
@@ -712,7 +715,23 @@ class WispIme : InputMethodService() {
         val item = clip.getItemAt(0)
         val stored = if (item.uri != null && clip.description.hasMimeType("image/*")) clipHistory.add("Image", sensitive, noStore, imageUri = item.uri.toString())
         else clipHistory.add(item.coerceToText(this), sensitive, noStore)
-        if (stored) { saveClipSoon(); clipPanel?.refresh() }
+        if (stored) { saveClipSoon(); clipPanel?.refresh(); if (isInputViewShown) offerPaste() }
+    }
+
+    // ---- paste offer: a copy made in the last few minutes is offered on the strip when a field opens, until it is used, closed or typed past ----
+
+    private var pasteOffer: ClipItem? = null
+    private var pasteOfferedAt = 0L          // the copy time of the last item used or turned down, so it is not offered twice
+
+    private fun offerPaste() {
+        val newest = clipHistory.items().maxByOrNull { it.at }
+        pasteOffer = newest?.takeIf { it.at > pasteOfferedAt && System.currentTimeMillis() - it.at < PASTE_OFFER_MS && field.kind != FieldKind.PASSWORD }
+        bar?.pasteOffer = pasteOffer?.text
+    }
+
+    private fun dropPasteOffer() {
+        pasteOffer?.let { pasteOfferedAt = it.at }
+        pasteOffer = null; bar?.pasteOffer = null
     }
 
     private fun saveClipSoon() { main.removeCallbacks(clipSave); main.postDelayed(clipSave, 2_000) }
@@ -781,6 +800,7 @@ class WispIme : InputMethodService() {
         bar?.micEnabled = f.kind != FieldKind.PASSWORD      // search boxes and address bars ask for "no suggestions", but dictation still belongs there
         keys?.soundOff = f.kind == FieldKind.PASSWORD
         onClipChanged()
+        offerPaste()
         engine?.refreshSources(); gestureEngine?.refreshSources()
         updateLearning()
         keys?.gesturesEnabled = style.glide && f.kind in listOf(FieldKind.TEXT, FieldKind.URL, FieldKind.EMAIL)      // not only in "suggestion" fields: search boxes and address bars swipe too
@@ -813,5 +833,5 @@ class WispIme : InputMethodService() {
         if (collapsed && !controller.isComposing) scheduleAdopt()      // the cursor came to rest: look at the word it touches
     }
 
-    private companion object { const val PANEL_FADE_MS = 120L }
+    private companion object { const val PANEL_FADE_MS = 120L; const val PASTE_OFFER_MS = 3 * 60_000L }
 }
