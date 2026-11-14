@@ -278,6 +278,7 @@ class WispIme : InputMethodService() {
     private fun handleKey(code: Int, x: Int, y: Int) {
         if (voice?.isActive == true) { voice?.stop(); return }      // touching the keys while listening ends the dictation (its text arrives a moment later)
         if (searchKey(code)) return
+        clearInline()        // typing by hand: the logins were not wanted, and the toolbar comes back
         when (code) {
             KeyCodes.SWITCH -> switchKeyboard()
             KeyCodes.SYMBOLS -> setMode(Mode.SYMBOLS)
@@ -472,6 +473,22 @@ class WispIme : InputMethodService() {
         host.setBackgroundColor(palette.background)
         host.visibility = View.VISIBLE
         return true
+    }
+
+    private var inlineFor: android.view.autofill.AutofillId? = null
+
+    private fun clearInline() { inlineScroll?.let { if (it.visibility != View.GONE) { it.removeAllViews(); it.visibility = View.GONE } } }
+
+    /**
+     * The chips belong to one field and stay for as long as that field is the one being edited. Apps restart their field often (Gmail's
+     * password page does it right after the chips arrive), and the password manager does not answer again for a field it has already
+     * answered, so a restart of the same field must keep them. A different field drops them; its own answer comes after this call.
+     */
+    override fun onStartInput(info: EditorInfo, restarting: Boolean) {
+        super.onStartInput(info, restarting)
+        val id = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) info.autofillId else null
+        if (!restarting || id != inlineFor) clearInline()
+        inlineFor = id
     }
 
     /**
@@ -772,7 +789,6 @@ class WispIme : InputMethodService() {
 
     override fun onFinishInput() {
         main.removeCallbacks(adopt)
-        inlineScroll?.let { it.removeAllViews(); it.visibility = View.GONE }
         voice?.cancel()                              // the field this was meant for is gone
         controller.onExternalCursorMove()
         engine?.flush()
