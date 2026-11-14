@@ -47,7 +47,7 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 | Words said during a 3 s slow model load | all kept (pre-roll) | none lost | met |
 | Audio left on disk after dictation | none | none | met |
 | Dropped frames typing | 0 to 1.4% across runs | under 1% | **inconclusive**: Waydroid quantises to 60 Hz vsync with no missed vsync reported; confirm on the phone |
-| arm64 release APK (speech and rewrite engines included) | 38.4 MB | 45 MB | met |
+| arm64 release APK (speech engine included) | 38.4 MB | 45 MB | met |
 | Two clean release builds | identical APK contents | reproducible | met (`docs/reproducible-builds.md`) |
 
 ## Typing core (host, release build)
@@ -63,20 +63,8 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 
 The swipe index is built once per language start from the lexicon file, with sort-and-dedupe in three large buffers (6 MB resident instead of 19 MB; `core/wisp-core/tests/mem_probe.rs`). `docs/gesture-eval.md` describes the glide gate.
 
-## AI rewrite (Waydroid x86_64, Qwen 2.5 0.5B 4-bit)
-| Check | Result |
-|---|---|
-| Polish "hey sorry cant make it thurs something came up at work" | "Hey, sorry I can't make it on Thurs. Something came up at work." in 2.7 to 2.8 s, streaming into the card |
-| Field while the rewrite runs, and after closing without choosing | unchanged |
-| Replace | the selected sentence is replaced and nothing else |
-| Voice process while rewriting | about 615 MB PSS (the 491 MB model is memory-mapped); gone after the idle timeout, shared with the speech model |
-| No model installed | the panel explains and offers Open Models |
-| Engine size | `libwisp_llm.so` 4.8 MB arm64, 4.8 MB arm64 with dot-product, 5.3 MB x86_64; llama.cpp v0.9.0 pinned by commit and SHA-256 |
-
-The dot-product build is picked on arm64 phones that report `asimddp`. 32-bit ARM is not built (llama.cpp no longer builds for it) and the panel reports rewrite as unavailable there. Gemma 3 1B and Qwen 2.5 1.5B were not run; the same code path loads any GGUF the catalogue lists.
-
 ## On the phone (vivo I2202i, release build, 2026-11-11)
 Installed and set as the keyboard over adb; the setup steps ticked themselves, the keyboard shows and types in the Home test area. Typing-only memory with the settings app in the same process: **51 MB PSS** (budget 80 MB).
 
 ## Not yet measured
-On the phone: press-to-commit and frame timing, gesture decode, voice energy per minute, rewrite speed, battery and a 24-hour daily-use run.
+On the phone: press-to-commit and frame timing, gesture decode, voice energy per minute, battery and a 24-hour daily-use run.

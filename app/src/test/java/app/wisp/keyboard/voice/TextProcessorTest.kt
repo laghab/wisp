@@ -87,9 +87,9 @@ class TextProcessorTest {
     }
 
     @Test fun catalogIsConsistent() {
-        val ids = ModelCatalog.speech.map { it.id }
+        val ids = ModelCatalog.all.map { it.id }
         assertEquals(ids.size, ids.toSet().size)
-        for (m in ModelCatalog.speech) {
+        for (m in ModelCatalog.all) {
             assertTrue(m.requiredFiles.isNotEmpty())
             val src = m.source
             if (src is ModelSource.Files) {

@@ -10,7 +10,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 1.3 "Open keyboard list" takes you to Android's keyboard settings; after you switch Wisp on, step 1 ticks itself when you come back.
 - [ ] 1.4 Step 2 (choose Wisp as your keyboard) opens the picker; after choosing, it ticks itself.
 - [ ] 1.5 "Skip for now" works and lands on Home. The Welcome screen does not come back on the next launch.
-- [ ] 1.6 **(!)** Settings > Apps > Wisp > Permissions lists only what is documented: Microphone (asked for when you first use voice), plus Internet, notifications and installing updates for the optional model downloader. Settings > Data usage shows no network use while you only type and dictate.
+- [ ] 1.6 **(!)** Settings > Apps > Wisp > Permissions lists only what is documented: Microphone (asked for when you first use voice), plus Internet, notifications and installing updates for the optional model downloader and the optional Rewrite. Settings > Data usage shows no network use while you only type and dictate.
 - [ ] 1.7 Home shows "Wisp is your keyboard" (green dot), the version, "0 KB sent off this phone", and a Test area.
 - [ ] 1.8 The home-screen icon is the Wisp ribbon icon (and a single-colour version appears with themed icons on Android 13+).
 
@@ -56,7 +56,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 5.5 Typing a new word, then tapping the "keep as typed" entry on the left of the strip, teaches it; it is offered next time.
 - [ ] 5.6 After a word and a space, the strip offers up to three words that usually come next ("how", then "are", "you" ...), the best in the middle; a tap types it with a space and offers the next. Pairs you write yourself come first over time. The grid button stays on the left: a tap on it brings the tools back.
 - [ ] 5.7 Autocorrect off in Home: nothing is replaced automatically, suggestions still show.
-- [ ] 5.8 With the field empty, the strip shows the grid button, then clipboard, rewrite and private typing, and the mic on the right. The grid button swaps to undo, redo, select all, cut, copy, paste, resize and settings.
+- [ ] 5.8 With the field empty, the strip shows the grid button, then clipboard and private typing (and rewrite, if it is switched on), and the mic on the right. The grid button swaps to undo, redo, select all, cut, copy, paste, resize and settings.
 - [ ] 5.8b Tap at the end of a word that is already in a text box (or open a box that has text): that word shows in the strip with corrections, and tapping one replaces it without an extra space. Tapping in the middle of a word offers nothing.
 - [ ] 5.11 **(!)** Tap into text so the cursor is at the end of a word or inside one: after a moment the strip offers that word's corrections (a misspelt word shows its fixes). Tapping one replaces the whole word. Typing or deleting inside the word works letter by letter, and the strip catches up when you pause. Space after a word that was already there never changes it.
 - [ ] 5.12 Undo and redo on the toolbar's second row take back and restore the last change in the field (apps that support Ctrl+Z).
@@ -115,15 +115,16 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 9.12 Voice in a quiet room, a noisy room and with a Bluetooth headset: it records, and stops cleanly.
 - [ ] 9.13 A phone call or another app taking the microphone during dictation does not crash Wisp.
 
-## 10. Rewrite (AI)
-- [ ] 10.1 **(!)** With no writing model installed, the rewrite panel explains and offers Open Models; tapping Open Models opens Wisp's Models screen (also when Wisp's settings are already open in the background) and the keyboard does not crash.
-- [ ] 10.2 With a model installed: select a sentence, tap the sparkle icon, choose Polish; the result streams into the card with a shimmer first.
-- [ ] 10.3 **(!)** The field is not changed until you press Replace. Closing the panel leaves the text untouched.
-- [ ] 10.4 Friendly, Formal, Shorter, Bullets and Translate to Hindi each do what they say.
-- [ ] 10.5 Replace swaps only the selected sentence; Insert below adds it on a new line; Regenerate gives another version.
-- [ ] 10.6 "Polish" from the voice panel dictates, then opens the rewrite panel with the dictated text.
-- [ ] 10.7 After the rewrite the model unloads when idle (memory returns).
-- [ ] 10.8 32-bit phones only: the panel says rewrite is unavailable instead of failing.
+## 10. Rewrite (optional, online)
+- [ ] 10.1 **(!)** Fresh install: the toolbar has no sparkle button, and the Toolbar editor does not list Rewrite.
+- [ ] 10.2 Typing > Rewrite with AI on: the sparkle appears on the toolbar and the internet switch on the Downloads tab is on. Off again: the button is gone.
+- [ ] 10.3 On with no key saved: the panel says where the text would go and offers Open settings, which opens Typing; the keyboard does not crash.
+- [ ] 10.4 Save a key: the field empties and reads "saved". Forget key removes it. The key never appears in an exported backup.
+- [ ] 10.5 With a key: select a sentence, tap the sparkle, choose Polish; the header names the provider and the result streams into the card with a shimmer first.
+- [ ] 10.6 **(!)** The field is not changed until you press Replace. Closing the panel leaves the text untouched.
+- [ ] 10.7 Replace swaps only the selected sentence; Insert below adds it on a new line; Regenerate gives another version.
+- [ ] 10.8 A wrong key, no credit, a wrong model name and no connection each give a plain message in the card.
+- [ ] 10.9 **(!)** With the internet switch turned off on the Downloads tab, Rewrite says the network is off and sends nothing.
 
 ## 11. Edit mode, size and position
 - [ ] 11.1 The crop icon on the toolbar's second row (behind the grid button) opens edit mode on the keyboard itself.
@@ -162,7 +163,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 13.1 Learned data lists what Wisp learned (words, swipe style); individual words can be removed; "Erase everything" erases it all after a confirmation.
 - [ ] 13.2 Private mode (incognito) in Settings: words typed while it is on are not learned.
 - [ ] 13.3 Apps Wisp never learns from: adding an app stops learning in that app.
-- [ ] 13.4 Privacy screen lists what is stored, the permissions, and what the app can do on the network (nothing by default).
+- [ ] 13.4 Privacy screen lists what is stored, the permissions, and what the app can do on the network (nothing by default: downloads and Rewrite are both off).
 - [ ] 13.5 Airplane mode on: every feature above still works.
 - [ ] 13.6 Settings > Apps > Wisp > Data usage shows no mobile or Wi-Fi data.
 - [ ] 13.7 Optional downloader (only if you turn it on): downloads a model from a link you give; with it off, nothing leaves the phone.
@@ -205,7 +206,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 17.2 First time the keyboard shows after a restart is fast (under about half a second).
 - [ ] 17.3 After an hour of normal use the keyboard has not become slower.
 - [ ] 17.4 Settings > Battery: Wisp is a small share after a day of use; it holds no wake lock when hidden.
-- [ ] 17.5 Developer options > Running services (or `adb shell dumpsys meminfo app.wisp.keyboard`): typing-only memory is under 80 MB; after a dictation or rewrite and a few minutes idle, the voice process is gone.
+- [ ] 17.5 Developer options > Running services (or `adb shell dumpsys meminfo app.wisp.keyboard`): typing-only memory is under 80 MB; after a dictation and a few minutes idle, the voice process is gone.
 - [ ] 17.6 Phone does not get warm while typing, swiping or with the keyboard just sitting open.
 - [ ] 17.7 `adb logcat` while typing shows no repeated errors, crashes or ANRs.
 

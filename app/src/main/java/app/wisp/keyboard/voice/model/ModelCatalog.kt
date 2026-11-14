@@ -7,10 +7,7 @@ import com.k2fsa.sherpa.onnx.OfflineTransducerModelConfig
 import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
 import java.io.File
 
-enum class ModelFamily { PARAKEET, WHISPER, MOONSHINE, SENSE_VOICE, LLAMA }
-
-/** What a model is for: turning speech into text, or rewriting text (the writing assistant). */
-enum class ModelKind { SPEECH, REWRITE }
+enum class ModelFamily { PARAKEET, WHISPER, MOONSHINE, SENSE_VOICE }
 
 data class RemoteFile(val name: String, val url: String, val sizeBytes: Long)
 
@@ -51,7 +48,6 @@ data class ModelSpec(
     /** Files that must exist for the install to count as complete. */
     val requiredFiles: List<String>,
     val buildConfig: (dir: File, language: String) -> OfflineModelConfig,
-    val kind: ModelKind = ModelKind.SPEECH,
 ) {
     val supportsLanguageSelection get() = selectableLanguages.isNotEmpty()
 }
@@ -102,13 +98,6 @@ object ModelCatalog {
     )
 
     const val AUTO = "auto"
-
-    private fun llm(id: String, name: String, description: String, repo: String, file: String, bytes: Long, ramMb: Int, speed: Int, accuracy: Int, languages: String) = ModelSpec(
-        id = id, name = name, description = description, family = ModelFamily.LLAMA, languages = languages, selectableLanguages = emptyList(),
-        source = ModelSource.Files(listOf(RemoteFile(file, "https://huggingface.co/$repo/resolve/main/$file", bytes))),
-        installedBytes = bytes, ramMb = ramMb, speed = speed, accuracy = accuracy, maxChunkSeconds = 0f,
-        requiredFiles = listOf(file), buildConfig = { _, _ -> OfflineModelConfig() }, kind = ModelKind.REWRITE,
-    )
 
     private val speechModels: List<ModelSpec> = listOf(
         ModelSpec(
@@ -266,16 +255,7 @@ object ModelCatalog {
         ),
     )
 
-    /** Writing-assistant models: GGUF files run by llama.cpp in the voice process. */
-    private val rewriteModels: List<ModelSpec> = listOf(
-        llm("qwen2.5-0.5b", "Qwen 2.5 0.5B", "Tiny and quick. Fine for tidying a sentence; will stumble on longer or subtler rewrites.", "Qwen/Qwen2.5-0.5B-Instruct-GGUF", "qwen2.5-0.5b-instruct-q4_k_m.gguf", 491_400_032, 700, 5, 2, "English, plus some other languages"),
-        llm("gemma-3-1b", "Gemma 3 1B", "Google's small model. Good tone and grammar; a good balance for most phones.", "unsloth/gemma-3-1b-it-GGUF", "gemma-3-1b-it-Q4_K_M.gguf", 806_058_272, 1100, 3, 3, "English and many other languages"),
-        llm("qwen2.5-1.5b", "Qwen 2.5 1.5B", "The most capable writing assistant here, and the slowest. Handles Hindi and longer text best.", "Qwen/Qwen2.5-1.5B-Instruct-GGUF", "qwen2.5-1.5b-instruct-q4_k_m.gguf", 1_117_320_736, 1700, 2, 4, "English, Hindi and 25 other languages"),
-    )
-
-    val all: List<ModelSpec> = speechModels + rewriteModels
-    val speech: List<ModelSpec> get() = speechModels
-    val rewrite: List<ModelSpec> get() = rewriteModels
+    val all: List<ModelSpec> = speechModels
 
     fun byId(id: String?): ModelSpec? = all.firstOrNull { it.id == id }
 

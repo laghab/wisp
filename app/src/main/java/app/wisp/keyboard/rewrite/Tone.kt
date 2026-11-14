@@ -1,4 +1,4 @@
-package app.wisp.keyboard.voice.llm
+package app.wisp.keyboard.rewrite
 
 /** What the user wants done to the text: the chips on the rewrite panel and the instruction given to the model. */
 enum class Tone(val label: String, val instruction: String) {
@@ -14,5 +14,4 @@ enum class Tone(val label: String, val instruction: String) {
     /** The full instruction for the model. */
     fun system(): String = "You rewrite text for a phone keyboard. $instruction Reply with the rewritten text only: no explanation, no quotation marks, no preface."
 
-    companion object { fun byName(n: String?) = values().firstOrNull { it.name == n } ?: POLISH }
 }

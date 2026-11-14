@@ -1,6 +1,13 @@
 package app.wisp.keyboard.ui
 
 import app.wisp.keyboard.kbd.Icons
+import app.wisp.keyboard.rewrite.RewriteSettings
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.Button
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.TextButton
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -170,5 +177,33 @@ fun TypingScreen(modifier: Modifier = Modifier) {
             Text("One per line, as word=expansion. Typing the word and a space types the expansion.", style = MaterialTheme.typography.bodySmall)
             androidx.compose.material3.OutlinedTextField(style.shortcuts, { v -> edit { it.copy(shortcuts = v) } }, Modifier.fillMaxWidth(), placeholder = { Text("omw=On my way") }, minLines = 3)
         }
+        RewriteSection()
+    }
+}
+
+/** Rewrite is the one feature that sends text off the phone, so it is off until switched on here, with the user's own provider and key. */
+@Composable
+private fun RewriteSection() {
+    val context = LocalContext.current
+    var on by remember { mutableStateOf(RewriteSettings.isOn(context)) }
+    var address by remember { mutableStateOf(RewriteSettings.address(context)) }
+    var model by remember { mutableStateOf(RewriteSettings.model(context)) }
+    var hasKey by remember { mutableStateOf(RewriteSettings.hasKey(context)) }
+    var key by remember { mutableStateOf("") }
+    Section("Rewrite", Icons.Icon.SPARKLE) {
+        SwitchRow("Rewrite with AI", "Adds a button to the toolbar that polishes, shortens or translates your text. Off: no button, and nothing is ever sent.", on) { v -> on = v; RewriteSettings.setOn(context, v) }
+        if (!on) return@Section
+        Text("The text you choose to rewrite is sent to ${RewriteSettings.host(context)} with your key, and only when you open Rewrite. Turning this on also turns on Wisp's internet switch. The key is stored encrypted on this phone and is left out of backups.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        OutlinedTextField(key, { key = it }, Modifier.fillMaxWidth(), label = { Text(if (hasKey) "API key (saved; type to replace)" else "API key") }, singleLine = true,
+            visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, autoCorrectEnabled = false))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Button({ RewriteSettings.setKey(context, key); key = ""; hasKey = RewriteSettings.hasKey(context) }, enabled = key.isNotBlank()) { Text("Save key") }
+            if (hasKey) TextButton({ RewriteSettings.setKey(context, ""); hasKey = false }) { Text("Forget key") }
+        }
+        OutlinedTextField(address, { address = it; RewriteSettings.setAddress(context, it) }, Modifier.fillMaxWidth(), label = { Text("Provider address") }, placeholder = { Text(RewriteSettings.DEFAULT_ADDRESS) }, singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri, autoCorrectEnabled = false))
+        OutlinedTextField(model, { model = it; RewriteSettings.setModel(context, it) }, Modifier.fillMaxWidth(), label = { Text("Model") }, placeholder = { Text(RewriteSettings.DEFAULT_MODEL) }, singleLine = true,
+            keyboardOptions = KeyboardOptions(autoCorrectEnabled = false))
+        Text("Works with OpenRouter and any provider that speaks the OpenAI chat format (OpenAI, Groq, Mistral and others): put its address ending in /v1 and one of its model names.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

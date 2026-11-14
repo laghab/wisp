@@ -1,4 +1,4 @@
-package app.wisp.keyboard.voice.llm
+package app.wisp.keyboard.rewrite
 
 import android.content.Context
 import android.graphics.Canvas
@@ -18,7 +18,7 @@ import app.wisp.keyboard.style.Theme
 import app.wisp.keyboard.style.ThemeFonts
 
 /**
- * The rewrite panel (the handoff's Rewrite screen): tone chips, a result card that shimmers while the model writes, and Replace / Insert
+ * The rewrite panel (the handoff's Rewrite screen): tone chips, a result card that shimmers while the answer arrives, and Replace / Insert
  * below / Regenerate. Nothing here changes the field: it only reports what the user chose.
  */
 class RewritePanelView(context: Context, private val rewrite: RewriteController, private var theme: Theme) : View(context) {
@@ -29,7 +29,7 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         fun onInsertBelow(text: String)
         fun onRegenerate()
         fun onClose()
-        fun onOpenModels()
+        fun onOpenSettings()
     }
 
     var listener: Listener? = null
@@ -66,7 +66,7 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
     override fun onDraw(c: Canvas) {
         c.drawColor(theme.board.first().base() or (0xFF shl 24))
         drawHeader(c)
-        if (rewrite.model == null) { drawNotInstalled(c); return }
+        if (!rewrite.hasKey) { drawNoKey(c); return }
         drawChips(c)
         drawCard(c)
         drawButtons(c)
@@ -77,10 +77,10 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         Icons.draw(c, Icons.Icon.SPARKLE, 24f * d, 17f * d, 16f * d, amber, strokeWidth = 1.9f)
         title.color = theme.fg
         c.drawText("Rewrite", 42f * d, 17f * d - (title.fontMetrics.ascent + title.fontMetrics.descent) / 2f, title)
-        // Where the text goes: nowhere. (This is the panel's only privacy note; it has to fit in the keyboard's height.)
-        Icons.draw(c, Icons.Icon.SHIELD, 42f * d + title.measureText("Rewrite") + 16f * d, 17f * d, 12f * d, 0xFF6FD3A6.toInt(), strokeWidth = 2f)
+        // Where the text goes. (This is the panel's only privacy note; it has to fit in the keyboard's height.)
+        Icons.draw(c, Icons.Icon.GLOBE, 42f * d + title.measureText("Rewrite") + 16f * d, 17f * d, 12f * d, amber, strokeWidth = 2f)
         small.color = theme.stripFg
-        c.drawText("on this phone", 42f * d + title.measureText("Rewrite") + 28f * d, 17f * d - (small.fontMetrics.ascent + small.fontMetrics.descent) / 2f, small)
+        c.drawText("sent to ${rewrite.host}", 42f * d + title.measureText("Rewrite") + 28f * d, 17f * d - (small.fontMetrics.ascent + small.fontMetrics.descent) / 2f, small)
         closeRect.set(width - 52f * d, 0f, width - 8f * d, 34f * d)
         Icons.draw(c, Icons.Icon.CLOSE, closeRect.centerX(), closeRect.centerY(), 20f * d, theme.stripFg, strokeWidth = 1.9f)
     }
@@ -177,19 +177,18 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         fill.alpha = 255; label.alpha = 255
     }
 
-    private fun drawNotInstalled(c: Canvas) {
+    private fun drawNoKey(c: Canvas) {
         val card = RectF(14f * d, 40f * d, width - 14f * d, height - 8f * d)
         fill.color = surface(); c.drawRoundRect(card, 16f * d, 16f * d, fill)
         line.color = theme.sep; c.drawRoundRect(card, 16f * d, 16f * d, line)
-        val msg = if (rewrite.isOff) "Rewrite is turned off. You can turn it on in Wisp's Models screen." else
-            "Rewrite needs a small AI model that runs on this phone, so your text never leaves it. No model is installed yet. Choose one in Wisp's Models screen."
+        val msg = "Rewrite sends the text you choose to ${rewrite.host} with your own API key. No key is saved yet. Add one in Wisp's Typing settings."
         val tp = TextPaint(body).also { it.color = theme.fg }
         val l = StaticLayout.Builder.obtain(msg, 0, msg.length, tp, (card.width() - 28f * d).toInt()).setAlignment(Layout.Alignment.ALIGN_NORMAL).setLineSpacing(0f, 1.15f).build()
         c.save(); c.translate(card.left + 14f * d, card.top + 14f * d); l.draw(c); c.restore()
         modelsRect.set(card.left + 14f * d, card.bottom - 52f * d, card.right - 14f * d, card.bottom - 12f * d)
         fill.color = amber; c.drawRoundRect(modelsRect, 14f * d, 14f * d, fill)
         label.color = 0xFF1A1206.toInt()
-        c.drawText("Open Models", modelsRect.centerX(), modelsRect.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
+        c.drawText("Open settings", modelsRect.centerX(), modelsRect.centerY() - (label.fontMetrics.ascent + label.fontMetrics.descent) / 2f, label)
     }
 
     // ---- touch
@@ -216,7 +215,7 @@ class RewritePanelView(context: Context, private val rewrite: RewriteController,
         val ready = rewrite.phase == RewriteController.Phase.DONE && rewrite.result.isNotBlank()
         when {
             closeRect.contains(x, y) -> listener?.onClose()
-            rewrite.model == null -> if (modelsRect.contains(x, y)) listener?.onOpenModels()
+            !rewrite.hasKey -> if (modelsRect.contains(x, y)) listener?.onOpenSettings()
             replaceRect.contains(x, y) -> if (ready) listener?.onReplace(rewrite.result)
             belowRect.contains(x, y) -> if (ready) listener?.onInsertBelow(rewrite.result)
             againRect.contains(x, y) -> if (hasText && !rewrite.working && rewrite.phase != RewriteController.Phase.IDLE) listener?.onRegenerate()

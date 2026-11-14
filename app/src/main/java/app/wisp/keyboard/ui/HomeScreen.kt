@@ -207,7 +207,7 @@ fun WelcomeScreen(onDone: () -> Unit, onOpen: (Target) -> Unit = {}, modifier: M
         Text(when (current) {
             1 -> "Android keeps a list of keyboards. Switch Wisp on in it. Nothing you type is sent anywhere: Wisp has no internet permission for typing."
             2 -> "Choose Wisp as the keyboard you type with. You can switch back any time with the globe key."
-            else -> "Voice typing and rewrite run on this phone, so each needs a small model. Pick one under Models. You can also skip this and add one later."
+            else -> "Voice typing runs on this phone, so it needs a small model. Pick one under Models. You can also skip this and add one later."
         }, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             StepRow(1, "Turn Wisp on", "In Android's keyboard list", enabled, current == 1)
@@ -251,10 +251,10 @@ private fun StepRow(n: Int, label: String, sub: String, done: Boolean, current: 
 fun AboutScreen(modifier: Modifier = Modifier) {
     Column(modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Section("What stays on your phone", Icons.Icon.SHIELD) {
-            Text("Everything. The words Wisp learns, how you swipe, your settings, and any speech models. Nothing is sent anywhere, and Wisp has no analytics, ads or crash reporting.", style = MaterialTheme.typography.bodyMedium)
+            Text("Everything, unless you switch Rewrite on. The words Wisp learns, how you swipe, your settings, and any speech models stay here, and Wisp has no analytics, ads or crash reporting.", style = MaterialTheme.typography.bodyMedium)
         }
         Section("What Wisp can do on the network", Icons.Icon.GLOBE) {
-            Text("Only one thing: download speech models and updates, from the Downloads tab. It is off until you turn it on, it never runs while you type or dictate, and it only contacts the servers listed there.", style = MaterialTheme.typography.bodyMedium)
+            Text("Two things, both off until you turn them on. Download speech models and updates, from the Downloads tab, from the servers listed there. And Rewrite (under Typing): when you open it, the text you chose to rewrite goes to the provider you set up, with your own key. Nothing is sent while you type or dictate.", style = MaterialTheme.typography.bodyMedium)
         }
         Section("Permissions", Icons.Icon.LOCK) {
             Text("Microphone (only when you use voice typing), notifications (only to show a download), and installing updates (only when you ask). No contacts, location or storage.", style = MaterialTheme.typography.bodyMedium)

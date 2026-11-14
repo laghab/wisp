@@ -9,7 +9,7 @@ import java.util.Properties
  */
 object UserData {
     /** Settings that describe this phone or this install rather than the user's choices; a restore leaves them as they are. */
-    private val DEVICE_ONLY_PREFIXES = listOf("network_enabled", "backup_", "bench_", "modelvercode_", "voice_model", "first_run_done", "incognito")
+    private val DEVICE_ONLY_PREFIXES = listOf("network_enabled", "rewrite_on", "backup_", "bench_", "modelvercode_", "voice_model", "first_run_done", "incognito")
 
     val ALL = setOf(BackupFormat.Scope.LEARNED, BackupFormat.Scope.LAYOUTS, BackupFormat.Scope.SETTINGS)
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Task 10.1: the network may only be used inside the :net module, and the app may only ask for the permissions Wisp is documented to need.
+# :net holds the downloader, the update list and the chat client for the optional Rewrite; each takes a NetworkGate.
 # Fails (exit 1) on any violation. Run from anywhere: tools/check-network.sh
 cd "$(dirname "$0")/.." || exit 1
 fail=0
@@ -18,4 +19,9 @@ if grep -qiE 'firebase|crashlytics|analytics|sentry|mixpanel|amplitude|admob|pla
 if grep -qE 'okhttp|retrofit|ktor|volley' net/build.gradle.kts; then echo "FAIL :net pulls in a networking library"; fail=1; else echo "PASS :net uses only the platform HTTP client"; fi
 # 5. Cleartext only in debug builds.
 if grep -q 'usesCleartextTraffic="true"' app/src/main/AndroidManifest.xml; then echo "FAIL release manifest allows cleartext traffic"; fail=1; else echo "PASS release manifest does not allow cleartext traffic"; fi
+# 6. Everything in :net that opens a connection asks the network switch first.
+for f in $(grep -lE '\.openConnection\(' net/src/main/kotlin/app/wisp/net/*.kt); do grep -q 'gate.require()' "$f" || { echo "FAIL $f connects without asking the network switch"; fail=1; }; done
+[ $fail = 0 ] && echo "PASS every connection in :net asks the network switch"
+# 7. Rewrite is off until the user turns it on, and its API key is not kept in the settings file (which backups carry).
+if grep -q 'getBoolean(ON, false)' app/src/main/java/app/wisp/keyboard/rewrite/RewriteSettings.kt && ! grep -rqE 'put(String)?\("rewrite_key' app/src/main; then echo "PASS rewrite is off by default and its key stays out of the settings file"; else echo "FAIL rewrite must default to off with its key outside the settings file"; fail=1; fi
 exit $fail

@@ -104,7 +104,7 @@ private fun ToolbarEditor() {
     fun commit(list: List<SuggestionBarView.Tool>) { tools = list; Toolbar.save(settings, list) }
     Section("Toolbar", Icons.Icon.GRID) {
         Text("The strip above the keys when you are not typing a word. Move things around or switch them off.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        val all = tools + SuggestionBarView.Tool.values().filter { it !in tools }
+        val all = tools + SuggestionBarView.Tool.values().filter { it !in tools && (it != SuggestionBarView.Tool.REWRITE || Toolbar.rewriteOn(settings)) }
         all.forEach { tool ->
             val on = tool in tools
             Row(verticalAlignment = Alignment.CenterVertically) {

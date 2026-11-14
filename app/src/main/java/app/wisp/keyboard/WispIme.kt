@@ -42,9 +42,9 @@ import app.wisp.keyboard.kbd.LayoutGuard
 import app.wisp.keyboard.style.KeyboardStyle
 import app.wisp.keyboard.voice.MicPermissionActivity
 import app.wisp.keyboard.voice.VoiceController
-import app.wisp.keyboard.voice.llm.RewriteController
-import app.wisp.keyboard.voice.llm.RewritePanelView
-import app.wisp.keyboard.voice.llm.Tone
+import app.wisp.keyboard.rewrite.RewriteController
+import app.wisp.keyboard.rewrite.RewritePanelView
+import app.wisp.keyboard.rewrite.Tone
 import app.wisp.keyboard.voice.text.TextProcessor
 import android.content.Intent
 
@@ -625,7 +625,7 @@ class WispIme : InputMethodService() {
         window?.window?.decorView?.post { requestHideSelf(0) } ?: requestHideSelf(0)
     }
 
-    // ---- rewrite: a small on-device model rewrites the selected text or the current sentence; nothing changes until the user chooses ----
+    // ---- rewrite: off unless the user switched it on; the provider they chose rewrites the selected text or the current sentence, and nothing changes until they choose ----
 
     private var rewritePanel: RewritePanelView? = null
     private var rewriteControl: RewriteController? = null
@@ -649,7 +649,8 @@ class WispIme : InputMethodService() {
         else {
             val before = editor.textBefore(600)?.toString().orEmpty()
             var e = before.length; while (e > 0 && before[e - 1].isWhitespace()) e--
-            var st = e; while (st > 0 && before[st - 1] !in ".!?\n") st--
+            var st = e; while (st > 0 && before[st - 1] in ".!?") st--          // the sentence's own full stop belongs to it
+            while (st > 0 && before[st - 1] !in ".!?\n") st--
             while (st < e && before[st].isWhitespace()) st++
             rewriteDraft = before.substring(st, e)
             rewriteTrailing = before.substring(e)
@@ -662,18 +663,18 @@ class WispIme : InputMethodService() {
             override fun onInsertBelow(text: String) { editor.selectBefore(0); editor.commit("\n" + text); rewriteSelectedByUs = false; setMode(Mode.LETTERS) }
             override fun onRegenerate() = ctl.start(ctl.tone, rewriteDraft)
             override fun onClose() = setMode(Mode.LETTERS)
-            override fun onOpenModels() { openSettings("voice") }
+            override fun onOpenSettings() { openSettings("typing") }
         }
         stack.addView(panel, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
         rewritePanel = panel
-        if (ctl.model != null && rewriteDraft.isNotBlank()) ctl.start(Tone.POLISH, rewriteDraft)
+        if (ctl.hasKey && rewriteDraft.isNotBlank()) ctl.start(Tone.POLISH, rewriteDraft)
     }
 
     /** Closing the panel leaves the field as it was: the sentence we selected is deselected, and a rewrite still running is stopped. */
     private fun hideRewritePanel() {
         val panel = rewritePanel ?: return
         rewritePanel = null
-        rewriteControl?.cancel(); rewriteControl?.release(); rewriteControl = null
+        rewriteControl?.cancel(); rewriteControl = null
         if (rewriteSelectedByUs) { editor.selectBefore(0); rewriteSelectedByUs = false }
         panelStack?.removeView(panel)
     }
@@ -765,6 +766,7 @@ class WispIme : InputMethodService() {
         applyStyleIfChanged()
         backups.runIfDue()
         bar?.setTools(app.wisp.keyboard.kbd.Toolbar.load(WispSettings.get(this)))
+        if (mode == Mode.REWRITE && !app.wisp.keyboard.kbd.Toolbar.rewriteOn(WispSettings.get(this))) setMode(Mode.LETTERS)
         val f = FieldInfo.from(info.inputType, info.imeOptions)
         field = f
         editor.inputType = info.inputType
