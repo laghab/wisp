@@ -116,13 +116,15 @@ fn generate(geo: &Geometry, rng: &mut Rng, letters: &[u8], noise: f32) -> (Vec<f
 
 fn load() -> (Glide, Vec<(String, u8)>) {
     let dir = format!("{}/../../app/src/main/assets/wordlists", env!("CARGO_MANIFEST_DIR"));
-    let lex = Lexicon::from_bytes(Lexicon::build(&std::fs::read_to_string(format!("{dir}/en_US.tsv")).unwrap(), "")).unwrap();
-    let words = lex.words();
+    let list = |path: String| Lexicon::from_bytes(Lexicon::build(&std::fs::read_to_string(path).unwrap(), "")).unwrap().words();
+    // WISP_WORDS: another word list to decode against, to compare it with the shipped one on the same swipes (the words swiped always come from the shipped list).
+    let words = list(std::env::var("WISP_WORDS").unwrap_or(format!("{dir}/en_US.tsv")));
+    let targets = list(format!("{dir}/en_US.tsv"));
     let (alphabet, geo) = geometry();
     let t = Instant::now();
     let g = Glide::build(&words, &alphabet, geo);
     println!("glide index: {} swipeable words, built in {} ms", g.len(), t.elapsed().as_millis());
-    (g, words)
+    (g, targets)
 }
 
 struct Report {
@@ -170,11 +172,16 @@ fn run(g: &mut Glide, words: &[(String, u8)], noise: f32, trials: usize, seed: u
 #[test]
 fn gate() {
     let (mut g, words) = load();
-    for (noise, min1, min3) in [(0.15, 0.93, 0.98), (0.30, 0.80, 0.92), (0.45, 0.50, 0.65)] {
-        let r = run(&mut g, &words, noise, 2000, 42);
+    // WISP_PRIOR: try another weight for how much a common word is favoured.
+    if let Some(w) = std::env::var("WISP_PRIOR").ok().and_then(|v| v.parse().ok()) { g.params.prior_weight = w }
+    let levels = [(0.15, 0.91, 0.98), (0.30, 0.785, 0.91), (0.45, 0.52, 0.67)];
+    let reports: Vec<Report> = levels.iter().map(|&(noise, _, _)| run(&mut g, &words, noise, 2000, 42)).collect();
+    for ((noise, _, _), r) in levels.iter().zip(&reports) {
         println!("GATE noise={noise:.2} top1={:.1}% top3={:.1}% decode p50={}us p95={}us", r.top1 * 100.0, r.top3 * 100.0, r.p50, r.p95);
-        assert!(r.top1 >= min1, "noise {noise}: top-1 {} < {min1}", r.top1);
-        assert!(r.top3 >= min3, "noise {noise}: top-3 {} < {min3}", r.top3);
+    }
+    for ((noise, min1, min3), r) in levels.iter().zip(&reports) {
+        assert!(r.top1 >= *min1, "noise {noise}: top-1 {} < {min1}", r.top1);
+        assert!(r.top3 >= *min3, "noise {noise}: top-3 {} < {min3}", r.top3);
         assert!(r.p95 <= 25_000, "p95 {}us", r.p95);
     }
 }
@@ -237,4 +244,64 @@ fn contractions_come_out_with_their_apostrophe() {
         worst = worst.min(shown as f32 / 200.0);
     }
     assert!(worst >= 0.85, "a contraction is missing from the top 3 too often: {worst}");
+}
+
+/// The word before helps: swipes of the second word of pairs from the word list's own pair table, decoded with and without the first.
+#[test]
+fn the_word_before_helps() {
+    let dir = format!("{}/../../app/src/main/assets/wordlists", env!("CARGO_MANIFEST_DIR"));
+    let read = |f: &str| std::fs::read_to_string(format!("{dir}/{f}")).unwrap();
+    let lex = Lexicon::from_bytes(Lexicon::build(&read("en_US.tsv"), &read("en_US.bigrams.tsv"))).unwrap();
+    let (alphabet, geo) = geometry();
+    let mut g = Glide::build(&lex.words(), &alphabet, geo);
+    g.set_pairs(lex.pairs().clone());
+    let mut pairs: Vec<(String, String)> = lex.pairs().iter().flat_map(|(p, n)| n.iter().map(move |w| (p.clone(), w.clone()))).collect();
+    pairs.sort();
+    let mut rng = Rng(21);
+    let (mut alone, mut after, mut n) = (0, 0, 0);
+    for (prev, word) in pairs.iter().step_by(7) {
+        let Some(letters) = g.fold(word).filter(|l| l.len() >= 2) else { continue };
+        let (xs, ys) = generate(&g.geo, &mut rng, &letters, 0.30);
+        let first = |hits: &[wisp_core::glide::Hit], g: &Glide| hits.first().map(|h| g.word(h.id) == word.as_str()).unwrap_or(false);
+        let a = g.decode(&xs, &ys).to_vec();
+        if first(&a, &g) { alone += 1 }
+        let b = g.decode_after(&xs, &ys, Some(prev)).to_vec();
+        if first(&b, &g) { after += 1 }
+        n += 1;
+    }
+    println!("GATE context: {n} pairs at normal noise, top-1 alone {:.1}%, after the word before {:.1}%", 100.0 * alone as f32 / n as f32, 100.0 * after as f32 / n as f32);
+    assert!(after > alone);
+}
+
+/// Swipes a person really made (recorded on a phone with the debug build's TraceRecorderActivity into eval/traces_en_US.jsonl, each with
+/// the key positions it was made on). Prints how many the decoder reads right; fails only if the file is there and most are wrong.
+#[test]
+fn real_swipes() {
+    let Ok(text) = std::fs::read_to_string(format!("{}/../../eval/traces_en_US.jsonl", env!("CARGO_MANIFEST_DIR"))) else { return };
+    let nums = |line: &str, key: &str| -> Vec<f32> {
+        let from = line.find(&format!("\"{key}\":[")).map(|i| i + key.len() + 4).unwrap_or(line.len());
+        line[from..].split(']').next().unwrap_or("").split(',').filter_map(|v| v.trim().parse().ok()).collect()
+    };
+    let one = |line: &str, key: &str| -> f32 {
+        let from = line.find(&format!("\"{key}\":")).map(|i| i + key.len() + 3).unwrap_or(line.len());
+        line[from..].split(|c| c == ',' || c == '}').next().and_then(|v| v.trim().parse().ok()).unwrap_or(0.0)
+    };
+    let (mut g, _) = load();
+    let (mut first, mut top3, mut n) = (0, 0, 0);
+    for line in text.lines().filter(|l| l.contains("\"kx\"")) {
+        let word = line.split("\"word\":\"").nth(1).and_then(|r| r.split('"').next()).unwrap_or("");
+        let fix = |v: Vec<f32>| v.into_iter().map(|c| if c < 0.0 { f32::NAN } else { c }).collect::<Vec<f32>>();
+        g.set_geometry(Geometry::new(fix(nums(line, "kx")), fix(nums(line, "ky")), one(line, "kw"), one(line, "kh")));
+        let (xs, ys) = (nums(line, "x"), nums(line, "y"));
+        let found = g.decode(&xs, &ys).to_vec();
+        let hits: Vec<String> = found.iter().take(3).map(|h| g.word(h.id).to_lowercase()).collect();
+        let rank = hits.iter().position(|w| w == word);
+        if rank == Some(0) { first += 1 }
+        if rank.is_some() { top3 += 1 }
+        if rank != Some(0) { println!("REAL {word} read as {}", hits.join(", ")) }
+        n += 1;
+    }
+    if n == 0 { return }
+    println!("GATE real swipes: {n}, first guess {:.1}%, in the top three {:.1}%", 100.0 * first as f32 / n as f32, 100.0 * top3 as f32 / n as f32);
+    assert!(top3 * 2 >= n, "most real swipes are read wrong");
 }

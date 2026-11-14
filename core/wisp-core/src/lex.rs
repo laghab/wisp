@@ -203,6 +203,11 @@ impl Lexicon {
         self.next.get(&prev.to_lowercase()).map_or(&[], |v| v.as_slice())
     }
 
+    /// Every pair: for a word, the words that follow it, best first.
+    pub fn pairs(&self) -> &HashMap<String, Vec<String>> {
+        &self.next
+    }
+
     fn pair_rank(&self, prev: &str, word: &str) -> Option<usize> {
         self.next.get(prev)?.iter().position(|w| w == word)
     }

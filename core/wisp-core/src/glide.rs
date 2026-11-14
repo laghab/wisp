@@ -54,6 +54,8 @@ pub struct Params {
     pub visit_tolerance: f32,
     pub visit_weight: f32,
     pub band_fraction: f32,
+    /// Taken off the cost of a word that often follows the word before it.
+    pub context_weight: f32,
 }
 
 impl Default for Params {
@@ -70,6 +72,7 @@ impl Default for Params {
             visit_tolerance: 0.40,
             visit_weight: 0.30,
             band_fraction: 0.20,
+            context_weight: 0.08,
         }
     }
 }
@@ -260,6 +263,9 @@ pub struct Glide {
     bucket: Vec<u32>,
     boost: Vec<i16>,
     extras: Vec<Extra>,
+    /// What tends to follow a word: from the word list (best first), and from this person's own writing (with a strength 0 to 1).
+    next: HashMap<String, Vec<String>>,
+    own_next: HashMap<String, Vec<(String, f32)>>,
     pub geo: Geometry,
     pub params: Params,
     pub style: Style,
@@ -346,6 +352,8 @@ impl Glide {
             bucket,
             boost,
             extras: Vec::new(),
+            next: HashMap::new(),
+            own_next: HashMap::new(),
             geo,
             params: Params::default(),
             style: Style::default(),
@@ -403,6 +411,19 @@ impl Glide {
         }
     }
 
+    /// The word list's pairs: for a word, the words that most often follow it, best first.
+    pub fn set_pairs(&mut self, next: HashMap<String, Vec<String>>) {
+        self.next = next;
+    }
+
+    /// This person's own pairs, `(word before, word, strength 0 to 1)`.
+    pub fn set_own_pairs(&mut self, pairs: &[(String, String, f32)]) {
+        self.own_next.clear();
+        for (prev, word, strength) in pairs {
+            self.own_next.entry(prev.to_lowercase()).or_default().push((word.to_lowercase(), strength.clamp(0.0, 1.0)));
+        }
+    }
+
     fn word_at(&self, i: usize) -> &str {
         let r = &self.recs[i];
         std::str::from_utf8(&self.words[r.word_off as usize..r.word_off as usize + r.word_len as usize]).unwrap_or("")
@@ -422,11 +443,40 @@ impl Glide {
 
     /// Decodes the trace into ranked words, best first. Returns `&[]` for a tap or a wiggle.
     pub fn decode(&mut self, xs: &[f32], ys: &[f32]) -> &[Hit] {
+        self.decode_after(xs, ys, None)
+    }
+
+    /// Like [`Glide::decode`], knowing the word written just before: words that often follow it are favoured.
+    pub fn decode_after(&mut self, xs: &[f32], ys: &[f32], previous: Option<&str>) -> &[Hit] {
         // The corrected copy of the trace lives in the struct; take it out so the rest of `self` stays usable.
         let (mut wx, mut wy) = (std::mem::take(&mut self.work_x), std::mem::take(&mut self.work_y));
         self.decode_with(xs, ys, &mut wx, &mut wy);
+        if self.hits.is_empty() {
+            // A sloppy swipe that started or ended well off its keys: look again with wider limits, so a real swipe always gets an answer.
+            let strict = self.params;
+            self.params.end_radius *= 1.7;
+            self.params.visit_max *= 1.7;
+            self.params.min_length_ratio *= 0.8;
+            self.params.max_length_ratio *= 1.25;
+            self.decode_with(xs, ys, &mut wx, &mut wy);
+            self.params = strict;
+        }
         self.work_x = wx;
         self.work_y = wy;
+        if let Some(prev) = previous.map(str::to_lowercase) {
+            let (listed, own) = (self.next.get(&prev), self.own_next.get(&prev));
+            if listed.is_some() || own.is_some() {
+                let mut hits = std::mem::take(&mut self.hits);
+                for h in hits.iter_mut() {
+                    let w = self.word(h.id).to_lowercase();
+                    let from_list = listed.and_then(|l| l.iter().position(|n| *n == w)).map_or(0.0, |rank| (1.0 - 0.1 * rank as f32).max(0.4));
+                    let from_own = own.and_then(|l| l.iter().find(|(n, _)| *n == w)).map_or(0.0, |(_, s)| 1.5 * s);
+                    h.cost -= self.params.context_weight * from_list.max(from_own);
+                }
+                hits.sort_by(|a, b| a.cost.total_cmp(&b.cost));
+                self.hits = hits;
+            }
+        }
         &self.hits
     }
 

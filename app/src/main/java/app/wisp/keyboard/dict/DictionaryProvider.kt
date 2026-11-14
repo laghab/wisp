@@ -29,7 +29,9 @@ class DictionaryProvider(private val context: Context) {
         val asset = lang.wordListAsset ?: return null
         val words = context.assets.open(asset).use { it.readBytes() }
         val pairs = try { context.assets.open(asset.removeSuffix(".tsv") + ".bigrams.tsv").use { it.readBytes() } } catch (e: java.io.FileNotFoundException) { ByteArray(0) }
-        return cached(File(context.filesDir, "lex/${lang.tag}-main-${words.size}.lex"), words, pairs)
+        // Named by the list's checksum, so a list that changed (even to one of the same size) is built again.
+        val sum = java.util.zip.CRC32().apply { update(words); update(pairs) }.value
+        return cached(File(context.filesDir, "lex/${lang.tag}-main-$sum.lex"), words, pairs)
     }
 
     private fun imported(lang: Language): Lexicon? {

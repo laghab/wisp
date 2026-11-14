@@ -51,6 +51,8 @@ class InputController(private val editor: Editor, private val clock: () -> Long 
     private inline fun <T> edit(block: () -> T): T { editing++; lastEditAt = clock(); try { return block() } finally { editing-- } }
     private val composer = WordComposer()
     private var previousWord: String? = null
+    /** The last finished word before the cursor (lower case), for anything that ranks the next word by what came before. */
+    val wordBefore get() = previousWord
     private var result: SuggestionResult? = null
     private var correction: Correction? = null
     private var keepAsTyped: String? = null     // a word whose auto-correction the user just took back

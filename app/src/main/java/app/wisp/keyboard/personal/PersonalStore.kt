@@ -24,6 +24,8 @@ class PersonalSnapshot(
     val words: List<kotlin.Pair<String, Int>>,
     /** Lower-case words with a bonus, including ones the main dictionary has. */
     val boosts: Map<String, Int>,
+    /** Pairs the user writes one after the other: the word before, the word, and how settled the habit is (0 to 1). */
+    val pairs: List<Triple<String, String, Float>> = emptyList(),
 ) {
     companion object { val EMPTY = PersonalSnapshot(emptyList(), emptyMap()) }
 }

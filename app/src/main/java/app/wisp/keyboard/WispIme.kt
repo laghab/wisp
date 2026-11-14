@@ -112,7 +112,7 @@ class WispIme : InputMethodService() {
             override fun onShiftLetter(code: Int, x: Int, y: Int) = controller.onShiftLetter(code, x, y)
             override fun onCursorSteps(steps: Int) { if (!emojiSearching) controller.onCursorSteps(steps) }
             override fun onLongPress(code: Int) { if (code == KeyCodes.SWITCH) showPicker() }
-            override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) { if (!emojiSearching) gestureEngine?.decode(xs, ys, count, null) }
+            override fun onGesture(xs: FloatArray, ys: FloatArray, count: Int) { if (!emojiSearching) gestureEngine?.decode(xs, ys, count, controller.wordBefore) }
         }
         Probe.mark("p_start")
         val spec0 = lettersSpec()

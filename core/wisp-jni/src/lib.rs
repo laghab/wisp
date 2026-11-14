@@ -274,7 +274,7 @@ pub extern "system" fn Java_app_wisp_keyboard_core_Native_glideNew(
     let _ = env.get_long_array_region(&lexes, 0, &mut handles);
     let mixed = ints(&env, &mixed);
     let alpha: Vec<u32> = ints(&env, &alphabet).into_iter().map(|c| c as u32).collect();
-    let g = Glide::build_with(
+    let mut g = Glide::build_with(
         |add| {
             for (i, &h) in handles.iter().enumerate() {
                 if h == 0 {
@@ -287,6 +287,10 @@ pub extern "system" fn Java_app_wisp_keyboard_core_Native_glideNew(
         &alpha,
         geometry(&env, &xs, &ys, key_w, key_h),
     );
+    // Which word follows which comes from the language itself, not from one mixed in.
+    if let Some((_, &h)) = handles.iter().enumerate().find(|(i, &h)| h != 0 && mixed.get(*i) != Some(&1)) {
+        g.set_pairs(unsafe { &*(h as *const Lexicon) }.pairs().clone());
+    }
     Box::into_raw(Box::new(g)) as jlong
 }
 
@@ -315,28 +319,35 @@ pub extern "system" fn Java_app_wisp_keyboard_core_Native_glideSetGeometry(
     ok as jni::sys::jboolean
 }
 
-/// Words as `word TAB probability points` lines for personal words the lexicon lacks, then a blank line, then
-/// `word TAB points` lines for lexicon words the user favours.
+/// Three blocks parted by blank lines: `word TAB probability points` for personal words the lexicon lacks, `word TAB points` for lexicon
+/// words the user favours, and `word before TAB word TAB strength` for the pairs of words the user writes one after the other.
 #[no_mangle]
 pub extern "system" fn Java_app_wisp_keyboard_core_Native_glideSetPersonal(mut env: JNIEnv, _c: JClass, h: jlong, text: JString) {
     let Some(g) = glide(h) else { return };
     let t = string(&mut env, &text);
-    let (extras, boosts) = t.split_once("\n\n").unwrap_or((t.as_str(), ""));
+    let mut blocks = t.split("\n\n");
+    let (extras, boosts, pairs) = (blocks.next().unwrap_or(""), blocks.next().unwrap_or(""), blocks.next().unwrap_or(""));
     let parse = |s: &str| -> Vec<(String, i32)> {
         s.lines().filter_map(|l| l.split_once('\t')).filter_map(|(w, p)| Some((w.to_string(), p.trim().parse().ok()?))).collect()
     };
     let boosts: std::collections::HashMap<String, i32> = parse(boosts).into_iter().collect();
     g.set_personal(&parse(extras), &boosts);
+    let pairs: Vec<(String, String, f32)> = pairs
+        .lines()
+        .filter_map(|l| { let mut f = l.split('\t'); Some((f.next()?.to_string(), f.next()?.to_string(), f.next()?.trim().parse().ok()?)) })
+        .collect();
+    g.set_own_pairs(&pairs);
 }
 
-/// Lines `word TAB cost TAB fit TAB prob`, best first.
+/// Lines `word TAB cost TAB fit TAB prob`, best first. `prev` is the word written just before (empty when there is none).
 #[no_mangle]
-pub extern "system" fn Java_app_wisp_keyboard_core_Native_glideDecode<'a>(env: JNIEnv<'a>, _c: JClass, h: jlong, xs: JFloatArray, ys: JFloatArray, n: jint) -> jni::objects::JString<'a> {
+pub extern "system" fn Java_app_wisp_keyboard_core_Native_glideDecode<'a>(mut env: JNIEnv<'a>, _c: JClass, h: jlong, xs: JFloatArray, ys: JFloatArray, n: jint, prev: JString) -> jni::objects::JString<'a> {
     let mut out = String::new();
+    let prev = string(&mut env, &prev);
     if let Some(g) = glide(h) {
         let (x, y) = (floats(&env, &xs), floats(&env, &ys));
         let n = (n.max(0) as usize).min(x.len()).min(y.len());
-        let hits: Vec<_> = g.decode(&x[..n], &y[..n]).to_vec();
+        let hits: Vec<_> = g.decode_after(&x[..n], &y[..n], (!prev.is_empty()).then_some(prev.as_str())).to_vec();
         for hit in hits {
             out.push_str(&format!("{}\t{}\t{}\t{}\n", g.word(hit.id), hit.cost, g.fit(&hit), g.prob(hit.id)));
         }

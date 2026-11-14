@@ -38,7 +38,7 @@ object Native {
     /** `word TAB points` lines of personal words the lexicon lacks, a blank line, then `word TAB points` of favoured words. */
     external fun glideSetPersonal(handle: Long, text: String)
     /** Lines `word TAB cost TAB fit TAB prob`, best first. */
-    external fun glideDecode(handle: Long, xs: FloatArray, ys: FloatArray, n: Int): String
+    external fun glideDecode(handle: Long, xs: FloatArray, ys: FloatArray, n: Int, previous: String): String
     external fun glideLiteral(handle: Long, xs: FloatArray, ys: FloatArray, n: Int): String
     external fun glideObserve(handle: Long, xs: FloatArray, ys: FloatArray, n: Int, word: String, weight: Float)
     external fun glidePlausible(handle: Long, xs: FloatArray, ys: FloatArray, n: Int, word: String): Boolean

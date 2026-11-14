@@ -96,7 +96,8 @@ class GestureTrainingActivity : Activity() {
         prompt.text = "..."; progress.text = "Getting the word list ready"
         thread {
             val sources = DictionaryProvider(this).open(language)
-            candidates = sources.firstOrNull()?.dict?.words().orEmpty().filter { (w, p) -> w.length in 3..9 && p >= 105 && w.all { it in 'a'..'z' } }.map { it.first }
+            // Everyday words only: 133 and up is about the 3,000 most used (tools/english_wordlist.py sets the scale).
+            candidates = sources.firstOrNull()?.dict?.words().orEmpty().filter { (w, p) -> w.length in 3..9 && p >= 133 && w.all { it in 'a'..'z' } }.map { it.first }
             sources.forEach { it.dict.close() }
             runOnUiThread { if (candidates.isNotEmpty()) startSession() else progress.text = "Could not load the dictionary" }
         }

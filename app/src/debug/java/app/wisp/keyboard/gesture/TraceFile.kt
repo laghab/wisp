@@ -9,25 +9,13 @@ import org.json.JSONObject
  */
 class RecordedTrace(
     val word: String, val language: String,
-    val width: Int, val height: Int, val density: Float,
+    /** Where the letters a to z sit (key centres, NaN for a letter the layout lacks) and how big a key is, in the same pixels as the path. */
+    val keyXs: FloatArray, val keyYs: FloatArray, val keyW: Float, val keyH: Float,
     val xs: FloatArray, val ys: FloatArray,
 ) {
-    val count get() = xs.size
-
     fun toJson(): String = JSONObject().apply {
-        put("word", word); put("lang", language); put("w", width); put("h", height); put("d", density.toDouble())
-        put("x", JSONArray().also { a -> xs.forEach { a.put(Math.round(it * 10) / 10.0) } })
-        put("y", JSONArray().also { a -> ys.forEach { a.put(Math.round(it * 10) / 10.0) } })
+        fun list(v: FloatArray) = JSONArray().also { a -> v.forEach { a.put(if (it.isNaN()) -1.0 else Math.round(it * 10) / 10.0) } }
+        put("word", word); put("lang", language); put("kw", keyW.toDouble()); put("kh", keyH.toDouble())
+        put("kx", list(keyXs)); put("ky", list(keyYs)); put("x", list(xs)); put("y", list(ys))
     }.toString()
-
-    companion object {
-        fun parse(line: String): RecordedTrace {
-            val o = JSONObject(line)
-            val x = o.getJSONArray("x"); val y = o.getJSONArray("y")
-            return RecordedTrace(
-                o.getString("word"), o.getString("lang"), o.getInt("w"), o.getInt("h"), o.getDouble("d").toFloat(),
-                FloatArray(x.length()) { x.getDouble(it).toFloat() }, FloatArray(y.length()) { y.getDouble(it).toFloat() },
-            )
-        }
-    }
 }

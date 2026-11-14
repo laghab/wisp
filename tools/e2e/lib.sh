@@ -75,7 +75,8 @@ expect() { # expect <label> <expected>
 # Run a command inside the app's data directory. Phones: run-as. Waydroid refuses run-as, so use its root shell.
 as_app() {
   if [ -z "${AS_MODE:-}" ]; then a run-as "$P" true >/dev/null 2>&1 && AS_MODE=runas || AS_MODE=waydroid; fi
-  if [ "$AS_MODE" = runas ]; then a run-as "$P" sh -c "$*"; else sudo waydroid shell -- sh -c "cd /data/data/$P && $*"; fi
+  if [ "$AS_MODE" = runas ]; then adb -s "$DEV" shell "run-as $P sh" <<< "$*"; else      # the command goes in on stdin, so its quotes survive adb
+  sudo waydroid shell -- sh -c "cd /data/data/$P && $*"; fi
 }
 
 # Write the app's settings file: set_prefs voice_idle_minutes=0 debug_load_delay_ms=2500 incognito=false

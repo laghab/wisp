@@ -11,12 +11,12 @@ expect "number field uses the number pad" "12.5"; shot field_number
 
 # email: bottom row has '@' where comma normally is
 field 33
-tap $(K a); tap $COMMA
+tap $(K a); tap $(key 64)
 expect "email field has an @ key" "a@"
 
 # url: '/' key
 field 17
-tap $(K a); tap $COMMA
+tap $(K a); tap $(key 47)
 expect "url field has a / key" "a/"
 
 # password: text is typed, never suggested; the dump masks it

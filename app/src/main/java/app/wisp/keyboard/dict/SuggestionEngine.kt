@@ -135,7 +135,7 @@ class SuggestionEngine(
         if (personal.version != lastSavedVersion) { store.save(lang, personal); lastSavedVersion = personal.version; personalStamp = store.file(lang).lastModified() }
         if (personal.version != lastPublishedVersion) {
             lastPublishedVersion = personal.version
-            val snap = PersonalSnapshot(personal.promotedWords(), personal.boosts())
+            val snap = PersonalSnapshot(personal.promotedWords(), personal.boosts(), personal.pairStrengths())
             main.post { onPersonalChanged(snap) }
         }
     }

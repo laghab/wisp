@@ -30,8 +30,9 @@ class Glide private constructor(private var handle: Long, val alphabet: IntArray
         geometryOk = Native.glideSetGeometry(handle, xs, ys, kw, kh)
     }
 
-    fun decode(xs: FloatArray, ys: FloatArray, n: Int): List<Hit> {
-        val text = Native.glideDecode(handle, xs, ys, n)
+    /** The words the swipe could be, best first. [previous] is the word written just before it: words that often follow it are favoured. */
+    fun decode(xs: FloatArray, ys: FloatArray, n: Int, previous: String? = null): List<Hit> {
+        val text = Native.glideDecode(handle, xs, ys, n, previous.orEmpty())
         return text.lineSequence().filter { it.isNotEmpty() }.map { l -> val f = l.split('\t'); Hit(f[0], f[1].toFloat(), f[2].toFloat(), f[3].toInt()) }.toList()
     }
 
@@ -62,6 +63,8 @@ class Glide private constructor(private var handle: Long, val alphabet: IntArray
         for ((w, bonus) in p.words) sb.append(w).append('\t').append(EXTRA_BASE_PROB + bonus * EXTRA_BONUS_POINTS / MAX_BONUS_UNITS).append('\n')
         sb.append('\n')
         for ((w, bonus) in p.boosts) sb.append(w).append('\t').append(bonus * EXTRA_BONUS_POINTS / MAX_BONUS_UNITS).append('\n')
+        sb.append('\n')
+        for ((before, w, strength) in p.pairs) sb.append(before).append('\t').append(w).append('\t').append(strength).append('\n')
         Native.glideSetPersonal(handle, sb.toString())
     }
 

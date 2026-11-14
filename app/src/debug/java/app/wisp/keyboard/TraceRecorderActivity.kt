@@ -17,10 +17,13 @@ import kotlin.concurrent.thread
 /**
  * Debug tool: asks for common words one at a time, records how you really swipe them (with the exact keyboard
  * geometry) to files/traces_<lang>.jsonl, and tells you whether the decoder got each one. Pull the file to
- * eval/ and `GestureRecordedTraceTest` replays it on the desktop. Swipes only; typing is ignored here.
+ * eval/ and the `real_swipes` test in core/wisp-core/tests/glide_eval.rs replays it on the desktop. Swipes only; typing is ignored here.
  */
 class TraceRecorderActivity : Activity() {
-    private val words = "hello world keyboard thanks because people should please school friend morning evening tomorrow yesterday between another through might never about great think still where really would could first after other their there these those while house water night phone message coffee garden window".split(' ')
+    // Everyday words, short ones first: they are swiped most and are the easiest to confuse with each other.
+    private val words = ("you the that this what with have your not for are was but all can out get just know like from they want here when one "
+        + "going about good time think right would there well really come back something because people should please thanks hello tomorrow "
+        + "tonight morning never still where could first other their these those while house water night phone message coffee friend work").split(' ')
     private var next = 0
     private lateinit var prompt: TextView
     private lateinit var result: TextView
@@ -62,7 +65,13 @@ class TraceRecorderActivity : Activity() {
         if (next >= words.size) return
         val word = words[next]
         val layout = keys.compiledLayout ?: return
-        val trace = RecordedTrace(word, lang.tag, layout.width.toInt(), layout.height.toInt(), resources.displayMetrics.density, xs, ys)
+        val at = ('a'..'z').map { layout.indexOfCode(it.code) }
+        fun side(k: Int, lo: Int) = layout.rects[k * 4 + lo + 2] - layout.rects[k * 4 + lo]
+        val trace = RecordedTrace(
+            word, lang.tag,
+            FloatArray(26) { if (at[it] < 0) Float.NaN else layout.centerX(at[it]) }, FloatArray(26) { if (at[it] < 0) Float.NaN else layout.centerY(at[it]) },
+            at.filter { it >= 0 }.maxOf { side(it, 0) }, at.filter { it >= 0 }.maxOf { side(it, 1) }, xs, ys,
+        )
         file.appendText(trace.toJson() + "\n")
         val g = glide ?: Glide.build(this, lang, layout)?.also { glide = it } ?: return
         val found = g.decode(xs, ys, xs.size)

@@ -128,18 +128,18 @@ class GestureEngine(
         worker.post {
             lastX = x; lastY = y; lastN = n
             if (gen != generation) return@post
-            val outcome = run(x, y, n) ?: return@post
+            val outcome = run(x, y, n, previousWord) ?: return@post
             main.post { if (gen == generation) onOutcome(outcome) }
         }
     }
 
-    private fun run(xs: FloatArray, ys: FloatArray, n: Int): GestureOutcome? {
+    private fun run(xs: FloatArray, ys: FloatArray, n: Int, previousWord: String?): GestureOutcome? {
         // The practice screen runs in this process too and may have updated the profile: pick that up.
         val stamp = styleFile().lastModified()
         if (stamp != styleStamp && styleDirty == 0) { glide?.loadStyle(styleFile()); styleStamp = stamp }
         val g = ensure() ?: return null
         if (!g.geometryOk) return null                       // not the letter layout (e.g. symbols)
-        val hits = g.decode(xs, ys, n)
+        val hits = g.decode(xs, ys, n, previousWord)
         val literal = g.literal(xs, ys, n).ifEmpty { null }
         if (hits.isEmpty()) return if (literal != null) GestureOutcome(emptyList(), false, literal) else null
         val margin = if (hits.size > 1) hits[1].cost - hits[0].cost else Float.MAX_VALUE
