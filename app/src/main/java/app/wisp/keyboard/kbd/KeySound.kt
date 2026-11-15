@@ -12,7 +12,7 @@ import kotlin.math.tanh
 import kotlin.random.Random
 
 /**
- * What a key press sounds like. Every sound is made here, on the phone; nothing is recorded or bundled. Three are clicks ("paper", a soft
+ * What a key press sounds like. "system" is the phone's own click. The others are made here, on the phone; nothing is recorded or bundled. Three are clicks ("paper", a soft
  * tap; "thock", a deep mechanical key; "wood", a warm knock), with a lower one for the wide keys. Two are instruments ("kalimba" and
  * "bells") that play the next note of a gentle melody for each key, so typing makes music. A volume above 100 is a boost, softly limited
  * so it stays clean. The sounds are rendered once per setting.
@@ -30,6 +30,7 @@ class KeySound(context: android.content.Context) {
 
     /** Plays the sound for [code]. [whenReady]: if the sounds are still being rendered, play as soon as they are (the settings' samples). */
     fun play(mode: String, volume: Int, code: Int, whenReady: Boolean = false) {
+        if (mode == "system") { audio.playSoundEffect(AudioManager.FX_KEYPRESS_STANDARD, if (volume >= 100) -1f else volume / 100f); return }
         if (mode !in MODES || audio.ringerMode != AudioManager.RINGER_MODE_NORMAL) return
         val fresh = prepare(mode, volume)
         val r = ready
@@ -125,8 +126,8 @@ class KeySound(context: android.content.Context) {
     companion object {
         val CLICKS = listOf("paper", "thock", "wood")
         /** Every sound, in the order the settings show them, with its name. */
-        val CHOICES = listOf("paper" to "Paper", "thock" to "Thock", "wood" to "Wood", "kalimba" to "Kalimba", "bells" to "Bells")
-        private val MODES = CHOICES.map { it.first }
+        val CHOICES = listOf("system" to "System click", "paper" to "Paper", "thock" to "Thock", "wood" to "Wood", "kalimba" to "Kalimba", "bells" to "Bells")
+        private val MODES = CHOICES.map { it.first } - "system"
 
         private const val RATE = 44100
         /** A pentatonic scale over two octaves and a bit, from middle C: any run of these notes sounds pleasant. */

@@ -148,8 +148,8 @@ fun FeedbackScreen(modifier: Modifier = Modifier) {
             val sample = remember { app.wisp.keyboard.kbd.KeySound(context) }
             DisposableEffect(Unit) { onDispose { sample.release() } }
             ChoiceRow("Key sound", listOf("off" to "Off") + app.wisp.keyboard.kbd.KeySound.CHOICES, style.sound) { v -> edit { it.copy(sound = v) }; sample.play(v, style.soundVolume, 'a'.code, whenReady = true) }
-            if (style.sound != "off") SliderRow("Volume", style.soundVolume, 5..300) { v -> edit { it.copy(soundVolume = v) }; sample.play(style.sound, v, 'a'.code, whenReady = true) }
-            if (style.sound != "off") Text("Tap a sound again to hear it. Above 100% is a boost. Silent in password fields and when the phone is on silent.", style = MaterialTheme.typography.bodySmall)
+            if (style.sound != "off") SliderRow("Volume", style.soundVolume.coerceAtMost(if (style.sound == "system") 100 else 300), 5..(if (style.sound == "system") 100 else 300)) { v -> edit { it.copy(soundVolume = v) }; sample.play(style.sound, v, 'a'.code, whenReady = true) }
+            if (style.sound != "off") Text("Tap a sound again to hear it. Above 100% is a boost (not for the System click, which follows the phone). Silent in password fields and when the phone is on silent.", style = MaterialTheme.typography.bodySmall)
         }
         Text("Try it: open any text field and type.", style = MaterialTheme.typography.bodySmall)
     }

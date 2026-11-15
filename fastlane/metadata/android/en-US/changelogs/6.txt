@@ -1,0 +1,1 @@
+Wisp 1.0.4: the System click key sound is back, as the first choice and the one the Home switch turns on. If you had it before, it is selected again.
