@@ -1,0 +1,1 @@
+Wisp 1.0.3: swipe typing favours the words people really use and reads the word before, with next-word suggestions after a space. What you just copied is offered on the strip when a text box opens. Rewrite is now optional and online, off by default, with your own API key; the on-device rewrite model is gone, so the app is smaller.
