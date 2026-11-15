@@ -10,5 +10,9 @@ fi
 adb -s "$DEV" shell "rm -rf /data/local/tmp/wisp-model && mkdir -p /data/local/tmp/wisp-model"
 for f in encoder_model.ort decoder_model_merged.ort tokens.txt; do adb -s "$DEV" push "$CACHE/$NAME/$f" /data/local/tmp/wisp-model/ >/dev/null; done
 adb -s "$DEV" push "$CACHE/$NAME/test_wavs/0.wav" /data/local/tmp/wisp-model/debug_mic.wav >/dev/null
-sudo waydroid shell -- sh -c "D=/data/data/$P; mkdir -p \$D/no_backup/models/moonshine-tiny-en \$D/files && cp /data/local/tmp/wisp-model/encoder_model.ort /data/local/tmp/wisp-model/decoder_model_merged.ort /data/local/tmp/wisp-model/tokens.txt \$D/no_backup/models/moonshine-tiny-en/ && cp /data/local/tmp/wisp-model/debug_mic.wav \$D/files/debug_mic.wav && chown -R \$(stat -c %u \$D) \$D/no_backup \$D/files"
+COPY='mkdir -p no_backup/models/moonshine-tiny-en files && cp /data/local/tmp/wisp-model/encoder_model.ort /data/local/tmp/wisp-model/decoder_model_merged.ort /data/local/tmp/wisp-model/tokens.txt no_backup/models/moonshine-tiny-en/ && cp /data/local/tmp/wisp-model/debug_mic.wav files/debug_mic.wav'
+# A phone lets the debug app's own user do the copy (run-as); Waydroid refuses run-as, so its root shell does it and hands the files over.
+if adb -s "$DEV" shell run-as "$P" true >/dev/null 2>&1; then adb -s "$DEV" shell "run-as $P sh" <<< "$COPY"
+else sudo waydroid shell -- sh -c "cd /data/data/$P && $COPY && chown -R \$(stat -c %u .) no_backup files"; fi
+adb -s "$DEV" shell "run-as $P ls no_backup/models/moonshine-tiny-en/tokens.txt" >/dev/null 2>&1 || sudo waydroid shell -- ls "/data/data/$P/no_backup/models/moonshine-tiny-en/tokens.txt" >/dev/null 2>&1 || { echo "the model did not reach the app's folder" >&2; exit 1; }
 echo "test model installed"

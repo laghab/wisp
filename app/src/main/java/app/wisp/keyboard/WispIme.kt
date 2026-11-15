@@ -141,6 +141,7 @@ class WispIme : InputMethodService() {
         Probe.mark("p_bar")
         b.listener = object : SuggestionBarView.Listener {
             override fun onMic() {
+                dropPasteOffer()
                 val vc = voice
                 val problem = vc?.failure?.problem
                 if (problem != null) fixVoiceProblem(problem) else if (vc?.isActive == true) vc.stop() else openVoice()
@@ -725,7 +726,8 @@ class WispIme : InputMethodService() {
 
     private fun offerPaste() {
         val newest = clipHistory.items().maxByOrNull { it.at }
-        pasteOffer = newest?.takeIf { it.at > pasteOfferedAt && System.currentTimeMillis() - it.at < PASTE_OFFER_MS && field.kind != FieldKind.PASSWORD }
+        val copiedAt = if (lastClipAt != 0L) lastClipAt else newest?.at ?: 0L      // Android's own copy time: after a restart the keyboard meets an old copy again, and that is not a fresh one
+        pasteOffer = newest?.takeIf { it.at > pasteOfferedAt && System.currentTimeMillis() - copiedAt < PASTE_OFFER_MS && field.kind != FieldKind.PASSWORD }
         bar?.pasteOffer = pasteOffer?.text
     }
 
