@@ -63,8 +63,10 @@ Budgets are the release gates. Until they are measured on a real phone they are 
 
 The swipe index is built once per language start from the lexicon file, with sort-and-dedupe in three large buffers (6 MB resident instead of 19 MB; `core/wisp-core/tests/mem_probe.rs`). `docs/gesture-eval.md` describes the glide gate.
 
-## On the phone (vivo I2202i, release build, 2026-11-11)
-Installed and set as the keyboard over adb; the setup steps ticked themselves, the keyboard shows and types in the Home test area. Typing-only memory with the settings app in the same process: **51 MB PSS** (budget 80 MB).
+## On the phone (vivo I2202i, 2026-11-15)
+Debug build, `tools/bench/budgets.sh`: key press to commit p99 3.8 ms (budget 16), wake locks 0, final transcript 13 ms after stop (budget 300), memory back within 15 MB after voice, Moonshine Tiny 38.7 times real time (load 554 ms). Over budget in the debug build: cold start p95 561 ms (budget 300) and typing memory 150 MB PSS (budget 80). The release build measured 51 MB PSS on 2026-11-11; its cold start is still to be measured.
+
+`tools/e2e/all.sh`: every group passes when run by itself. In a full run `launch_field` now and then reports "keyboard did not appear after launch" and the checks after it fail; the cause is not found.
 
 ## Not yet measured
-On the phone: press-to-commit and frame timing, gesture decode, voice energy per minute, battery and a 24-hour daily-use run.
+On the phone: release-build cold start, frame timing, gesture decode, voice energy per minute, battery and a 24-hour daily-use run.
