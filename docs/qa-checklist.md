@@ -94,7 +94,7 @@ Use at least two different apps for the typing sections (a messaging app and a b
 - [ ] 8.3 Kaomoji and Symbols tabs insert correctly. ABC returns to the letters; backspace works in the panel.
 - [ ] 8.4 Recent emoji are remembered.
 - [ ] 8.5 Clipboard icon opens history; copy something in another app and it appears. With Incognito on, the panel says copies are not kept.
-- [ ] 8.5b Copy some text in another app, then tap a text box within 3 minutes: the strip offers that text with a clipboard icon; tapping it pastes, the cross or typing a key closes it, and the same copy is not offered again. Not offered in password fields, with Incognito on, or for copies Android marks sensitive.
+- [ ] 8.5b Copy some text in another app, then tap a text box within 3 minutes: the strip offers that text with a clipboard icon; it shows even when the cursor lands on a word that has guesses; tapping it pastes, the cross, a key or a swipe closes it, and the same copy is not offered again. Not offered in password fields, with Incognito on, or for copies Android marks sensitive.
 - [ ] 8.6 Tapping a clip inserts it; pinning keeps it; filters (All, Pinned, Links, Codes) work.
 - [ ] 8.7 **(!)** Copy a password from a password manager: it is not stored in history.
 - [ ] 8.8 A copied one-time code appears under Codes and disappears sooner than other clips; unpinned clips clear after about an hour.

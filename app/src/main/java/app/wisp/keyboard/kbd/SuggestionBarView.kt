@@ -47,10 +47,11 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
 
     private var items: List<BarItem> = emptyList()
 
-    /** Something was copied a moment ago: its text is offered on the strip, one tap to paste, in place of the everyday tools. Null: no offer. */
+    /** Something was copied a moment ago: its text is offered on the strip, one tap to paste, ahead of the tools and of the guesses for a
+     *  word the cursor happens to touch. The first key pressed ends the offer. Null: no offer. */
     var pasteOffer: String? = null
         set(v) { if (field != v) { field = v; invalidate() } }
-    private val pasteShown get() = pasteOffer != null && !showMore && !(composing && !toolsOverGuesses) && !voiceActive && voiceMessage == null
+    private val pasteShown get() = pasteOffer != null && !showMore && !voiceActive && voiceMessage == null
 
     /** While on, nothing typed is learned; the toggle is shown in the accent colour. */
     var incognito = false
@@ -124,7 +125,7 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         drawMic(c)
         val d = density
         if (voiceActive || voiceMessage != null) { drawTranscript(c); return }
-        val words = composing && !toolsOverGuesses
+        val words = composing && !toolsOverGuesses && !pasteShown
         val left = if (words && !predicting) 4f * d else 4f * d + cell
         if (!words || predicting) Icons.draw(c, Icons.Icon.GRID, 4f * d + cell / 2f, height / 2f, 20f * d, if (showMore && !words) palette.accent else ink)
         val x0 = left; val x1 = width - micArea
@@ -229,7 +230,7 @@ class SuggestionBarView(context: Context, private val palette: Palette = Palette
         if (micPressed) return true
         if (e.actionMasked == MotionEvent.ACTION_UP) {
             if (e.x >= width - micArea) return true
-            val words = composing && !toolsOverGuesses
+            val words = composing && !toolsOverGuesses && !pasteShown
             val x0 = if (words && !predicting) 4f * density else 4f * density + cell
             if (words && e.x < x0) { toolsOverGuesses = true; showMore = false; invalidate(); return true }      // the grid button beside the guesses: back to the tools
             if (words) {
